@@ -1,14 +1,13 @@
 package integration
 
 import (
+	"github.com/buildpack/libbuildpack"
+	"github.com/cloudfoundry/yarn-cnb/detect"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 	"path/filepath"
 	"testing"
 
-	"github.com/cloudfoundry/yarn-cnb/detect"
-
-	"github.com/buildpack/libbuildpack"
 	"github.com/cloudfoundry/dagger"
 	. "github.com/onsi/gomega"
 )
@@ -73,5 +72,26 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 		Expect(detectResult.BuildPlan[detect.YarnDependency].Version).To(Equal("~1"))
 		Expect(len(detectResult.BuildPlan[detect.YarnDependency].Metadata)).To(Equal(1))
 		Expect(detectResult.BuildPlan[detect.YarnDependency].Metadata["launch"]).To(BeTrue())
+	})
+
+	it("should run build", func() {
+		group := dagger.Group{
+			Buildpacks: []libbuildpack.BuildpackInfo{
+				{
+					ID:      "org.cloudfoundry.buildpacks.yarn",
+					Version: "0.0.1",
+				},
+			},
+		}
+		buildResult, err := dagg.Build(filepath.Join(rootDir, "fixtures", "simple_app"), group, libbuildpack.BuildPlan{})
+		Expect(err).ToNot(HaveOccurred())
+
+		metadata, found, err := buildResult.GetLaunchMetadata()
+		Expect(err).ToNot(HaveOccurred())
+		Expect(found).To(Equal(true))
+
+		Expect(len(metadata.Processes)).To(Equal(1))
+		Expect(metadata.Processes[0].Type).To(Equal("web"))
+		Expect(metadata.Processes[0].Command).To(Equal("yarn start"))
 	})
 }
