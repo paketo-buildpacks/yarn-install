@@ -1,11 +1,21 @@
-
 [buildpack]
 id = "org.cloudfoundry.buildpacks.yarn"
 name = "Yarn Buildpack"
 version = "0.0.1"
 
+[[metadata.dependencies]]
+id = "yarn"
+name = "Yarn"
+sha256 = "02cd4b589ec22c4bdbd2bc5ebbfd99c5e99b07242ad68a539cb37896b93a24f2"
+stacks = ["org.cloudfoundry.stacks.cflinuxfs2", "org.cloudfoundry.stacks.cflinuxfs3", "io.buildpacks.stacks.bionic"]
+uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.12.3-any-stack-02cd4b58.tar.gz"
+version = "1.12.3"
+
 [[stacks]]
 id = "org.cloudfoundry.stacks.cflinuxfs3"
+
+[[stacks]]
+id = "org.cloudfoundry.stacks.cflinuxfs2"
 
 [[stacks]]
 id = "io.buildpacks.stacks.bionic"
