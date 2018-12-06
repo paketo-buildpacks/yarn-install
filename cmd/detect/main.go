@@ -15,37 +15,37 @@ import (
 )
 
 func main() {
-	detector, err := detect.DefaultDetect()
+	context, err := detect.DefaultDetect()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "failed to create default detector: %s", err)
+		_, _ = fmt.Fprintf(os.Stderr, "failed to create a default detection context: %s", err)
 		os.Exit(100)
 	}
 
-	code, err := runDetect(detector)
+	code, err := runDetect(context)
 	if err != nil {
-		detector.Logger.Info(err.Error())
+		context.Logger.Info(err.Error())
 	}
 
 	os.Exit(code)
 }
 
-func runDetect(detector detect.Detect) (int, error) {
-	yarnLock := filepath.Join(detector.Application.Root, "yarn.lock")
+func runDetect(context detect.Detect) (int, error) {
+	yarnLock := filepath.Join(context.Application.Root, "yarn.lock")
 	if exists, _ := layers.FileExists(yarnLock); !exists {
-		return detector.Fail(), fmt.Errorf(`no "yarn.lock" found at: %s`, yarnLock)
+		return context.Fail(), fmt.Errorf(`no "yarn.lock" found at: %s`, yarnLock)
 	}
 
-	packageJSON := filepath.Join(detector.Application.Root, "package.json")
+	packageJSON := filepath.Join(context.Application.Root, "package.json")
 	if exists, _ := layers.FileExists(packageJSON); !exists {
-		return detector.Fail(), fmt.Errorf(`no "package.json" found at: %s`, packageJSON)
+		return context.Fail(), fmt.Errorf(`no "package.json" found at: %s`, packageJSON)
 	}
 
 	version, err := node.GetNodeVersion(packageJSON)
 	if err != nil {
-		return detector.Fail(), fmt.Errorf(`unable to parse "package.json": %s`, err.Error())
+		return context.Fail(), fmt.Errorf(`unable to parse "package.json": %s`, err.Error())
 	}
 
-	return detector.Pass(buildplan.BuildPlan{
+	return context.Pass(buildplan.BuildPlan{
 		node.Dependency: buildplan.Dependency{
 			Version:  version,
 			Metadata: buildplan.Metadata{"build": true, "launch": true},

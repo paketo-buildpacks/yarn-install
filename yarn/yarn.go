@@ -31,7 +31,7 @@ func (n Yarn) run(dir string, args ...string) error {
 type Contributor struct {
 	buildContribution  bool
 	launchContribution bool
-	layer              layers.DependencyLayer
+	yarnLayer          layers.DependencyLayer
 }
 
 func NewContributor(builder build.Build) (Contributor, bool, error) {
@@ -50,7 +50,7 @@ func NewContributor(builder build.Build) (Contributor, bool, error) {
 		return Contributor{}, false, err
 	}
 
-	contributor := Contributor{layer: builder.Layers.DependencyLayer(dep)}
+	contributor := Contributor{yarnLayer: builder.Layers.DependencyLayer(dep)}
 
 	if _, ok := plan.Metadata["build"]; ok {
 		contributor.buildContribution = true
@@ -64,7 +64,7 @@ func NewContributor(builder build.Build) (Contributor, bool, error) {
 }
 
 func (n Contributor) Contribute() error {
-	return n.layer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
+	return n.yarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
 		layer.Logger.SubsequentLine("Expanding to %s", layer.Root)
 		return layers.ExtractTarGz(artifact, layer.Root, 1)
 	}, n.flags()...)

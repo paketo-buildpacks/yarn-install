@@ -12,44 +12,44 @@ import (
 )
 
 func main() {
-	builder, err := build.DefaultBuild()
+	context, err := build.DefaultBuild()
 	if err != nil {
-		_, _ = fmt.Fprintf(os.Stderr, "failed to create default builder: %s", err)
+		_, _ = fmt.Fprintf(os.Stderr, "failed to create a default build context: %s", err)
 		os.Exit(100)
 	}
 
-	code, err := runBuild(builder)
+	code, err := runBuild(context)
 	if err != nil {
-		builder.Logger.Info(err.Error())
+		context.Logger.Info(err.Error())
 	}
 
 	os.Exit(code)
 }
 
-func runBuild(builder build.Build) (int, error) {
-	builder.Logger.FirstLine(builder.Logger.PrettyIdentity(builder.Buildpack))
+func runBuild(context build.Build) (int, error) {
+	context.Logger.FirstLine(context.Logger.PrettyIdentity(context.Buildpack))
 
-	yarnContributor, willContributeYarn, err := yarn.NewContributor(builder)
+	yarnContributor, willContributeYarn, err := yarn.NewContributor(context)
 	if err != nil {
-		return builder.Failure(102), err
+		return context.Failure(102), err
 	}
 
 	if willContributeYarn {
 		if err := yarnContributor.Contribute(); err != nil {
-			return builder.Failure(103), err
+			return context.Failure(103), err
 		}
 	}
 
-	modulesContributor, willContributeModules, err := modules.NewContributor(builder, yarn.Yarn{})
+	modulesContributor, willContributeModules, err := modules.NewContributor(context, yarn.Yarn{})
 	if err != nil {
-		return builder.Failure(104), err
+		return context.Failure(104), err
 	}
 
 	if willContributeModules {
 		if err := modulesContributor.Contribute(); err != nil {
-			return builder.Failure(105), err
+			return context.Failure(105), err
 		}
 	}
 
-	return builder.Success(buildplan.BuildPlan{})
+	return context.Success(buildplan.BuildPlan{})
 }

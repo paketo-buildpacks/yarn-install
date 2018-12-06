@@ -25,8 +25,8 @@ type Contributor struct {
 	launchContribution bool
 	pkgManager         PackageManager
 	app                application.Application
-	layer              layers.Layer
-	launch             layers.Layers
+	modulesLayer       layers.Layer
+	launchLayer        layers.Layers
 	id                 string
 }
 
@@ -51,11 +51,11 @@ func NewContributor(builder build.Build, pkgManager PackageManager) (Contributor
 	hash := sha256.Sum256(buf)
 
 	contributor := Contributor{
-		app:        builder.Application,
-		pkgManager: pkgManager,
-		layer:      builder.Layers.Layer(Dependency),
-		launch:     builder.Layers,
-		id:         hex.EncodeToString(hash[:]),
+		app:          builder.Application,
+		pkgManager:   pkgManager,
+		modulesLayer: builder.Layers.Layer(Dependency),
+		launchLayer:  builder.Layers,
+		id:           hex.EncodeToString(hash[:]),
 	}
 
 	if _, ok := plan.Metadata["build"]; ok {
@@ -70,7 +70,7 @@ func NewContributor(builder build.Build, pkgManager PackageManager) (Contributor
 }
 
 func (c Contributor) Contribute() error {
-	return c.layer.Contribute(c, func(layer layers.Layer) error {
+	return c.modulesLayer.Contribute(c, func(layer layers.Layer) error {
 		nodeModules := filepath.Join(c.app.Root, "node_modules")
 
 		vendored, err := layers.FileExists(nodeModules)
@@ -104,7 +104,7 @@ func (c Contributor) Contribute() error {
 			return err
 		}
 
-		return c.launch.WriteMetadata(layers.Metadata{
+		return c.launchLayer.WriteMetadata(layers.Metadata{
 			Processes: []layers.Process{{"web", "npm start"}},
 		})
 	}, c.flags()...)
