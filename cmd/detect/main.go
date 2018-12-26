@@ -2,16 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"os"
 	"path/filepath"
 
+	"github.com/cloudfoundry/nodejs-cnb/node"
 	"github.com/cloudfoundry/yarn-cnb/modules"
-	"github.com/cloudfoundry/yarn-cnb/node"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 
 	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/detect"
-	"github.com/cloudfoundry/libcfbuildpack/layers"
 )
 
 func main() {
@@ -31,16 +31,16 @@ func main() {
 
 func runDetect(context detect.Detect) (int, error) {
 	yarnLock := filepath.Join(context.Application.Root, "yarn.lock")
-	if exists, _ := layers.FileExists(yarnLock); !exists {
+	if exists, _ := helper.FileExists(yarnLock); !exists {
 		return context.Fail(), fmt.Errorf(`no "yarn.lock" found at: %s`, yarnLock)
 	}
 
 	packageJSON := filepath.Join(context.Application.Root, "package.json")
-	if exists, _ := layers.FileExists(packageJSON); !exists {
+	if exists, _ := helper.FileExists(packageJSON); !exists {
 		return context.Fail(), fmt.Errorf(`no "package.json" found at: %s`, packageJSON)
 	}
 
-	version, err := node.GetNodeVersion(packageJSON)
+	version, err := node.GetVersion(packageJSON)
 	if err != nil {
 		return context.Fail(), fmt.Errorf(`unable to parse "package.json": %s`, err.Error())
 	}

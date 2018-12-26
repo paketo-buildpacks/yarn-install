@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -20,24 +21,32 @@ type PackageManager interface {
 	Rebuild(location string) error
 }
 
+type Metadata struct {
+	Hash string
+}
+
+func (m Metadata) Identity() (name string, version string) {
+	return Dependency, m.Hash
+}
+
 type Contributor struct {
+	Metadata           Metadata
 	buildContribution  bool
 	launchContribution bool
 	pkgManager         PackageManager
 	app                application.Application
 	modulesLayer       layers.Layer
 	launchLayer        layers.Layers
-	id                 string
 }
 
-func NewContributor(builder build.Build, pkgManager PackageManager) (Contributor, bool, error) {
-	plan, shouldUseNPM := builder.BuildPlan[Dependency]
+func NewContributor(context build.Build, pkgManager PackageManager) (Contributor, bool, error) {
+	plan, shouldUseNPM := context.BuildPlan[Dependency]
 	if !shouldUseNPM {
 		return Contributor{}, false, nil
 	}
 
-	lockFile := filepath.Join(builder.Application.Root, "yarn.lock")
-	if exists, err := layers.FileExists(lockFile); err != nil {
+	lockFile := filepath.Join(context.Application.Root, "yarn.lock")
+	if exists, err := helper.FileExists(lockFile); err != nil {
 		return Contributor{}, false, err
 	} else if !exists {
 		return Contributor{}, false, fmt.Errorf(`unable to find "yarn.lock"`)
@@ -51,11 +60,11 @@ func NewContributor(builder build.Build, pkgManager PackageManager) (Contributor
 	hash := sha256.Sum256(buf)
 
 	contributor := Contributor{
-		app:          builder.Application,
+		app:          context.Application,
 		pkgManager:   pkgManager,
-		modulesLayer: builder.Layers.Layer(Dependency),
-		launchLayer:  builder.Layers,
-		id:           hex.EncodeToString(hash[:]),
+		modulesLayer: context.Layers.Layer(Dependency),
+		launchLayer:  context.Layers,
+		Metadata:     Metadata{hex.EncodeToString(hash[:])},
 	}
 
 	if _, ok := plan.Metadata["build"]; ok {
@@ -70,10 +79,10 @@ func NewContributor(builder build.Build, pkgManager PackageManager) (Contributor
 }
 
 func (c Contributor) Contribute() error {
-	return c.modulesLayer.Contribute(c, func(layer layers.Layer) error {
+	return c.modulesLayer.Contribute(c.Metadata, func(layer layers.Layer) error {
 		nodeModules := filepath.Join(c.app.Root, "node_modules")
 
-		vendored, err := layers.FileExists(nodeModules)
+		vendored, err := helper.FileExists(nodeModules)
 		if err != nil {
 			return fmt.Errorf("unable to stat node_modules: %s", err.Error())
 		}
@@ -92,7 +101,7 @@ func (c Contributor) Contribute() error {
 			return fmt.Errorf("unable make layer: %s", err.Error())
 		}
 
-		if err := layers.CopyDirectory(nodeModules, layer.Root); err != nil {
+		if err := helper.CopyDirectory(nodeModules, layer.Root); err != nil {
 			return fmt.Errorf(`unable to copy "%s" to "%s": %s`, nodeModules, layer.Root, err.Error())
 		}
 
@@ -108,10 +117,6 @@ func (c Contributor) Contribute() error {
 			Processes: []layers.Process{{"web", "npm start"}},
 		})
 	}, c.flags()...)
-}
-
-func (c Contributor) Identity() (name string, version string) {
-	return Dependency, c.id
 }
 
 func (c Contributor) flags() []layers.Flag {

@@ -2,13 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
+	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"path/filepath"
 	"testing"
 
+	"github.com/cloudfoundry/nodejs-cnb/node"
 	"github.com/cloudfoundry/yarn-cnb/modules"
-	"github.com/cloudfoundry/yarn-cnb/node"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 
 	"github.com/buildpack/libbuildpack/buildplan"
@@ -25,32 +24,20 @@ func TestUnitDetect(t *testing.T) {
 }
 
 func testDetect(t *testing.T, when spec.G, it spec.S) {
-	var (
-		err     error
-		dir     string
-		factory *test.DetectFactory
-	)
+	var factory *test.DetectFactory
 
 	it.Before(func() {
-		dir, err = ioutil.TempDir("", "")
-		Expect(err).NotTo(HaveOccurred())
-
 		factory = test.NewDetectFactory(t)
-		factory.Detect.Application.Root = dir
-	})
-
-	it.After(func() {
-		Expect(os.RemoveAll(dir)).To(Succeed())
 	})
 
 	when("there is a yarn.lock and a package.json with a node version in engines", func() {
 		const version string = "1.2.3"
 
 		it.Before(func() {
-			Expect(ioutil.WriteFile(filepath.Join(dir, "yarn.lock"), []byte(""), 0666)).To(Succeed())
+			Expect(helper.WriteFile(filepath.Join(factory.Detect.Application.Root, "yarn.lock"), 0666, "")).To(Succeed())
 
 			packageJSONString := fmt.Sprintf(`{"engines": {"node" : "%s"}}`, version)
-			Expect(ioutil.WriteFile(filepath.Join(dir, "package.json"), []byte(packageJSONString), 0666)).To(Succeed())
+			Expect(helper.WriteFile(filepath.Join(factory.Detect.Application.Root, "package.json"), 0666, packageJSONString)).To(Succeed())
 		})
 
 		it("should pass", func() {
@@ -59,7 +46,7 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 
 			Expect(code).To(Equal(detect.PassStatusCode))
 
-			test.BeBuildPlanLike(t, factory.Output, buildplan.BuildPlan{
+			Expect(factory.Output).To(Equal(buildplan.BuildPlan{
 				node.Dependency: buildplan.Dependency{
 					Version:  version,
 					Metadata: buildplan.Metadata{"build": true, "launch": true},
@@ -70,15 +57,15 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 				modules.Dependency: buildplan.Dependency{
 					Metadata: buildplan.Metadata{"launch": true},
 				},
-			})
+			}))
 
 		})
 	})
 
 	when("there is a yarn.lock and a package.json", func() {
 		it.Before(func() {
-			Expect(ioutil.WriteFile(filepath.Join(dir, "yarn.lock"), []byte(""), 0666)).To(Succeed())
-			Expect(ioutil.WriteFile(filepath.Join(dir, "package.json"), []byte("{}"), 0666)).To(Succeed())
+			Expect(helper.WriteFile(filepath.Join(factory.Detect.Application.Root, "yarn.lock"), 0666, "")).To(Succeed())
+			Expect(helper.WriteFile(filepath.Join(factory.Detect.Application.Root, "package.json"), 0666, "{}")).To(Succeed())
 		})
 
 		it("should pass with the default version of node", func() {
@@ -87,7 +74,7 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 
 			Expect(code).To(Equal(detect.PassStatusCode))
 
-			test.BeBuildPlanLike(t, factory.Output, buildplan.BuildPlan{
+			Expect(factory.Output).To(Equal(buildplan.BuildPlan{
 				node.Dependency: buildplan.Dependency{
 					Version:  "",
 					Metadata: buildplan.Metadata{"build": true, "launch": true},
@@ -98,14 +85,14 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 				modules.Dependency: buildplan.Dependency{
 					Metadata: buildplan.Metadata{"launch": true},
 				},
-			})
+			}))
 
 		})
 	})
 
 	when("there is a yarn.lock and no package.json", func() {
 		it.Before(func() {
-			Expect(ioutil.WriteFile(filepath.Join(dir, "yarn.lock"), []byte(""), 0666)).To(Succeed())
+			Expect(helper.WriteFile(filepath.Join(factory.Detect.Application.Root, "yarn.lock"), 0666, "")).To(Succeed())
 		})
 
 		it("should fail", func() {

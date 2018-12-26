@@ -19,12 +19,12 @@ func TestUnitYarn(t *testing.T) {
 
 func testYarn(t *testing.T, when spec.G, it spec.S) {
 	when("NewContributor", func() {
-		var stubYarnFixture = filepath.Join("stub-yarn.tar.gz")
+		var stubYarnFixture = filepath.Join("fixtures", "stub-yarn.tar.gz")
 
 		it("returns true if a build plan exists", func() {
 			f := test.NewBuildFactory(t)
-			f.AddBuildPlan(t, Dependency, buildplan.Dependency{})
-			f.AddDependency(t, Dependency, stubYarnFixture)
+			f.AddBuildPlan(Dependency, buildplan.Dependency{})
+			f.AddDependency(Dependency, stubYarnFixture)
 
 			_, willContribute, err := NewContributor(f.Build)
 			Expect(err).NotTo(HaveOccurred())
@@ -41,10 +41,10 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 
 		it("contributes yarn to the cache layer when included in the build plan", func() {
 			f := test.NewBuildFactory(t)
-			f.AddBuildPlan(t, Dependency, buildplan.Dependency{
+			f.AddBuildPlan(Dependency, buildplan.Dependency{
 				Metadata: buildplan.Metadata{"build": true},
 			})
-			f.AddDependency(t, Dependency, stubYarnFixture)
+			f.AddDependency(Dependency, stubYarnFixture)
 
 			yarnDep, _, err := NewContributor(f.Build)
 			Expect(err).NotTo(HaveOccurred())
@@ -52,16 +52,16 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 			Expect(yarnDep.Contribute()).To(Succeed())
 
 			layer := f.Build.Layers.Layer(Dependency)
-			test.BeLayerLike(t, layer, true, true, false)
-			test.BeFileLike(t, filepath.Join(layer.Root, "stub.txt"), 0644, "This is a stub file\n")
+			Expect(layer).To(test.HaveLayerMetadata(true, true, false))
+			Expect(filepath.Join(layer.Root, "stub.txt")).To(BeARegularFile())
 		})
 
 		it("contributes yarn to the launch layer when included in the build plan", func() {
 			f := test.NewBuildFactory(t)
-			f.AddBuildPlan(t, Dependency, buildplan.Dependency{
+			f.AddBuildPlan(Dependency, buildplan.Dependency{
 				Metadata: buildplan.Metadata{"launch": true},
 			})
-			f.AddDependency(t, Dependency, stubYarnFixture)
+			f.AddDependency(Dependency, stubYarnFixture)
 
 			yarnContributor, _, err := NewContributor(f.Build)
 			Expect(err).NotTo(HaveOccurred())
@@ -69,8 +69,8 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 			Expect(yarnContributor.Contribute()).To(Succeed())
 
 			layer := f.Build.Layers.Layer(Dependency)
-			test.BeLayerLike(t, layer, false, true, true)
-			test.BeFileLike(t, filepath.Join(layer.Root, "stub.txt"), 0644, "This is a stub file\n")
+			Expect(layer).To(test.HaveLayerMetadata(false, true, true))
+			Expect(filepath.Join(layer.Root, "stub.txt")).To(BeARegularFile())
 		})
 	})
 }

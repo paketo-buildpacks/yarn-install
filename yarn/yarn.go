@@ -1,6 +1,7 @@
 package yarn
 
 import (
+	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"os"
 	"os/exec"
 
@@ -66,7 +67,7 @@ func NewContributor(builder build.Build) (Contributor, bool, error) {
 func (n Contributor) Contribute() error {
 	return n.yarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
 		layer.Logger.SubsequentLine("Expanding to %s", layer.Root)
-		return layers.ExtractTarGz(artifact, layer.Root, 1)
+		return helper.ExtractTarGz(artifact, layer.Root, 1)
 	}, n.flags()...)
 }
 
