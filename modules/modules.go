@@ -17,8 +17,8 @@ import (
 const Dependency = "modules"
 
 type PackageManager interface {
-	Install(location string) error
-	Rebuild(location string) error
+	InstallOffline(location string) error
+	InstallOnline(location string) error
 }
 
 type Metadata struct {
@@ -80,22 +80,26 @@ func NewContributor(context build.Build, pkgManager PackageManager) (Contributor
 
 func (c Contributor) Contribute() error {
 	return c.modulesLayer.Contribute(c.Metadata, func(layer layers.Layer) error {
-		nodeModules := filepath.Join(c.app.Root, "node_modules")
+		offlineCache := filepath.Join(c.app.Root, "npm-packages-offline-cache")
 
-		vendored, err := helper.FileExists(nodeModules)
+		offline, err := helper.FileExists(offlineCache)
 		if err != nil {
 			return fmt.Errorf("unable to stat node_modules: %s", err.Error())
 		}
 
-		if vendored {
-			if err := c.pkgManager.Rebuild(c.app.Root); err != nil {
-				return fmt.Errorf("unable to rebuild node_modules: %s", err.Error())
+		if offline {
+			c.modulesLayer.Logger.Info("Running yarn in offline mode")
+			if err := c.pkgManager.InstallOffline(c.app.Root); err != nil {
+				return fmt.Errorf("unable to install node_modules: %s", err.Error())
 			}
 		} else {
-			if err := c.pkgManager.Install(c.app.Root); err != nil {
+			c.modulesLayer.Logger.Info("Running yarn in online mode")
+			if err := c.pkgManager.InstallOnline(c.app.Root); err != nil {
 				return fmt.Errorf("unable to install node_modules: %s", err.Error())
 			}
 		}
+
+		nodeModules := filepath.Join(c.app.Root, "node_modules")
 
 		if err := os.MkdirAll(layer.Root, 0777); err != nil {
 			return fmt.Errorf("unable make layer: %s", err.Error())
@@ -113,8 +117,12 @@ func (c Contributor) Contribute() error {
 			return err
 		}
 
+		if err := layer.OverrideSharedEnv("npm_config_nodedir", os.Getenv("NODE_HOME")); err != nil {
+			return err
+		}
+
 		return c.launchLayer.WriteMetadata(layers.Metadata{
-			Processes: []layers.Process{{"web", "npm start"}},
+			Processes: []layers.Process{{"web", "yarn start"}},
 		})
 	}, c.flags()...)
 }

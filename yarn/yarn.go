@@ -1,28 +1,72 @@
 package yarn
 
 import (
+	"github.com/cloudfoundry/libcfbuildpack/build"
 	"github.com/cloudfoundry/libcfbuildpack/helper"
+	"github.com/cloudfoundry/libcfbuildpack/layers"
 	"os"
 	"os/exec"
-
-	"github.com/cloudfoundry/libcfbuildpack/build"
-	"github.com/cloudfoundry/libcfbuildpack/layers"
+	"path/filepath"
 )
 
 const Dependency = "yarn"
 
-type Yarn struct{}
-
-func (n Yarn) Install(location string) error {
-	return n.run(location, "install")
+type Yarn struct {
+	Layer layers.DependencyLayer
 }
 
-func (n Yarn) Rebuild(location string) error {
-	return n.run(location, "rebuild")
+func (y Yarn) InstallOffline(location string) error {
+	y.setConfig("yarn-offline-mirror", filepath.Join(location, "npm-packages-offline-cache"))
+	y.setConfig("yarn-offline-mirror-pruning", "false")
+	if err := y.install(location, true); err != nil {
+		return err
+	}
+	return y.check(location, true)
 }
 
-func (n Yarn) run(dir string, args ...string) error {
-	cmd := exec.Command("yarn", args...)
+func (y Yarn) InstallOnline(location string) error {
+	y.setConfig("yarn-offline-mirror", filepath.Join(location, "npm-packages-offline-cache"))
+	y.setConfig("yarn-offline-mirror-pruning", "true")
+	if err := y.install(location, false); err != nil {
+		return err
+	}
+	return y.check(location, false)
+}
+
+func (y Yarn) setConfig(key, value string) error {
+	return y.run("config", "set", key, value)
+}
+
+func (y Yarn) install(location string, offline bool) error {
+	args := []string{
+		"install",
+		"--pure-lockfile",
+		"--ignore-engines",
+		"--cache-folder",
+		filepath.Join(location, ".cache/yarn"),
+		"--modules-folder",
+		filepath.Join(location, "node_modules"),
+	}
+
+	if offline {
+		args = append(args, "--offline")
+	}
+
+	return y.run(location, args...)
+}
+
+func (y Yarn) check(location string, offline bool) error {
+	args := []string{"check"}
+
+	if offline {
+		args = append(args, "--offline")
+	}
+
+	return y.run(location, args...)
+}
+
+func (y Yarn) run(dir string, args ...string) error {
+	cmd := exec.Command(filepath.Join(y.Layer.Root, "bin", "yarn"), args...)
 	cmd.Dir = dir
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -30,9 +74,9 @@ func (n Yarn) run(dir string, args ...string) error {
 }
 
 type Contributor struct {
+	YarnLayer          layers.DependencyLayer
 	buildContribution  bool
 	launchContribution bool
-	yarnLayer          layers.DependencyLayer
 }
 
 func NewContributor(builder build.Build) (Contributor, bool, error) {
@@ -51,7 +95,7 @@ func NewContributor(builder build.Build) (Contributor, bool, error) {
 		return Contributor{}, false, err
 	}
 
-	contributor := Contributor{yarnLayer: builder.Layers.DependencyLayer(dep)}
+	contributor := Contributor{YarnLayer: builder.Layers.DependencyLayer(dep)}
 
 	if _, ok := plan.Metadata["build"]; ok {
 		contributor.buildContribution = true
@@ -65,7 +109,7 @@ func NewContributor(builder build.Build) (Contributor, bool, error) {
 }
 
 func (n Contributor) Contribute() error {
-	return n.yarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
+	return n.YarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
 		layer.Logger.SubsequentLine("Expanding to %s", layer.Root)
 		return helper.ExtractTarGz(artifact, layer.Root, 1)
 	}, n.flags()...)

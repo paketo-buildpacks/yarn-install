@@ -40,7 +40,7 @@ func runBuild(context build.Build) (int, error) {
 		}
 	}
 
-	modulesContributor, willContributeModules, err := modules.NewContributor(context, yarn.Yarn{})
+	modulesContributor, willContributeModules, err := modules.NewContributor(context, yarn.Yarn{Layer: yarnContributor.YarnLayer})
 	if err != nil {
 		return context.Failure(104), err
 	}

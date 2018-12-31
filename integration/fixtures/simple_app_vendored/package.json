@@ -1,21 +1,9 @@
 {
-  "name": "simple_app",
-  "version": "0.0.0",
-  "description": "some app",
+  "name": "simple_app_vendored",
+  "version": "1.0.0",
   "main": "server.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "",
+  "license": "MIT",
   "dependencies": {
-    "leftpad": "~0.0.1"
-  },
-  "repository": {
-    "type": "git",
-    "url": ""
-  },
-  "engines": {
-    "node": "~10"
+    "leftpad": "^0.0.1"
   }
 }

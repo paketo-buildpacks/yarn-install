@@ -80,10 +80,13 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 
 			when("the app is vendored", func() {
 				it.Before(func() {
-					file := filepath.Join(factory.Build.Application.Root, "node_modules", "test_module")
+					file := filepath.Join(factory.Build.Application.Root, "npm-packages-offline-cache", "test_module")
 					Expect(helper.WriteFile(file, 0666, "some module")).To(Succeed())
 
-					mockPkgManager.EXPECT().Rebuild(factory.Build.Application.Root)
+					mockPkgManager.EXPECT().InstallOffline(factory.Build.Application.Root).Do(func(location string) {
+						module := filepath.Join(location, "node_modules", "test_module")
+						helper.WriteFile(module, 0666, "some module")
+					})
 				})
 
 				it("contributes modules to the cache layer when included in the build plan", func() {
@@ -100,6 +103,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 					Expect(layer).To(test.HaveLayerMetadata(true, true, false))
 					Expect(filepath.Join(layer.Root, "test_module")).To(BeARegularFile())
 					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
+					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
 					Expect(filepath.Join(factory.Build.Application.Root, "node_modules")).NotTo(BeADirectory())
 				})
 
@@ -117,14 +121,15 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 					Expect(layer).To(test.HaveLayerMetadata(false, true, true))
 					Expect(filepath.Join(layer.Root, "test_module")).To(BeARegularFile())
 					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
+					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
 					Expect(filepath.Join(factory.Build.Application.Root, "node_modules")).NotTo(BeADirectory())
 				})
 			})
 
 			when("the app is not vendored", func() {
 				it.Before(func() {
-					mockPkgManager.EXPECT().Install(factory.Build.Application.Root).Do(func(location string) {
-						file := filepath.Join(factory.Build.Application.Root, "node_modules", "test_module")
+					mockPkgManager.EXPECT().InstallOnline(factory.Build.Application.Root).Do(func(location string) {
+						file := filepath.Join(location, "node_modules", "test_module")
 						Expect(helper.WriteFile(file, 0666, "some module")).To(Succeed())
 					})
 				})
@@ -143,6 +148,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 					Expect(layer).To(test.HaveLayerMetadata(true, true, false))
 					Expect(filepath.Join(layer.Root, "test_module")).To(BeARegularFile())
 					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
+					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
 					Expect(filepath.Join(factory.Build.Application.Root, "node_modules")).NotTo(BeADirectory())
 				})
 
@@ -160,6 +166,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 					Expect(layer).To(test.HaveLayerMetadata(false, true, true))
 					Expect(filepath.Join(layer.Root, "test_module")).To(BeARegularFile())
 					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
+					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
 					Expect(filepath.Join(factory.Build.Application.Root, "node_modules")).NotTo(BeADirectory())
 				})
 			})
