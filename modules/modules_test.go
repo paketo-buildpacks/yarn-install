@@ -1,10 +1,11 @@
 package modules_test
 
 import (
-	"github.com/cloudfoundry/libcfbuildpack/helper"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"path/filepath"
 	"testing"
+
+	"github.com/cloudfoundry/libcfbuildpack/helper"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 
 	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/test"

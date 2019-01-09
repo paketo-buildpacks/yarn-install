@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/yarn-cnb/utils"
 	"os"
+
+	"github.com/cloudfoundry/yarn-cnb/utils"
 
 	"github.com/cloudfoundry/yarn-cnb/modules"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
@@ -44,7 +45,7 @@ func runBuild(context build.Build) (int, error) {
 	pkgManager := yarn.Yarn{
 		Logger: context.Logger,
 		Runner: utils.CommandRunner{},
-		Layer: yarnContributor.YarnLayer.Layer,
+		Layer:  yarnContributor.YarnLayer.Layer,
 	}
 
 	modulesContributor, willContributeModules, err := modules.NewContributor(context, pkgManager)

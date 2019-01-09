@@ -4,11 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"github.com/cloudfoundry/libcfbuildpack/helper"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+
+	"github.com/cloudfoundry/libcfbuildpack/helper"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 
 	"github.com/buildpack/libbuildpack/application"
 	"github.com/cloudfoundry/libcfbuildpack/build"
@@ -100,7 +101,6 @@ func (c Contributor) Contribute() error {
 			}
 		}
 
-
 		if err := os.MkdirAll(layer.Root, 0777); err != nil {
 			return fmt.Errorf("unable make layer: %s", err.Error())
 		}
@@ -120,7 +120,7 @@ func (c Contributor) Contribute() error {
 		}
 
 		if err := os.RemoveAll(yarnCache); err != nil {
-			return fmt.Errorf("unable to remove node_modules from the app dir: %s", err.Error())
+			return fmt.Errorf("unable to remove yarn-cache from the app dir: %s", err.Error())
 		}
 
 		if err := layer.OverrideSharedEnv("NODE_PATH", layer.Root); err != nil {
