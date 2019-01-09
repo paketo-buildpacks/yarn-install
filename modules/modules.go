@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/cloudfoundry/libcfbuildpack/helper"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -99,17 +100,26 @@ func (c Contributor) Contribute() error {
 			}
 		}
 
-		nodeModules := filepath.Join(c.app.Root, "node_modules")
 
 		if err := os.MkdirAll(layer.Root, 0777); err != nil {
 			return fmt.Errorf("unable make layer: %s", err.Error())
 		}
 
-		if err := helper.CopyDirectory(nodeModules, layer.Root); err != nil {
+		nodeModules := filepath.Join(c.app.Root, yarn.ModulesDir)
+		if err := helper.CopyDirectory(nodeModules, filepath.Join(layer.Root, yarn.ModulesDir)); err != nil {
 			return fmt.Errorf(`unable to copy "%s" to "%s": %s`, nodeModules, layer.Root, err.Error())
 		}
 
 		if err := os.RemoveAll(nodeModules); err != nil {
+			return fmt.Errorf("unable to remove node_modules from the app dir: %s", err.Error())
+		}
+
+		yarnCache := filepath.Join(c.app.Root, yarn.CacheDir)
+		if err := helper.CopyDirectory(yarnCache, filepath.Join(layer.Root, yarn.CacheDir)); err != nil {
+			return fmt.Errorf(`unable to copy "%s" to "%s": %s`, yarnCache, layer.Root, err.Error())
+		}
+
+		if err := os.RemoveAll(yarnCache); err != nil {
 			return fmt.Errorf("unable to remove node_modules from the app dir: %s", err.Error())
 		}
 
