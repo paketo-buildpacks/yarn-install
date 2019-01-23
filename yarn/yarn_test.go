@@ -20,7 +20,6 @@ import (
 //go:generate mockgen -source=yarn.go -destination=mocks_test.go -package=yarn_test
 
 func TestUnitYarn(t *testing.T) {
-	RegisterTestingT(t)
 	spec.Run(t, "Yarn", testYarn, spec.Report(report.Terminal{}))
 	spec.Run(t, "Yarn", testContributor, spec.Report(report.Terminal{}))
 }
@@ -35,6 +34,7 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 	)
 
 	it.Before(func() {
+		RegisterTestingT(t)
 		mockCtrl = gomock.NewController(t)
 		mockRunner = NewMockRunner(mockCtrl)
 		mockLogger = NewMockLogger(mockCtrl)

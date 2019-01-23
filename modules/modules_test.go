@@ -24,6 +24,10 @@ func TestUnitModules(t *testing.T) {
 }
 
 func testModules(t *testing.T, when spec.G, it spec.S) {
+	it.Before(func() {
+		RegisterTestingT(t)
+	})
+
 	when("modules.NewContributor", func() {
 		var (
 			mockCtrl       *gomock.Controller
