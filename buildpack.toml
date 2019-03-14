@@ -7,10 +7,10 @@ version = "0.0.2"
 [[metadata.dependencies]]
 id = "yarn"
 name = "Yarn"
-sha256 = "d2f2c6e11a8686f66d7a37b438470bf032f15cefc843f9301e47a52e5817454b"
+sha256 = "c63f402bcbf7499f015fe50f05f8b8d5f63fab08a10e4f78eb440baf54aac167"
 stacks = ["org.cloudfoundry.stacks.cflinuxfs2","org.cloudfoundry.stacks.cflinuxfs3","io.buildpacks.stacks.bionic"]
-uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.15.0-any-stack-d2f2c6e1.tar.gz"
-version = "1.15.0"
+uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.15.1-any-stack-c63f402b.tar.gz"
+version = "1.15.1"
 
 [[stacks]]
 id = "org.cloudfoundry.stacks.cflinuxfs3"
