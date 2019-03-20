@@ -5,9 +5,8 @@
 package yarn_test
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockRunner is a mock of Runner interface
@@ -35,7 +34,6 @@ func (m *MockRunner) EXPECT() *MockRunnerMockRecorder {
 
 // Run mocks base method
 func (m *MockRunner) Run(bin, dir string, args ...string) error {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{bin, dir}
 	for _, a := range args {
 		varargs = append(varargs, a)
@@ -47,9 +45,26 @@ func (m *MockRunner) Run(bin, dir string, args ...string) error {
 
 // Run indicates an expected call of Run
 func (mr *MockRunnerMockRecorder) Run(bin, dir interface{}, args ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{bin, dir}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Run", reflect.TypeOf((*MockRunner)(nil).Run), varargs...)
+}
+
+// RunWithOutput mocks base method
+func (m *MockRunner) RunWithOutput(bin, dir string, quiet bool, args ...string) (string, error) {
+	varargs := []interface{}{bin, dir, quiet}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RunWithOutput", varargs...)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// RunWithOutput indicates an expected call of RunWithOutput
+func (mr *MockRunnerMockRecorder) RunWithOutput(bin, dir, quiet interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{bin, dir, quiet}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunWithOutput", reflect.TypeOf((*MockRunner)(nil).RunWithOutput), varargs...)
 }
 
 // MockLogger is a mock of Logger interface
@@ -77,7 +92,6 @@ func (m *MockLogger) EXPECT() *MockLoggerMockRecorder {
 
 // Info mocks base method
 func (m *MockLogger) Info(format string, args ...interface{}) {
-	m.ctrl.T.Helper()
 	varargs := []interface{}{format}
 	for _, a := range args {
 		varargs = append(varargs, a)
@@ -87,7 +101,21 @@ func (m *MockLogger) Info(format string, args ...interface{}) {
 
 // Info indicates an expected call of Info
 func (mr *MockLoggerMockRecorder) Info(format interface{}, args ...interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
 	varargs := append([]interface{}{format}, args...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Info", reflect.TypeOf((*MockLogger)(nil).Info), varargs...)
+}
+
+// Warning mocks base method
+func (m *MockLogger) Warning(format string, args ...interface{}) {
+	varargs := []interface{}{format}
+	for _, a := range args {
+		varargs = append(varargs, a)
+	}
+	m.ctrl.Call(m, "Warning", varargs...)
+}
+
+// Warning indicates an expected call of Warning
+func (mr *MockLoggerMockRecorder) Warning(format interface{}, args ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{format}, args...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Warning", reflect.TypeOf((*MockLogger)(nil).Warning), varargs...)
 }

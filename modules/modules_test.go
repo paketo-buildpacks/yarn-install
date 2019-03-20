@@ -1,6 +1,9 @@
 package modules_test
 
 import (
+	"fmt"
+	"github.com/cloudfoundry/libcfbuildpack/layers"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -86,11 +89,15 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 
 			when("the app is vendored", func() {
 				it.Before(func() {
+
 					file := filepath.Join(factory.Build.Application.Root, "npm-packages-offline-cache", "test_module")
 					Expect(helper.WriteFile(file, 0666, "some module")).To(Succeed())
 
-					mockPkgManager.EXPECT().InstallOffline(factory.Build.Application.Root).Do(func(location string) {
-						module := filepath.Join(location, yarn.ModulesDir, "test_module")
+					modulePath := filepath.Join(factory.Build.Layers.Root, yarn.ModulesDir, yarn.ModulesDir)
+					mockPkgManager.EXPECT().InstallOffline(factory.Build.Application.Root, modulePath).Do(func(location, destination string) {
+						fmt.Println("in pkgmanager expectation")
+						Expect(os.MkdirAll(destination, os.ModePerm)).NotTo(HaveOccurred())
+						module := filepath.Join(destination, "test_module")
 						Expect(helper.WriteFile(module, 0666, "some module")).To(Succeed())
 
 						cacheItem := filepath.Join(location, yarn.CacheDir, "cache-item")
@@ -98,9 +105,9 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 					})
 				})
 
-				it("contributes modules for the build phase", func() {
+				it("runs yarn install, sets env vars, writes to yarn cache", func() {
 					factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
-						Metadata: buildplan.Metadata{"build": true},
+						Metadata: buildplan.Metadata{"build": true, "launch": true},
 					})
 
 					contributor, _, err := modules.NewContributor(factory.Build, mockPkgManager)
@@ -109,19 +116,22 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 					Expect(contributor.Contribute()).To(Succeed())
 
 					layer := factory.Build.Layers.Layer(modules.Dependency)
-					Expect(layer).To(test.HaveLayerMetadata(true, true, false))
+					Expect(layer).To(test.HaveLayerMetadata(true, true, true))
 
 					Expect(filepath.Join(layer.Root, yarn.ModulesDir, "test_module")).To(BeARegularFile())
 					Expect(filepath.Join(layer.Root, yarn.CacheDir, "cache-item")).To(BeARegularFile())
 
-					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
+					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", filepath.Join(layer.Root, yarn.ModulesDir)))
+					Expect(layer).To(test.HaveAppendPathSharedEnvironment("PATH", filepath.Join(layer.Root, yarn.ModulesDir, ".bin")))
 					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
 
 					Expect(filepath.Join(factory.Build.Application.Root, yarn.ModulesDir)).NotTo(BeADirectory())
 					Expect(filepath.Join(factory.Build.Application.Root, yarn.CacheDir)).NotTo(BeADirectory())
+
+					Expect(factory.Build.Layers).To(test.HaveApplicationMetadata(layers.Metadata{Processes: []layers.Process{{"web", "yarn start"}}}))
 				})
 
-				it("contributes modules for the launch phase", func() {
+				it("contributes modules for the launch phase, cache is always true", func() {
 					factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
 						Metadata: buildplan.Metadata{"launch": true},
 					})
@@ -133,22 +143,29 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 
 					layer := factory.Build.Layers.Layer(modules.Dependency)
 					Expect(layer).To(test.HaveLayerMetadata(false, true, true))
+				})
 
-					Expect(filepath.Join(layer.Root, yarn.ModulesDir, "test_module")).To(BeARegularFile())
-					Expect(filepath.Join(layer.Root, yarn.CacheDir, "cache-item")).To(BeARegularFile())
+				it("contributes modules for the build phase, cache is always true", func() {
+					factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
+						Metadata: buildplan.Metadata{"build": true},
+					})
 
-					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
-					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
+					contributor, _, err := modules.NewContributor(factory.Build, mockPkgManager)
+					Expect(err).NotTo(HaveOccurred())
 
-					Expect(filepath.Join(factory.Build.Application.Root, yarn.ModulesDir)).NotTo(BeADirectory())
-					Expect(filepath.Join(factory.Build.Application.Root, yarn.CacheDir)).NotTo(BeADirectory())
+					Expect(contributor.Contribute()).To(Succeed())
+
+					layer := factory.Build.Layers.Layer(modules.Dependency)
+					Expect(layer).To(test.HaveLayerMetadata(true, true, false))
 				})
 			})
 
 			when("the app is not vendored", func() {
 				it.Before(func() {
-					mockPkgManager.EXPECT().InstallOnline(factory.Build.Application.Root).Do(func(location string) {
-						module := filepath.Join(location, yarn.ModulesDir, "test_module")
+					modulePath := filepath.Join(factory.Build.Layers.Root, yarn.ModulesDir, yarn.ModulesDir)
+					mockPkgManager.EXPECT().InstallOnline(factory.Build.Application.Root, modulePath).Do(func(location, destination string) {
+						module := filepath.Join(destination, "test_module")
+						Expect(os.MkdirAll(destination, os.ModePerm)).NotTo(HaveOccurred())
 						Expect(helper.WriteFile(module, 0666, "some module")).To(Succeed())
 
 						cacheItem := filepath.Join(location, yarn.CacheDir, "cache-item")
@@ -158,7 +175,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 
 				it("contributes modules for the build phase", func() {
 					factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
-						Metadata: buildplan.Metadata{"build": true},
+						Metadata: buildplan.Metadata{"build": true, "launch": true},
 					})
 
 					contributor, _, err := modules.NewContributor(factory.Build, mockPkgManager)
@@ -167,36 +184,8 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 					Expect(contributor.Contribute()).To(Succeed())
 
 					layer := factory.Build.Layers.Layer(modules.Dependency)
-					Expect(layer).To(test.HaveLayerMetadata(true, true, false))
-
 					Expect(filepath.Join(layer.Root, yarn.ModulesDir, "test_module")).To(BeARegularFile())
 					Expect(filepath.Join(layer.Root, yarn.CacheDir, "cache-item")).To(BeARegularFile())
-
-					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
-					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
-
-					Expect(filepath.Join(factory.Build.Application.Root, yarn.ModulesDir)).NotTo(BeADirectory())
-					Expect(filepath.Join(factory.Build.Application.Root, yarn.CacheDir)).NotTo(BeADirectory())
-				})
-
-				it("contributes modules for the launch phase", func() {
-					factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
-						Metadata: buildplan.Metadata{"launch": true},
-					})
-
-					contributor, _, err := modules.NewContributor(factory.Build, mockPkgManager)
-					Expect(err).NotTo(HaveOccurred())
-
-					Expect(contributor.Contribute()).To(Succeed())
-
-					layer := factory.Build.Layers.Layer(modules.Dependency)
-					Expect(layer).To(test.HaveLayerMetadata(false, true, true))
-
-					Expect(filepath.Join(layer.Root, yarn.ModulesDir, "test_module")).To(BeARegularFile())
-					Expect(filepath.Join(layer.Root, yarn.CacheDir, "cache-item")).To(BeARegularFile())
-
-					Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", layer.Root))
-					Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
 
 					Expect(filepath.Join(factory.Build.Application.Root, yarn.ModulesDir)).NotTo(BeADirectory())
 					Expect(filepath.Join(factory.Build.Application.Root, yarn.CacheDir)).NotTo(BeADirectory())

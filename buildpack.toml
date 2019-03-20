@@ -3,6 +3,15 @@
 id = "org.cloudfoundry.buildpacks.yarn"
 name = "Yarn Buildpack"
 version = "0.0.2"
+[metadata]
+    include_files = [
+        "bin/build",
+        "bin/detect",
+        "buildpack.toml",
+        "go.mod",
+        "go.sum",
+    ]
+    pre_package = "./scripts/build.sh"
 
 [[metadata.dependencies]]
 id = "yarn"

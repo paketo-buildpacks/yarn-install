@@ -13,7 +13,7 @@ import (
 
 func testContributor(t *testing.T, when spec.G, it spec.S) {
 	when("NewContributor", func() {
-		var stubYarnFixture = filepath.Join("fixtures", "stub-yarn.tar.gz")
+		var stubYarnFixture = filepath.Join("testdata", "stub-yarn.tar.gz")
 
 		it("returns true if a build plan exists", func() {
 			f := test.NewBuildFactory(t)

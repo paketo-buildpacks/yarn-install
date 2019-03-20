@@ -16,11 +16,13 @@ import (
 	"github.com/cloudfoundry/libcfbuildpack/layers"
 )
 
-const Dependency = "modules"
+const (
+	Dependency = "node_modules"
+)
 
 type PackageManager interface {
-	InstallOffline(location string) error
-	InstallOnline(location string) error
+	InstallOffline(location, destination string) error
+	InstallOnline(location, destination string) error
 }
 
 type Metadata struct {
@@ -42,8 +44,8 @@ type Contributor struct {
 }
 
 func NewContributor(context build.Build, pkgManager PackageManager) (Contributor, bool, error) {
-	plan, shouldUseNPM := context.BuildPlan[Dependency]
-	if !shouldUseNPM {
+	plan, shouldInstallModules := context.BuildPlan[Dependency]
+	if !shouldInstallModules {
 		return Contributor{}, false, nil
 	}
 
@@ -84,6 +86,8 @@ func (c Contributor) Contribute() error {
 	return c.modulesLayer.Contribute(c.Metadata, func(layer layers.Layer) error {
 		offlineCache := filepath.Join(c.app.Root, "npm-packages-offline-cache")
 
+		modulesDir := filepath.Join(c.modulesLayer.Root, yarn.ModulesDir)
+
 		offline, err := helper.FileExists(offlineCache)
 		if err != nil {
 			return fmt.Errorf("unable to stat node_modules: %s", err.Error())
@@ -91,12 +95,12 @@ func (c Contributor) Contribute() error {
 
 		if offline {
 			c.modulesLayer.Logger.Info("Running yarn in offline mode")
-			if err := c.pkgManager.InstallOffline(c.app.Root); err != nil {
+			if err := c.pkgManager.InstallOffline(c.app.Root, modulesDir); err != nil {
 				return fmt.Errorf("unable to install node_modules: %s", err.Error())
 			}
 		} else {
 			c.modulesLayer.Logger.Info("Running yarn in online mode")
-			if err := c.pkgManager.InstallOnline(c.app.Root); err != nil {
+			if err := c.pkgManager.InstallOnline(c.app.Root, modulesDir); err != nil {
 				return fmt.Errorf("unable to install node_modules: %s", err.Error())
 			}
 		}
@@ -105,14 +109,14 @@ func (c Contributor) Contribute() error {
 			return fmt.Errorf("unable make layer: %s", err.Error())
 		}
 
-		nodeModules := filepath.Join(c.app.Root, yarn.ModulesDir)
-		if err := helper.CopyDirectory(nodeModules, filepath.Join(layer.Root, yarn.ModulesDir)); err != nil {
-			return fmt.Errorf(`unable to copy "%s" to "%s": %s`, nodeModules, layer.Root, err.Error())
-		}
+		//nodeModules := filepath.Join(c.app.Root, yarn.ModulesDir)
+		//if err := helper.CopyDirectory(nodeModules, filepath.Join(layer.Root, yarn.ModulesDir)); err != nil {
+		//	return fmt.Errorf(`unable to copy "%s" to "%s": %s`, nodeModules, layer.Root, err.Error())
+		//}
 
-		if err := os.RemoveAll(nodeModules); err != nil {
-			return fmt.Errorf("unable to remove node_modules from the app dir: %s", err.Error())
-		}
+		//if err := os.RemoveAll(nodeModules); err != nil {
+		//	return fmt.Errorf("unable to remove node_modules from the app dir: %s", err.Error())
+		//}
 
 		yarnCache := filepath.Join(c.app.Root, yarn.CacheDir)
 		if err := helper.CopyDirectory(yarnCache, filepath.Join(layer.Root, yarn.CacheDir)); err != nil {
@@ -123,7 +127,11 @@ func (c Contributor) Contribute() error {
 			return fmt.Errorf("unable to remove yarn-cache from the app dir: %s", err.Error())
 		}
 
-		if err := layer.OverrideSharedEnv("NODE_PATH", layer.Root); err != nil {
+		if err := layer.OverrideSharedEnv("NODE_PATH", filepath.Join(layer.Root, yarn.ModulesDir)); err != nil {
+			return err
+		}
+
+		if err := layer.AppendPathSharedEnv("PATH", filepath.Join(layer.Root, yarn.ModulesDir, ".bin")); err != nil {
 			return err
 		}
 
@@ -131,7 +139,7 @@ func (c Contributor) Contribute() error {
 			return err
 		}
 
-		return c.launchLayer.WriteMetadata(layers.Metadata{
+		return c.launchLayer.WriteApplicationMetadata(layers.Metadata{
 			Processes: []layers.Process{{"web", "yarn start"}},
 		})
 	}, c.flags()...)

@@ -1,3 +1,6 @@
 .DS_Store
+*.tgz
 .idea
 .bin
+yarn-cnb_*
+bin

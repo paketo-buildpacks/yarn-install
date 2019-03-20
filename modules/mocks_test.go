@@ -5,9 +5,8 @@
 package modules_test
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
+	reflect "reflect"
 )
 
 // MockPackageManager is a mock of PackageManager interface
@@ -34,25 +33,25 @@ func (m *MockPackageManager) EXPECT() *MockPackageManagerMockRecorder {
 }
 
 // InstallOffline mocks base method
-func (m *MockPackageManager) InstallOffline(location string) error {
-	ret := m.ctrl.Call(m, "InstallOffline", location)
+func (m *MockPackageManager) InstallOffline(location, destination string) error {
+	ret := m.ctrl.Call(m, "InstallOffline", location, destination)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // InstallOffline indicates an expected call of InstallOffline
-func (mr *MockPackageManagerMockRecorder) InstallOffline(location interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallOffline", reflect.TypeOf((*MockPackageManager)(nil).InstallOffline), location)
+func (mr *MockPackageManagerMockRecorder) InstallOffline(location, destination interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallOffline", reflect.TypeOf((*MockPackageManager)(nil).InstallOffline), location, destination)
 }
 
 // InstallOnline mocks base method
-func (m *MockPackageManager) InstallOnline(location string) error {
-	ret := m.ctrl.Call(m, "InstallOnline", location)
+func (m *MockPackageManager) InstallOnline(location, destination string) error {
+	ret := m.ctrl.Call(m, "InstallOnline", location, destination)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // InstallOnline indicates an expected call of InstallOnline
-func (mr *MockPackageManagerMockRecorder) InstallOnline(location interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallOnline", reflect.TypeOf((*MockPackageManager)(nil).InstallOnline), location)
+func (mr *MockPackageManagerMockRecorder) InstallOnline(location, destination interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "InstallOnline", reflect.TypeOf((*MockPackageManager)(nil).InstallOnline), location, destination)
 }
