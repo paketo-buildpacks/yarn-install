@@ -11,4 +11,3 @@ require (
 	github.com/sclevine/spec v1.2.0
 )
 
-replace github.com/cloudfoundry/libcfbuildpack => /Users/pivotal/workspace/libcfbuildpack
