@@ -110,7 +110,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("using yarn workspaces", func() {
-		it("should correctly install node modules in respective workspaces", func(){
+		it("should correctly install node modules in respective workspaces", func() {
 			app, err := dagger.PackBuild(filepath.Join("testdata", "yarn_with_workspaces"), nodeBP, bp)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
