@@ -46,31 +46,6 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 			_, _, err = app.HTTPGet("/")
 			Expect(err).ToNot(HaveOccurred())
 		})
-
-		when("the yarn and node buildpacks are cached", func() {
-			it.Focus("should not reach out to the internet", func() {
-
-				// TODO: fetch these buildpacks and package
-				nodeBp, _, err := dagger.PackageCachedBuildpack("/Users/pivotal/workspace/nodejs-cnb")
-				Expect(err).ToNot(HaveOccurred())
-
-				// TODO: change to local bp
-				yarnBp, _, err := dagger.PackageCachedBuildpack("/Users/pivotal/workspace/yarn-cnb")
-				Expect(err).ToNot(HaveOccurred())
-
-				app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app_vendored"), nodeBp, yarnBp)
-				Expect(err).ToNot(HaveOccurred())
-				defer app.Destroy()
-
-				Expect(app.Start()).To(Succeed())
-
-				// TODO: add functionality to force network isolation in dagger
-				_, _, err = app.HTTPGet("/")
-				Expect(app.BuildLogs()).To(ContainSubstring("Reusing cached download from buildpack"))
-				Expect(err).NotTo(HaveOccurred())
-
-			})
-		})
 	})
 
 	when("when the node_modules are not vendored", func() {
@@ -83,29 +58,6 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 
 			_, _, err = app.HTTPGet("/")
 			Expect(err).ToNot(HaveOccurred())
-		})
-
-		when("the yarn and node buildpacks are cached", func() {
-			it.Focus("should install all the node modules", func() {
-
-				nodeBp, _, err := dagger.PackageCachedBuildpack("/Users/pivotal/workspace/nodejs-cnb")
-				Expect(err).ToNot(HaveOccurred())
-
-				yarnBp, _, err := dagger.PackageCachedBuildpack("/Users/pivotal/workspace/yarn-cnb")
-				Expect(err).ToNot(HaveOccurred())
-
-				app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app"), nodeBp, yarnBp)
-				Expect(err).ToNot(HaveOccurred())
-				defer app.Destroy()
-
-				Expect(app.Start()).To(Succeed())
-
-				// TODO: add functionality to force network isolation in dagger
-				_, _, err = app.HTTPGet("/")
-				Expect(app.BuildLogs()).To(ContainSubstring("Reusing cached download from buildpack"))
-				Expect(err).NotTo(HaveOccurred())
-
-			})
 		})
 	})
 
