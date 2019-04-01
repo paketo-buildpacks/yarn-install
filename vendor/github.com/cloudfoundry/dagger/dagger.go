@@ -71,9 +71,9 @@ func PackageCachedBuildpack(bpPath string) (string, string, error) {
 	return tarFile, string(out), err
 }
 
-func PackageLocalBuildpack(name string) (string, error) {
+func PackageLocalBuildpack(name, path string) (string, error) {
 	cmd := exec.Command("./scripts/package.sh")
-	cmd.Dir = fmt.Sprintf("../../%s", name)
+	cmd.Dir = path
 	cmd.Stderr = os.Stderr
 	out, err := cmd.Output()
 	if err != nil {
@@ -168,30 +168,6 @@ func PackBuildNamedImage(appImageName, appDir string, buildpacks ...string) (*Ap
 		fixtureName: appDir,
 	}
 	return app, nil
-}
-
-func BuildCFLinuxFS3() error {
-	cmd := exec.Command("pack", "stacks", "--no-color")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return errors.Wrapf(err, "could not get stack list %s", out)
-	}
-
-	contains, err := regexp.Match(CFLINUXFS3, out)
-
-	if err != nil {
-		return errors.Wrap(err, "error running regex match")
-	} else if contains {
-		fmt.Println("cflinuxfs3 stack already added")
-		return nil
-	}
-
-	cmd = exec.Command("pack", "add-stack", CFLINUXFS3, "--build-image", DEFAULT_BUILD_IMAGE, "--run-image", DEFAULT_RUN_IMAGE)
-	if err = cmd.Run(); err != nil {
-		return errors.Wrap(err, "could not add stack")
-	}
-
-	return nil
 }
 
 type App struct {
