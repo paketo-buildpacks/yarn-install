@@ -1,3 +1,9 @@
+v0.0.4 Apr 01, 2019
+====================
+
+* Always write launch metadata for subsequent builds
+  (https://www.pivotaltracker.com/story/show/164992442)
+
 v0.0.3 Mar 28, 2019
 ====================
 
