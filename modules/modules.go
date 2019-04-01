@@ -83,7 +83,7 @@ func NewContributor(context build.Build, pkgManager PackageManager) (Contributor
 }
 
 func (c Contributor) Contribute() error {
-	return c.modulesLayer.Contribute(c.Metadata, func(layer layers.Layer) error {
+	if err := c.modulesLayer.Contribute(c.Metadata, func(layer layers.Layer) error {
 		offlineCache := filepath.Join(c.app.Root, "npm-packages-offline-cache")
 
 		modulesDir := filepath.Join(c.modulesLayer.Root, yarn.ModulesDir)
@@ -109,15 +109,6 @@ func (c Contributor) Contribute() error {
 			return fmt.Errorf("unable make layer: %s", err.Error())
 		}
 
-		//nodeModules := filepath.Join(c.app.Root, yarn.ModulesDir)
-		//if err := helper.CopyDirectory(nodeModules, filepath.Join(layer.Root, yarn.ModulesDir)); err != nil {
-		//	return fmt.Errorf(`unable to copy "%s" to "%s": %s`, nodeModules, layer.Root, err.Error())
-		//}
-
-		//if err := os.RemoveAll(nodeModules); err != nil {
-		//	return fmt.Errorf("unable to remove node_modules from the app dir: %s", err.Error())
-		//}
-
 		yarnCache := filepath.Join(c.app.Root, yarn.CacheDir)
 		if err := helper.CopyDirectory(yarnCache, filepath.Join(layer.Root, yarn.CacheDir)); err != nil {
 			return fmt.Errorf(`unable to copy "%s" to "%s": %s`, yarnCache, layer.Root, err.Error())
@@ -135,14 +126,14 @@ func (c Contributor) Contribute() error {
 			return err
 		}
 
-		if err := layer.OverrideSharedEnv("npm_config_nodedir", os.Getenv("NODE_HOME")); err != nil {
-			return err
-		}
+		return layer.OverrideSharedEnv("npm_config_nodedir", os.Getenv("NODE_HOME"))
+	}, c.flags()...); err != nil {
+		return err
+	}
 
-		return c.launchLayer.WriteApplicationMetadata(layers.Metadata{
-			Processes: []layers.Process{{"web", "yarn start"}},
-		})
-	}, c.flags()...)
+	return c.launchLayer.WriteApplicationMetadata(layers.Metadata{
+		Processes: []layers.Process{{"web", "yarn start"}},
+	})
 }
 
 func (c Contributor) flags() []layers.Flag {
