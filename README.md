@@ -1,2 +1,2 @@
-# V3 Yarn Buildpack
+# Yarn Cloud Native Buildpack
 
