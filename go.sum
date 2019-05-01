@@ -12,8 +12,8 @@ github.com/cloudfoundry/dagger v0.0.0-20190401212155-44a90aadbea5/go.mod h1:mZHx
 github.com/cloudfoundry/libcfbuildpack v1.29.0/go.mod h1:OEwAwCqppAMwWrcrnxE0j0llq5HcvQHrUa6J5n8XMMc=
 github.com/cloudfoundry/libcfbuildpack v1.44.0 h1:DeQlNZJ5lpRtwRPXX3CJlVhHKTUtuVKUMuzDnF9Qv8c=
 github.com/cloudfoundry/libcfbuildpack v1.44.0/go.mod h1:C2AOm63Ca1GIBP7NdVhd8Q2gKenz600PVWqtOAbrN4o=
-github.com/cloudfoundry/libcfbuildpack v1.53.0 h1:Ms3Fxds7+m+3bxTfAgspPhsIysa3xj5AHYFGujO+F58=
-github.com/cloudfoundry/libcfbuildpack v1.53.0/go.mod h1:vZOU0l+jAwkcDiyYcUYkQ3NifrsMc9PCLqUQ0xM4DHc=
+github.com/cloudfoundry/libcfbuildpack v1.54.0 h1:tI/oCBCbnysQtBQayKu405qD91VElx8pV5sM1KNrPXc=
+github.com/cloudfoundry/libcfbuildpack v1.54.0/go.mod h1:vZOU0l+jAwkcDiyYcUYkQ3NifrsMc9PCLqUQ0xM4DHc=
 github.com/cloudfoundry/nodejs-cnb v0.0.3-0.20181226182428-89d9efe0a59b h1:ioILSrJlETqH6FJcG5+0chxivmt0gunrrhMfn8/s7Lk=
 github.com/cloudfoundry/nodejs-cnb v0.0.3-0.20181226182428-89d9efe0a59b/go.mod h1:jIMmJN7byxXmRCqlTmhZ9IB2lZU3MpyVcWDIx6PGiVo=
 github.com/fatih/color v1.7.0 h1:DkWD4oS2D8LGGgTQ6IvwJJXSL5Vp2ffcQg58nFV38Ys=
