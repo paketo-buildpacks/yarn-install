@@ -1,12 +1,8 @@
 package integration
 
 import (
-	"bytes"
-	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"regexp"
 	"testing"
 
 	"github.com/cloudfoundry/dagger"
@@ -17,30 +13,35 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var (
+	bpDir, yarnURI, nodeURI string
+)
+
 func TestIntegration(t *testing.T) {
+	var err error
+	Expect := NewWithT(t).Expect
+	bpDir, err = dagger.FindBPRoot()
+	Expect(err).NotTo(HaveOccurred())
+	yarnURI, err = dagger.PackageBuildpack(bpDir)
+	Expect(err).ToNot(HaveOccurred())
+	defer os.RemoveAll(yarnURI)
+
+	nodeURI, err = dagger.GetLatestBuildpack("nodejs-cnb")
+	Expect(err).ToNot(HaveOccurred())
+	defer os.RemoveAll(nodeURI)
+
 	spec.Run(t, "Integration", testIntegration, spec.Report(report.Terminal{}))
 }
 
 func testIntegration(t *testing.T, when spec.G, it spec.S) {
-	var (
-		bp     string
-		nodeBP string
-	)
-
+	var Expect func(interface{}, ...interface{}) GomegaAssertion
 	it.Before(func() {
-		RegisterTestingT(t)
-		var err error
-
-		bp, err = dagger.PackageBuildpack()
-		Expect(err).ToNot(HaveOccurred())
-
-		nodeBP, err = dagger.GetLatestBuildpack("nodejs-cnb")
-		Expect(err).ToNot(HaveOccurred())
+		Expect = NewWithT(t).Expect
 	})
 
 	when("when the node_modules are vendored", func() {
 		it("should build a working OCI image for a simple app", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app_vendored"), nodeBP, bp)
+			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app_vendored"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
@@ -53,7 +54,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 
 	when("when the node_modules are not vendored", func() {
 		it("should build a working OCI image for a simple app", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app"), nodeBP, bp)
+			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
@@ -66,7 +67,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 
 	when("using yarn workspaces", func() {
 		it("should correctly install node modules in respective workspaces", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "yarn_with_workspaces"), nodeBP, bp)
+			app, err := dagger.PackBuild(filepath.Join("testdata", "yarn_with_workspaces"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
@@ -82,32 +83,18 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	when("the app is pushed twice", func() {
 		it("does not reinstall node_modules", func() {
 			appDir := filepath.Join("testdata", "simple_app")
-			app, err := dagger.PackBuild(appDir, nodeBP, bp)
+			app, err := dagger.PackBuild(appDir, nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
 			Expect(app.BuildLogs()).To(MatchRegexp("node_modules .*: Contributing to layer"))
 
-			buildLogs := &bytes.Buffer{}
-
-			// TODO: Move this to dagger
-
-			_, imageID, _, err := app.Info()
+			// pack rebuild
+			app, err = dagger.PackBuildNamedImage(app.ImageName, appDir, nodeURI, yarnURI)
 			Expect(err).NotTo(HaveOccurred())
 
-			cmd := exec.Command("pack", "build", imageID, "--builder", "cfbuildpacks/cflinuxfs3-cnb-test-builder", "--buildpack", nodeBP, "--buildpack", bp)
-			cmd.Dir = appDir
-			cmd.Stdout = io.MultiWriter(os.Stdout, buildLogs)
-			cmd.Stderr = io.MultiWriter(os.Stderr, buildLogs)
-			Expect(cmd.Run()).To(Succeed())
-
-			const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
-
-			re := regexp.MustCompile(ansi)
-			strippedLogs := re.ReplaceAllString(buildLogs.String(), "")
-
-			Expect(strippedLogs).To(MatchRegexp("node_modules .*: Reusing cached layer"))
-			Expect(strippedLogs).NotTo(MatchRegexp("node_modules .*: Contributing to layer"))
+			Expect(app.BuildLogs()).To(MatchRegexp("node_modules .*: Reusing cached layer"))
+			Expect(app.BuildLogs()).NotTo(MatchRegexp("node_modules .*: Contributing to layer"))
 
 			Expect(app.Start()).To(Succeed())
 
