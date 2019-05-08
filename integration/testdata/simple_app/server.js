@@ -3,8 +3,7 @@ const leftpad = require('leftpad')
 const port = process.env.PORT || 8080
 
 const requestHandler = (request, response) => {
-  response.end(leftpad(`NodeOptions: ${process.env.NODE_OPTIONS}
-  `, 2, 'this is from leftpad \n'))
+  response.end("Hello, World!")
 }
 
 const server = http.createServer(requestHandler)

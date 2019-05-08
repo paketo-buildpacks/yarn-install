@@ -41,14 +41,15 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 
 	when("when the node_modules are vendored", func() {
 		it("should build a working OCI image for a simple app", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app_vendored"), nodeURI, yarnURI)
+			app, err := dagger.PackBuild(filepath.Join("testdata", "vendored"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
 			Expect(app.Start()).To(Succeed())
 
-			_, _, err = app.HTTPGet("/")
+			body, _, err := app.HTTPGet("/")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(body).To(ContainSubstring("Hello, World!"))
 		})
 	})
 
@@ -60,14 +61,15 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 
 			Expect(app.Start()).To(Succeed())
 
-			_, _, err = app.HTTPGet("/")
+			body, _, err := app.HTTPGet("/")
 			Expect(err).ToNot(HaveOccurred())
+			Expect(body).To(ContainSubstring("Hello, World!"))
 		})
 	})
 
 	when("using yarn workspaces", func() {
 		it("should correctly install node modules in respective workspaces", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "yarn_with_workspaces"), nodeURI, yarnURI)
+			app, err := dagger.PackBuild(filepath.Join("testdata", "with_yarn_workspaces"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
