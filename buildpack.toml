@@ -1,6 +1,6 @@
 
 [buildpack]
-id = "org.cloudfoundry.buildpacks.yarn"
+id = "org.cloudfoundry.yarn"
 name = "Yarn Buildpack"
 version = "0.0.5"
 
