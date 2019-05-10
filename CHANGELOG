@@ -1,3 +1,12 @@
+v0.0.6 May 10, 2019
+====================
+
+* Remove buildpacks from id
+
+* Add yarn 1.16.0, remove yarn 1.15.2
+  for stack(s) org.cloudfoundry.stacks.cflinuxfs2, org.cloudfoundry.stacks.cflinuxfs3, io.buildpacks.stacks.bionic
+  (https://www.pivotaltracker.com/story/show/165924485)
+
 v0.0.5 Apr 01, 2019
 ====================
 
