@@ -86,7 +86,7 @@ func (c Contributor) Contribute() error {
 	if err := c.modulesLayer.Contribute(c.Metadata, func(layer layers.Layer) error {
 		offlineCache := filepath.Join(c.app.Root, "npm-packages-offline-cache")
 
-		modulesDir := filepath.Join(c.modulesLayer.Root, yarn.ModulesDir)
+		modulesDir := filepath.Join(layer.Root)
 
 		offline, err := helper.FileExists(offlineCache)
 		if err != nil {
@@ -118,11 +118,11 @@ func (c Contributor) Contribute() error {
 			return fmt.Errorf("unable to remove yarn-cache from the app dir: %s", err.Error())
 		}
 
-		if err := layer.OverrideSharedEnv("NODE_PATH", filepath.Join(layer.Root, yarn.ModulesDir)); err != nil {
+		if err := layer.OverrideSharedEnv("NODE_PATH", modulesDir); err != nil {
 			return err
 		}
 
-		if err := layer.AppendPathSharedEnv("PATH", filepath.Join(layer.Root, yarn.ModulesDir, ".bin")); err != nil {
+		if err := layer.AppendPathSharedEnv("PATH", filepath.Join(modulesDir, ".bin")); err != nil {
 			return err
 		}
 
