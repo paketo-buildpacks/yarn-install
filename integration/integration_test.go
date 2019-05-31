@@ -39,9 +39,9 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 		Expect = NewWithT(t).Expect
 	})
 
-	when("when the node_modules are vendored", func() {
+	when("when the node_modules are NOT vendored", func() {
 		it("should build a working OCI image for a simple app", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "vendored"), nodeURI, yarnURI)
+			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
@@ -53,9 +53,9 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 		})
 	})
 
-	when("when the node_modules are not vendored", func() {
+	when("when the node_modules are vendored", func() {
 		it("should build a working OCI image for a simple app", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app"), nodeURI, yarnURI)
+			app, err := dagger.PackBuild(filepath.Join("testdata", "vendored"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
@@ -83,7 +83,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("the app is pushed twice", func() {
-		it("does not reinstall node_modules", func() {
+		it("does not reinstall node_modules when yarn.lock is not changed", func() {
 			appDir := filepath.Join("testdata", "simple_app")
 			app, err := dagger.PackBuild(appDir, nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
@@ -100,8 +100,9 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 
 			Expect(app.Start()).To(Succeed())
 
-			_, _, err = app.HTTPGet("/")
-			Expect(err).NotTo(HaveOccurred())
+			body, _, err := app.HTTPGet("/")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).To(ContainSubstring("Hello, World!"))
 		})
 	})
 }

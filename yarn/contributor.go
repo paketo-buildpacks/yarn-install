@@ -1,34 +1,32 @@
 package yarn
 
 import (
+	"fmt"
 	"github.com/cloudfoundry/libcfbuildpack/build"
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"github.com/cloudfoundry/libcfbuildpack/layers"
+	"github.com/pkg/errors"
+	"os"
+)
+
+const (
+	Dependency = "yarn"
 )
 
 type Contributor struct {
+	context            build.Build
 	YarnLayer          layers.DependencyLayer
 	buildContribution  bool
 	launchContribution bool
 }
 
-func NewContributor(builder build.Build) (Contributor, bool, error) {
-	plan, wantDependency := builder.BuildPlan[Dependency]
+func NewContributor(context build.Build) (Contributor, bool, error) {
+	plan, wantDependency := context.BuildPlan[Dependency]
 	if !wantDependency {
 		return Contributor{}, false, nil
 	}
 
-	deps, err := builder.Buildpack.Dependencies()
-	if err != nil {
-		return Contributor{}, false, err
-	}
-
-	dep, err := deps.Best(Dependency, plan.Version, builder.Stack)
-	if err != nil {
-		return Contributor{}, false, err
-	}
-
-	contributor := Contributor{YarnLayer: builder.Layers.DependencyLayer(dep)}
+	contributor := Contributor{context: context}
 
 	if _, ok := plan.Metadata["build"]; ok {
 		contributor.buildContribution = true
@@ -41,21 +39,38 @@ func NewContributor(builder build.Build) (Contributor, bool, error) {
 	return contributor, true, nil
 }
 
-func (n Contributor) Contribute() error {
-	return n.YarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
+func (c *Contributor) Contribute() error {
+	deps, err := c.context.Buildpack.Dependencies()
+	if err != nil {
+		return errors.Wrap(err, "failed to get dependencies")
+	}
+
+	dep, err := deps.Best(Dependency, "*", c.context.Stack)
+	if err != nil {
+		return err
+	}
+
+	c.YarnLayer = c.context.Layers.DependencyLayer(dep)
+
+
+
+	return c.YarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
+		nodeHome := os.Getenv("NODE_HOME")
+		layer.Logger.SubsequentLine(fmt.Sprintf("NODE_HOME Value %s",nodeHome))
 		layer.Logger.SubsequentLine("Expanding to %s", layer.Root)
+
 		return helper.ExtractTarGz(artifact, layer.Root, 1)
-	}, n.flags()...)
+	}, c.flags()...)
 }
 
-func (n Contributor) flags() []layers.Flag {
+func (c *Contributor) flags() []layers.Flag {
 	flags := []layers.Flag{layers.Cache}
 
-	if n.buildContribution {
+	if c.buildContribution {
 		flags = append(flags, layers.Build)
 	}
 
-	if n.launchContribution {
+	if c.launchContribution {
 		flags = append(flags, layers.Launch)
 	}
 

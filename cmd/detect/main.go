@@ -2,17 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"os"
 	"path/filepath"
 
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 
-	"github.com/cloudfoundry/nodejs-cnb/node"
-	"github.com/cloudfoundry/yarn-cnb/modules"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
-
 	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/detect"
+	"github.com/cloudfoundry/nodejs-cnb/node"
+	"github.com/cloudfoundry/yarn-cnb/modules"
 )
 
 func main() {
@@ -52,7 +51,7 @@ func runDetect(context detect.Detect) (int, error) {
 			Metadata: buildplan.Metadata{"build": true, "launch": true},
 		},
 		yarn.Dependency: buildplan.Dependency{
-			Metadata: buildplan.Metadata{"build": true, "launch": true},
+			Metadata: buildplan.Metadata{"launch": true},
 		},
 		modules.Dependency: buildplan.Dependency{
 			Metadata: buildplan.Metadata{"launch": true},

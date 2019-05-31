@@ -2,14 +2,16 @@ package main
 
 import (
 	"fmt"
+	"github.com/buildpack/libbuildpack/buildplan"
+	"github.com/buildpack/libbuildpack/logger"
+	"github.com/cloudfoundry/yarn-cnb/modules"
 	"os"
+	"path/filepath"
 
 	"github.com/cloudfoundry/yarn-cnb/utils"
 
-	"github.com/cloudfoundry/yarn-cnb/modules"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 
-	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/build"
 )
 
@@ -42,11 +44,12 @@ func runBuild(context build.Build) (int, error) {
 		}
 	}
 
-	pkgManager := yarn.Yarn{
-		Logger: context.Logger,
-		Runner: utils.CommandRunner{},
-		Layer:  yarnContributor.YarnLayer.Layer,
-	}
+	pkgManager, err := yarn.NewCLI(
+		context.Application.Root,
+		filepath.Join(yarnContributor.YarnLayer.Layer.Root, "bin", "yarn"),
+		utils.CommandRunner{},
+		logger.NewLogger(os.Stderr, os.Stdout),
+	)
 
 	modulesContributor, willContributeModules, err := modules.NewContributor(context, pkgManager)
 	if err != nil {

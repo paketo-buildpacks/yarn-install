@@ -1,6 +1,7 @@
 package yarn_test
 
 import (
+	"github.com/sclevine/spec/report"
 	"path/filepath"
 	"testing"
 
@@ -11,34 +12,62 @@ import (
 	"github.com/sclevine/spec"
 )
 
-func testContributor(t *testing.T, when spec.G, it spec.S) {
-	when("NewContributor", func() {
-		var stubYarnFixture = filepath.Join("testdata", "stub-yarn.tar.gz")
+func TestUnitContributor(t *testing.T) {
+	spec.Run(t, "Contributor", testContributor, spec.Report(report.Terminal{}))
+}
 
-		it("returns true if a build plan exists", func() {
-			f := test.NewBuildFactory(t)
+func testContributor(t *testing.T, when spec.G, it spec.S) {
+	var f *test.BuildFactory
+	it.Before(func() {
+		f = test.NewBuildFactory(t)
+	})
+
+	when("NewContributor", func() {
+		it("returns true if the dep is in the build plan", func() {
 			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{})
-			f.AddDependency(yarn.Dependency, stubYarnFixture)
 
 			_, willContribute, err := yarn.NewContributor(f.Build)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(willContribute).To(BeTrue())
 		})
 
-		it("returns false if a build plan does not exist", func() {
+		it("returns false if the dep is not in the build plan", func() {
 			f := test.NewBuildFactory(t)
 
 			_, willContribute, err := yarn.NewContributor(f.Build)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(willContribute).To(BeFalse())
 		})
+	})
 
-		it("contributes yarn to the cache layer when included in the build plan", func() {
-			f := test.NewBuildFactory(t)
-			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{
-				Metadata: buildplan.Metadata{"build": true},
-			})
+	when("Contribute", func() {
+		var (
+			stubYarnFixture string
+		)
+
+		it.Before(func() {
+			stubYarnFixture = filepath.Join("testdata", "stub-yarn.tar.gz")
+		})
+
+		it("contributes yarn when included in the build plan and sets cache true", func() {
+			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{})
 			f.AddDependency(yarn.Dependency, stubYarnFixture)
+
+			yarnContributor, willContribute, err := yarn.NewContributor(f.Build)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(willContribute).To(BeTrue())
+
+			Expect(yarnContributor.Contribute()).To(Succeed())
+
+			layer := f.Build.Layers.Layer(yarn.Dependency)
+			Expect(layer).To(test.HaveLayerMetadata(false, true, false))
+			Expect(filepath.Join(layer.Root, "stub.txt")).To(BeARegularFile())
+		})
+
+		it("contributes yarn as build and launch layers when it is requested in the build plan", func() {
+			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{
+				Metadata: buildplan.Metadata{"build": true, "launch": true},
+			})
 
 			yarnDep, _, err := yarn.NewContributor(f.Build)
 			Expect(err).NotTo(HaveOccurred())
@@ -46,25 +75,7 @@ func testContributor(t *testing.T, when spec.G, it spec.S) {
 			Expect(yarnDep.Contribute()).To(Succeed())
 
 			layer := f.Build.Layers.Layer(yarn.Dependency)
-			Expect(layer).To(test.HaveLayerMetadata(true, true, false))
-			Expect(filepath.Join(layer.Root, "stub.txt")).To(BeARegularFile())
-		})
-
-		it("contributes yarn to the launch layer when included in the build plan", func() {
-			f := test.NewBuildFactory(t)
-			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{
-				Metadata: buildplan.Metadata{"launch": true},
-			})
-			f.AddDependency(yarn.Dependency, stubYarnFixture)
-
-			yarnContributor, _, err := yarn.NewContributor(f.Build)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(yarnContributor.Contribute()).To(Succeed())
-
-			layer := f.Build.Layers.Layer(yarn.Dependency)
-			Expect(layer).To(test.HaveLayerMetadata(false, true, true))
-			Expect(filepath.Join(layer.Root, "stub.txt")).To(BeARegularFile())
+			Expect(layer).To(test.HaveLayerMetadata(true, true, true))
 		})
 	})
 }

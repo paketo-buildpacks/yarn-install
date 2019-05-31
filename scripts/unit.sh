@@ -4,7 +4,7 @@ set -uo pipefail
 cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 
 echo "Run Buildpack Unit Tests"
-go test -mod=vendor ./... -v -run Unit
+go test -mod=vendor ./... -v -run UnitModules
 exit_code=$?
 
 if [ "$exit_code" != "0" ]; then

@@ -2,18 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"path/filepath"
 	"testing"
 
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 
-	"github.com/cloudfoundry/nodejs-cnb/node"
-	"github.com/cloudfoundry/yarn-cnb/modules"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
-
 	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/detect"
 	"github.com/cloudfoundry/libcfbuildpack/test"
+	"github.com/cloudfoundry/nodejs-cnb/node"
+	"github.com/cloudfoundry/yarn-cnb/modules"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
@@ -53,7 +52,7 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 					Metadata: buildplan.Metadata{"build": true, "launch": true},
 				},
 				yarn.Dependency: buildplan.Dependency{
-					Metadata: buildplan.Metadata{"build": true, "launch": true},
+					Metadata: buildplan.Metadata{"launch": true},
 				},
 				modules.Dependency: buildplan.Dependency{
 					Metadata: buildplan.Metadata{"launch": true},
@@ -81,7 +80,7 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 					Metadata: buildplan.Metadata{"build": true, "launch": true},
 				},
 				yarn.Dependency: buildplan.Dependency{
-					Metadata: buildplan.Metadata{"build": true, "launch": true},
+					Metadata: buildplan.Metadata{"launch": true},
 				},
 				modules.Dependency: buildplan.Dependency{
 					Metadata: buildplan.Metadata{"launch": true},
