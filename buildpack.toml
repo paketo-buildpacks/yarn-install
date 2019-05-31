@@ -12,15 +12,14 @@ pre_package = "./scripts/build.sh"
 id = "yarn"
 name = "Yarn"
 sha256 = "df202627d9a70cf09ef2fb11cb298cb619db1b958590959d6f6e571b50656029"
-stacks = ["org.cloudfoundry.stacks.cflinuxfs2","org.cloudfoundry.stacks.cflinuxfs3","io.buildpacks.stacks.bionic"]
+source = "https://github.com/yarnpkg/yarn/releases/download/v1.16.0/yarn-v1.16.0.tar.gz"
+source_sha256 = "df202627d9a70cf09ef2fb11cb298cb619db1b958590959d6f6e571b50656029"
+stacks = ["org.cloudfoundry.stacks.cflinuxfs3","io.buildpacks.stacks.bionic"]
 uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.16.0-any-stack-df202627.tar.gz"
 version = "1.16.0"
 
 [[stacks]]
 id = "org.cloudfoundry.stacks.cflinuxfs3"
-
-[[stacks]]
-id = "org.cloudfoundry.stacks.cflinuxfs2"
 
 [[stacks]]
 id = "io.buildpacks.stacks.bionic"
