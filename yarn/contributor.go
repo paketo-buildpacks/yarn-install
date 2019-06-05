@@ -3,11 +3,9 @@ package yarn
 import (
 	"fmt"
 	"github.com/cloudfoundry/libcfbuildpack/build"
-	"github.com/cloudfoundry/libcfbuildpack/buildpack"
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"github.com/cloudfoundry/libcfbuildpack/layers"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	"os"
 )
 
@@ -28,43 +26,7 @@ func NewContributor(context build.Build) (Contributor, bool, error) {
 		return Contributor{}, false, nil
 	}
 
-	version := plan.Version
-	if version == "" {
-		var err error
-		if version, err = context.Buildpack.DefaultVersion(Dependency); err != nil {
-			return Contributor{}, false, err
-		}
-	}
-
-	deps, err := context.Buildpack.Dependencies()
-	if err != nil {
-		return Contributor{}, false, errors.Wrap(err, "failed to get dependencies")
-	}
-
-
-	var dep buildpack.Dependency
-	if entry, ok := plan.Metadata["override"]; ok {
-		// cast entry as string
-		if stringEntry, ok := entry.(string); ok {
-			var overrideDep buildpack.Dependency
-
-			if err := yaml.Unmarshal([]byte(stringEntry), &overrideDep); err != nil {
-				return Contributor{}, false, err
-			}
-
-			dep = overrideDep
-		}
-	} else {
-		dep, err = deps.Best(Dependency, version, context.Stack)
-		if err != nil {
-			return Contributor{}, false, err
-		}
-	}
-
-	contributor := Contributor{
-		context: context,
-		YarnLayer: context.Layers.DependencyLayer(dep),
-	}
+	contributor := Contributor{context: context}
 
 	if _, ok := plan.Metadata["build"]; ok {
 		contributor.buildContribution = true
@@ -78,6 +40,20 @@ func NewContributor(context build.Build) (Contributor, bool, error) {
 }
 
 func (c *Contributor) Contribute() error {
+	deps, err := c.context.Buildpack.Dependencies()
+	if err != nil {
+		return errors.Wrap(err, "failed to get dependencies")
+	}
+
+	dep, err := deps.Best(Dependency, "*", c.context.Stack)
+	if err != nil {
+		return err
+	}
+
+	c.YarnLayer = c.context.Layers.DependencyLayer(dep)
+
+
+
 	return c.YarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
 		nodeHome := os.Getenv("NODE_HOME")
 		layer.Logger.SubsequentLine(fmt.Sprintf("NODE_HOME Value %s",nodeHome))
