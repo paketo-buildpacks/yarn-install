@@ -33,6 +33,7 @@ install_pack_master() {
 }
 
 install_pack() {
+    if [[ -f ".bin/pack" ]]; then return 0; fi
     OS=$(uname -s)
 
     if [[ $OS == "Darwin" ]]; then
@@ -47,7 +48,7 @@ install_pack() {
     # don't fail out if lpass is not found
     set -e
     set +u
-    (GIT_TOKEN=${GIT_TOKEN:-"$(lpasss show Shared-CF\ Buildpacks/concourse-private.yml | grep buildpacks-github-token | cut -d ' ' -f 2)"}) || true
+    (GIT_TOKEN=${GIT_TOKEN:-"$(lpass show Shared-CF\ Buildpacks/concourse-private.yml | grep buildpacks-github-token | cut -d ' ' -f 2)"}) || true
     set +e
 
     CURL_DATA=""
@@ -106,6 +107,6 @@ cd "$( dirname "${BASH_SOURCE[0]}" )/.."
 mkdir -p .bin
 export PATH=$(pwd)/.bin:$PATH
 
-install_pack_master
+install_pack
 install_packager
 
