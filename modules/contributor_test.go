@@ -29,7 +29,6 @@ func TestUnitModules(t *testing.T) {
 func testModules(t *testing.T, when spec.G, it spec.S) {
 	const (
 		cacheLayer = "modules_cache"
-		dir = "node_modules"
 	)
 
 	var (
@@ -91,7 +90,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			modulesLayer = factory.Build.Layers.Layer(modules.Dependency)
 			cacheLayer := factory.Build.Layers.Layer(cacheLayer)
 			mockPkgManager.EXPECT().Install(
-				filepath.Join(modulesLayer.Root, dir),
+				filepath.Join(modulesLayer.Root, modules.Dir),
 				filepath.Join(cacheLayer.Root, cacheDir))
 			mockPkgManager.EXPECT().Check(factory.Build.Application.Root)
 		})
@@ -127,13 +126,13 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			layer := factory.Build.Layers.Layer(modules.Dependency)
 			Expect(layer).To(test.HaveLayerMetadata(true, true, true))
 
-			Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", filepath.Join(layer.Root, dir)))
-			Expect(layer).To(test.HaveAppendPathSharedEnvironment("PATH", filepath.Join(layer.Root, dir, ".bin")))
+			Expect(layer).To(test.HaveOverrideSharedEnvironment("NODE_PATH", filepath.Join(layer.Root, modules.Dir)))
+			Expect(layer).To(test.HaveAppendPathSharedEnvironment("PATH", filepath.Join(layer.Root, modules.Dir, ".bin")))
 			Expect(layer).To(test.HaveOverrideSharedEnvironment("npm_config_nodedir", ""))
 
-			link, err := os.Readlink(filepath.Join(factory.Build.Application.Root, dir))
+			link, err := os.Readlink(filepath.Join(factory.Build.Application.Root, modules.Dir))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(link).To(Equal(filepath.Join(layer.Root, dir)))
+			Expect(link).To(Equal(filepath.Join(layer.Root, modules.Dir)))
 
 			Expect(factory.Build.Layers).To(test.HaveApplicationMetadata(layers.Metadata{Processes: []layers.Process{{"web", "yarn start"}}}))
 		})
@@ -174,11 +173,11 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			)
 
 			it.Before(func() {
-				file := filepath.Join(factory.Build.Application.Root, dir, "test_module")
+				file := filepath.Join(factory.Build.Application.Root, modules.Dir, "test_module")
 				Expect(helper.WriteFile(file, 0666, "some module")).To(Succeed())
 
 				modulesLayer := factory.Build.Layers.Layer(modules.Dependency)
-				layerModulesDir = filepath.Join(modulesLayer.Root, dir)
+				layerModulesDir = filepath.Join(modulesLayer.Root, modules.Dir)
 			})
 
 			it("moves the app node_modules to the modules layer", func() {
@@ -191,7 +190,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 				Expect(contributor.Contribute()).To(Succeed())
 
 				Expect(filepath.Join(layerModulesDir, "test_module")).To(BeAnExistingFile())
-				link, err := os.Readlink(filepath.Join(factory.Build.Application.Root, dir))
+				link, err := os.Readlink(filepath.Join(factory.Build.Application.Root, modules.Dir))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(link).To(Equal(layerModulesDir))
 			})

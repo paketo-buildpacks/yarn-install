@@ -59,3 +59,17 @@ func (mr *MockPackageManagerMockRecorder) Check(appDir interface{}) *gomock.Call
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Check", reflect.TypeOf((*MockPackageManager)(nil).Check), appDir)
 }
+
+// SetConfig mocks base method
+func (m *MockPackageManager) SetConfig(location, key, value string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetConfig", location, key, value)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetConfig indicates an expected call of SetConfig
+func (mr *MockPackageManagerMockRecorder) SetConfig(location, key, value interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetConfig", reflect.TypeOf((*MockPackageManager)(nil).SetConfig), location, key, value)
+}

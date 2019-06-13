@@ -69,11 +69,11 @@ func (c CLI) Install(modulesDir, cacheDir string) error {
 		args = append(args, "--offline")
 
 		offlineCache := filepath.Join(c.appDir, offlineCacheDir)
-		if err := c.setConfig(c.appDir, "yarn-offline-mirror", offlineCache); err != nil {
+		if err := c.SetConfig(c.appDir, "yarn-offline-mirror", offlineCache); err != nil {
 			return err
 		}
 
-		if err := c.setConfig(c.appDir, "yarn-offline-mirror-pruning", "false"); err != nil {
+		if err := c.SetConfig(c.appDir, "yarn-offline-mirror-pruning", "false"); err != nil {
 			return err
 		}
 	}
@@ -109,7 +109,7 @@ func (c CLI) Check(appDir string) error {
 	return nil
 }
 
-func (c CLI) setConfig(location, key, value string) error {
+func (c CLI) SetConfig(location, key, value string) error {
 	return c.runner.Run(c.binary, location, "config", "set", key, value)
 }
 

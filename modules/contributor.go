@@ -15,7 +15,8 @@ import (
 
 const (
 	Dependency = "modules"
-	dir        = "node_modules"
+	Dir        = "node_dependencies"
+	DirMetadata        = "Node Dependencies"
 	cacheLayer = "modules_cache"
 	lockFile   = "yarn.lock"
 )
@@ -27,6 +28,7 @@ var (
 type PackageManager interface {
 	Install(modulesDir, cacheDir string) error
 	Check(appDir string) error
+	SetConfig(location, key, value string) error
 }
 
 type Metadata struct {
@@ -93,8 +95,8 @@ func (c *Contributor) Contribute() error {
 }
 
 func (c *Contributor) contributeNodeModules(layer layers.Layer) error {
-	appModulesDir := filepath.Join(c.context.Application.Root, dir)
-	layerModulesDir := filepath.Join(c.modulesLayer.Root, dir)
+	appModulesDir := filepath.Join(c.context.Application.Root, Dir)
+	layerModulesDir := filepath.Join(c.modulesLayer.Root, Dir)
 	layerCacheDir := filepath.Join(c.cacheLayer.Root, cacheDir)
 
 	if vendored, err := helper.FileExists(appModulesDir); err != nil {
@@ -164,7 +166,7 @@ func (c *Contributor) setMetadata() error {
 	}
 
 	hash := sha256.Sum256(f)
-	c.metadata = Metadata{dir, hex.EncodeToString(hash[:])}
+	c.metadata = Metadata{DirMetadata, hex.EncodeToString(hash[:])}
 	return nil
 }
 

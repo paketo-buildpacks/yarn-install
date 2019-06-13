@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"fmt"
+	"github.com/cloudfoundry/yarn-cnb/modules"
 	"os"
 	"path/filepath"
 	"testing"
@@ -89,14 +91,14 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
-			Expect(app.BuildLogs()).To(MatchRegexp("node_modules .*: Contributing to layer"))
+			Expect(app.BuildLogs()).To(MatchRegexp(fmt.Sprintf("%s .*: Contributing to layer", modules.DirMetadata)))
 
 			// pack rebuild
 			app, err = dagger.PackBuildNamedImage(app.ImageName, appDir, nodeURI, yarnURI)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(app.BuildLogs()).To(MatchRegexp("node_modules .*: Reusing cached layer"))
-			Expect(app.BuildLogs()).NotTo(MatchRegexp("node_modules .*: Contributing to layer"))
+			Expect(app.BuildLogs()).To(MatchRegexp(fmt.Sprintf("%s .*: Reusing cached layer", modules.DirMetadata)))
+			Expect(app.BuildLogs()).NotTo(MatchRegexp(fmt.Sprintf("%s .*: Contributing to layer", modules.DirMetadata)))
 
 			Expect(app.Start()).To(Succeed())
 
