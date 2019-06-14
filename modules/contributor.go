@@ -14,11 +14,11 @@ import (
 )
 
 const (
-	Dependency = "modules"
-	Dir        = "node_dependencies"
-	DirMetadata        = "Node Dependencies"
-	cacheLayer = "modules_cache"
-	lockFile   = "yarn.lock"
+	Dependency  = "modules"
+	Dir         = "node_modules"
+	DirMetadata = "Node Dependencies"
+	cacheLayer  = "modules_cache"
+	lockFile    = "yarn.lock"
 )
 
 var (
