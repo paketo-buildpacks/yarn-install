@@ -1,3 +1,16 @@
+v0.0.7 Jun 18, 2019
+====================
+
+* update dependency names so node_modules layer is name 'node_modules'
+  - This is a keyword in yarn, without this rebuilds fail
+  (https://www.pivotaltracker.com/story/show/163528537)
+
+* Adjust metadata so that it prints Node Dependencies
+  (https://www.pivotaltracker.com/story/show/163528537)
+
+* Add source and source SHAs to dependencies
+  (https://www.pivotaltracker.com/story/show/164246265)
+
 v0.0.6 May 10, 2019
 ====================
 
