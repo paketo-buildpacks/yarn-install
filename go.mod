@@ -3,7 +3,7 @@ module github.com/cloudfoundry/yarn-cnb
 require (
 	github.com/buildpack/libbuildpack v1.18.0
 	github.com/cloudfoundry/dagger v0.0.0-20190618191508-11a2fd493334
-	github.com/cloudfoundry/libcfbuildpack v1.64.0
+	github.com/cloudfoundry/libcfbuildpack v1.64.1-0.20190620202053-60d9a504b72f
 	github.com/cloudfoundry/node-engine-cnb v0.0.12
 	github.com/cloudfoundry/npm-cnb v0.0.9
 	github.com/golang/mock v1.3.0
