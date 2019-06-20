@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"path/filepath"
 	"testing"
+
+	"github.com/cloudfoundry/node-engine-cnb/node"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 
 	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/detect"
 	"github.com/cloudfoundry/libcfbuildpack/test"
-	"github.com/cloudfoundry/nodejs-cnb/node"
 	"github.com/cloudfoundry/yarn-cnb/modules"
 	. "github.com/onsi/gomega"
 	"github.com/sclevine/spec"

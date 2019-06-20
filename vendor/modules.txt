@@ -27,11 +27,14 @@ github.com/cloudfoundry/libcfbuildpack/runner
 github.com/cloudfoundry/libcfbuildpack/services
 github.com/cloudfoundry/libcfbuildpack/test
 github.com/cloudfoundry/libcfbuildpack/internal
-# github.com/cloudfoundry/nodejs-cnb v0.0.3-0.20181226182428-89d9efe0a59b
-github.com/cloudfoundry/nodejs-cnb/node
+# github.com/cloudfoundry/node-engine-cnb v0.0.12
+github.com/cloudfoundry/node-engine-cnb/node
+# github.com/cloudfoundry/npm-cnb v0.0.9
+github.com/cloudfoundry/npm-cnb/detector
+github.com/cloudfoundry/npm-cnb/modules
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
-# github.com/golang/mock v1.2.0
+# github.com/golang/mock v1.3.0
 github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.3.1
 github.com/golang/protobuf/proto
@@ -94,7 +97,7 @@ golang.org/x/text/runes
 golang.org/x/text/internal/language
 golang.org/x/text/internal/language/compact
 golang.org/x/text/internal/tag
-# google.golang.org/appengine v1.4.0
+# google.golang.org/appengine v1.5.0
 google.golang.org/appengine/urlfetch
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/urlfetch
