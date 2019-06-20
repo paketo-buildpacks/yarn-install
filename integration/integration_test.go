@@ -28,7 +28,7 @@ func TestIntegration(t *testing.T) {
 	Expect(err).ToNot(HaveOccurred())
 	defer os.RemoveAll(yarnURI)
 
-	nodeURI, err = dagger.GetLatestBuildpack("nodejs-cnb")
+	nodeURI, err = dagger.GetLatestBuildpack("node-engine-cnb")
 	Expect(err).ToNot(HaveOccurred())
 	defer os.RemoveAll(nodeURI)
 
