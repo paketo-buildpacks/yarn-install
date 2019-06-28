@@ -15,8 +15,8 @@ github.com/cloudfoundry/libcfbuildpack v1.44.0/go.mod h1:C2AOm63Ca1GIBP7NdVhd8Q2
 github.com/cloudfoundry/libcfbuildpack v1.61.1-0.20190613174040-25cb17387d8f/go.mod h1:4pMJZ/PYfjLg3ZzOVwzqQ17yCUErBVkDMMTJ0RCTziU=
 github.com/cloudfoundry/libcfbuildpack v1.62.0 h1:xobpTjMYm4Ul/mVoB1VOWDFjkJORb6HYJDyUbrGrJvc=
 github.com/cloudfoundry/libcfbuildpack v1.62.0/go.mod h1:4pMJZ/PYfjLg3ZzOVwzqQ17yCUErBVkDMMTJ0RCTziU=
-github.com/cloudfoundry/libcfbuildpack v1.73.1-0.20190628085653-278fdb66d6e5 h1:HptmUZGwqcCd2Z0tb6YyxcLjbBLi0qQ4tDnZjiqFx4Q=
-github.com/cloudfoundry/libcfbuildpack v1.73.1-0.20190628085653-278fdb66d6e5/go.mod h1:QGm+nzixn579dvQNlS7ZQET541y2hEpZ0/5uNxkQ04Y=
+github.com/cloudfoundry/libcfbuildpack v1.74.0 h1:bWO3ktmVpcbHg7/imRW0s91RwkaZPQWsyIxeHs9Xq1s=
+github.com/cloudfoundry/libcfbuildpack v1.74.0/go.mod h1:QGm+nzixn579dvQNlS7ZQET541y2hEpZ0/5uNxkQ04Y=
 github.com/cloudfoundry/node-engine-cnb v0.0.12 h1:eUbo8mNhMD4iUDtwHVmlpMBoEbcUx20Ff4NHqKew5bQ=
 github.com/cloudfoundry/node-engine-cnb v0.0.12/go.mod h1:hGhKQIxckykrN0eRNpfnj8Lxtc4/CSEwE8N/6poD2bg=
 github.com/cloudfoundry/npm-cnb v0.0.9 h1:FwbR9TSKI1r/RzGzty7Rw0CcoQ/jsm1wxeXR1gl9BbM=
