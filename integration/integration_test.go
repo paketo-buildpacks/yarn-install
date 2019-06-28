@@ -2,10 +2,11 @@ package integration
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/yarn-cnb/modules"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/cloudfoundry/yarn-cnb/modules"
 
 	"github.com/cloudfoundry/dagger"
 
@@ -99,6 +100,20 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 
 			Expect(app.BuildLogs()).To(MatchRegexp(fmt.Sprintf("%s .*: Reusing cached layer", modules.DirMetadata)))
 			Expect(app.BuildLogs()).NotTo(MatchRegexp(fmt.Sprintf("%s .*: Contributing to layer", modules.DirMetadata)))
+
+			Expect(app.Start()).To(Succeed())
+
+			body, _, err := app.HTTPGet("/")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(body).To(ContainSubstring("Hello, World!"))
+		})
+	})
+
+	when("the app uses pre-gyp", func() {
+		it("should build a working OCI image for a simple app", func() {
+			app, err := dagger.PackBuild(filepath.Join("testdata", "yarn_pre_gyp"), nodeURI, yarnURI)
+			Expect(err).ToNot(HaveOccurred())
+			defer app.Destroy()
 
 			Expect(app.Start()).To(Succeed())
 

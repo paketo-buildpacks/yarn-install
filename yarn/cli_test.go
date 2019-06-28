@@ -2,13 +2,14 @@ package yarn_test
 
 import (
 	"bytes"
-	"github.com/buildpack/libbuildpack/logger"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"testing"
+
+	"github.com/buildpack/libbuildpack/logger"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 
 	"github.com/golang/mock/gomock"
 
@@ -73,7 +74,7 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 		it("yarn installs ONLINE by default", func() {
 			pkgManager, err := yarn.NewCLI(appDir, yarnBin, mockRunner, log)
 			Expect(err).NotTo(HaveOccurred())
-			mockRunner.EXPECT().RunWithOutput(yarnBin, appDir, false, "install", "--pure-lockfile", "--ignore-engines", "--cache-folder", cacheDir, "--modules-folder", modulesDir)
+			mockRunner.EXPECT().RunWithOutput(yarnBin, modulesDir, false, "install", "--pure-lockfile", "--ignore-engines", "--cache-folder", cacheDir)
 
 			Expect(pkgManager.Install(modulesDir, cacheDir)).To(Succeed())
 			Expect(logBuf.String()).To(ContainSubstring("Running yarn in online mode"))
@@ -86,7 +87,7 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 			mockRunner.EXPECT().Run(yarnBin, appDir, "config", "set", "yarn-offline-mirror", npmCacheDir)
 			mockRunner.EXPECT().Run(yarnBin, appDir, "config", "set", "yarn-offline-mirror-pruning", "false")
-			mockRunner.EXPECT().RunWithOutput(yarnBin, appDir, false, "install", "--pure-lockfile", "--ignore-engines", "--cache-folder", cacheDir, "--modules-folder", modulesDir, "--offline")
+			mockRunner.EXPECT().RunWithOutput(yarnBin, modulesDir, false, "install", "--pure-lockfile", "--ignore-engines", "--cache-folder", cacheDir, "--offline")
 
 			Expect(pkgManager.Install(modulesDir, cacheDir)).To(Succeed())
 			Expect(logBuf.String()).To(ContainSubstring("Running yarn in offline mode"))
@@ -96,7 +97,7 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 			pkgManager, err := yarn.NewCLI(appDir, yarnBin, mockRunner, log)
 			Expect(err).NotTo(HaveOccurred())
 
-			mockRunner.EXPECT().RunWithOutput(yarnBin, appDir, false, "install", "--pure-lockfile", "--ignore-engines", "--cache-folder", cacheDir, "--modules-folder", modulesDir).Return("unmet peer dependency", nil)
+			mockRunner.EXPECT().RunWithOutput(yarnBin, modulesDir, false, "install", "--pure-lockfile", "--ignore-engines", "--cache-folder", cacheDir).Return("unmet peer dependency", nil)
 
 			Expect(pkgManager.Install(modulesDir, cacheDir)).To(Succeed())
 

@@ -2,13 +2,14 @@ package yarn
 
 import (
 	"fmt"
-	"github.com/buildpack/libbuildpack/logger"
-	"github.com/cloudfoundry/libcfbuildpack/helper"
-	"github.com/pkg/errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+
+	"github.com/buildpack/libbuildpack/logger"
+	"github.com/cloudfoundry/libcfbuildpack/helper"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -58,8 +59,6 @@ func (c CLI) Install(modulesDir, cacheDir string) error {
 		"--ignore-engines",
 		"--cache-folder",
 		cacheDir,
-		"--modules-folder",
-		modulesDir,
 	}
 
 	mode := "online"
@@ -78,10 +77,9 @@ func (c CLI) Install(modulesDir, cacheDir string) error {
 		}
 	}
 
-
 	c.log.Info("Running yarn in %s mode", mode)
 
-	output, err := c.runner.RunWithOutput(c.binary, c.appDir, false, args...)
+	output, err := c.runner.RunWithOutput(c.binary, modulesDir, false, args...)
 	if err != nil {
 		return err
 	}

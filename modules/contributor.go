@@ -4,18 +4,19 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/cloudfoundry/libcfbuildpack/build"
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"github.com/cloudfoundry/libcfbuildpack/layers"
 	"github.com/pkg/errors"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 const (
 	Dependency  = "modules"
-	Dir         = "node_modules"
+	NodeModules = "node_modules"
 	DirMetadata = "Node Dependencies"
 	cacheLayer  = "modules_cache"
 	lockFile    = "yarn.lock"
@@ -95,8 +96,8 @@ func (c *Contributor) Contribute() error {
 }
 
 func (c *Contributor) contributeNodeModules(layer layers.Layer) error {
-	appModulesDir := filepath.Join(c.context.Application.Root, Dir)
-	layerModulesDir := filepath.Join(c.modulesLayer.Root, Dir)
+	appModulesDir := filepath.Join(c.context.Application.Root, NodeModules)
+	layerModulesDir := filepath.Join(c.modulesLayer.Root, NodeModules)
 	layerCacheDir := filepath.Join(c.cacheLayer.Root, cacheDir)
 
 	if vendored, err := helper.FileExists(appModulesDir); err != nil {
@@ -107,11 +108,15 @@ func (c *Contributor) contributeNodeModules(layer layers.Layer) error {
 		}
 	}
 
+	if err := symlinkAll(c.context.Application.Root, c.modulesLayer.Root); err != nil {
+		return errors.Wrap(err, "failed to symlink appdir to modules dir")
+	}
+
 	if err := c.enableCaching(); err != nil {
 		return errors.Wrap(err, "failed to enable caching")
 	}
 
-	if err := c.pkgManager.Install(layerModulesDir, layerCacheDir); err != nil {
+	if err := c.pkgManager.Install(c.modulesLayer.Root, layerCacheDir); err != nil {
 		return fmt.Errorf("failed to install node_modules: %s", err.Error())
 	}
 
@@ -197,6 +202,29 @@ func moveNodeModulesToLayer(nodeModules, modulesLayer string) error {
 
 		if err := os.RemoveAll(nodeModules); err != nil {
 			return fmt.Errorf("unable to remove node_modules from the app dir: %s", err.Error())
+		}
+	}
+
+	return nil
+}
+
+func symlinkAll(srcDir string, linkDir string) error {
+	files, err := ioutil.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+
+	if err := os.MkdirAll(linkDir, os.ModePerm); err != nil {
+		return err
+	}
+
+	for _, f := range files {
+		if f.Name() != NodeModules {
+			srcPath := filepath.Join(srcDir, f.Name())
+			linkPath := filepath.Join(linkDir, f.Name())
+			if err := os.Symlink(srcPath, linkPath); err != nil {
+				return err
+			}
 		}
 	}
 
