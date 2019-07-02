@@ -93,7 +93,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			mockPkgManager.EXPECT().Install(
 				modulesLayer.Root,
 				filepath.Join(cacheLayer.Root, cacheDir))
-			mockPkgManager.EXPECT().Check(factory.Build.Application.Root)
+			mockPkgManager.EXPECT().Check(modulesLayer.Root)
 		})
 
 		it.After(func() {

@@ -109,7 +109,7 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 		it("logs that yarn.lock and package.json match", func() {
 			pkgManager, err := yarn.NewCLI("some-app", "some-bin", mockRunner, log)
 			Expect(err).NotTo(HaveOccurred())
-			mockRunner.EXPECT().Run("some-bin", "some-app", "check")
+			mockRunner.EXPECT().RunWithOutput("some-bin", "some-app", true, "check").Return("", nil)
 			Expect(pkgManager.Check("some-app")).To(Succeed())
 			Expect(logBuf.String()).To(ContainSubstring("yarn.lock and package.json match"))
 		})
@@ -117,7 +117,7 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 		it("warns that yarn.lock is out of date", func() {
 			pkgManager, err := yarn.NewCLI("some-app", "some-bin", mockRunner, log)
 			Expect(err).NotTo(HaveOccurred())
-			mockRunner.EXPECT().Run("some-bin", "some-app", "check").Return(&exec.ExitError{})
+			mockRunner.EXPECT().RunWithOutput("some-bin", "some-app", true, "check").Return("Some yarn check output", &exec.ExitError{})
 			Expect(pkgManager.Check("some-app")).To(Succeed())
 			Expect(logBuf.String()).To(ContainSubstring("yarn.lock is outdated"))
 		})
@@ -130,7 +130,7 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 			pkgManager, err := yarn.NewCLI("some-app", "some-bin", mockRunner, log)
 			Expect(err).NotTo(HaveOccurred())
 
-			mockRunner.EXPECT().Run("some-bin", "some-app", "check", "--offline")
+			mockRunner.EXPECT().RunWithOutput("some-bin", "some-app", true, "check", "--offline")
 			Expect(pkgManager.Check("some-app")).To(Succeed())
 		})
 	})

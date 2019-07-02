@@ -120,7 +120,7 @@ func (c *Contributor) contributeNodeModules(layer layers.Layer) error {
 		return fmt.Errorf("failed to install node_modules: %s", err.Error())
 	}
 
-	if err := c.pkgManager.Check(c.context.Application.Root); err != nil {
+	if err := c.pkgManager.Check(c.modulesLayer.Root); err != nil {
 		return fmt.Errorf("failed to yarn check installed modules %s", err.Error())
 	}
 

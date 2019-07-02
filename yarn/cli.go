@@ -96,10 +96,11 @@ func (c CLI) Check(appDir string) error {
 		args = append(args, "--offline")
 	}
 
-	if err := c.runner.Run(c.binary, appDir, args...); err != nil {
+	if out, err := c.runner.RunWithOutput(c.binary, appDir, true, args...); err != nil {
 		if _, ok := err.(*exec.ExitError); !ok {
 			return err
 		}
+		c.log.Info(out)
 		c.log.Info("yarn.lock is outdated")
 	} else {
 		c.log.Info("yarn.lock and package.json match")
