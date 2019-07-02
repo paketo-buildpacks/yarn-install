@@ -9,14 +9,14 @@ github.com/buildpack/libbuildpack v1.18.0/go.mod h1:qj2VrlQy+OmYGwWTPeQMa9bpvUPv
 github.com/buildpack/libbuildpack v1.19.0 h1:HUkaIwuGmPbQhujBjYNpd+E4f0NdAgAgHq7skydiL5s=
 github.com/buildpack/libbuildpack v1.19.0/go.mod h1:oxgSTzPbWscHs27iuYrctEZpSak2m/qPThA+9JM0Boo=
 github.com/cloudfoundry/dagger v0.0.0-20190531142541-7ffbc906bfb0/go.mod h1:WdF5u2bg4xztLnFRel7bviH5rEI6zY/EGX2w1xxd7nI=
-github.com/cloudfoundry/dagger v0.0.0-20190618191508-11a2fd493334 h1:rjV9aXO3/aJJjPfXKCDUvzQIA7L8iEgLzBvUmeDxmwk=
-github.com/cloudfoundry/dagger v0.0.0-20190618191508-11a2fd493334/go.mod h1:WdF5u2bg4xztLnFRel7bviH5rEI6zY/EGX2w1xxd7nI=
+github.com/cloudfoundry/dagger v0.0.0-20190702204901-6f86432fd00d h1:vpKkm7GEKaSGn1whjthGausas9/lomcZqh8cGMc7ZmA=
+github.com/cloudfoundry/dagger v0.0.0-20190702204901-6f86432fd00d/go.mod h1:PXeUHc4d2vAVO/31jFE6uD09w/yFfzs4kcayAVEvnEI=
 github.com/cloudfoundry/libcfbuildpack v1.44.0/go.mod h1:C2AOm63Ca1GIBP7NdVhd8Q2gKenz600PVWqtOAbrN4o=
 github.com/cloudfoundry/libcfbuildpack v1.61.1-0.20190613174040-25cb17387d8f/go.mod h1:4pMJZ/PYfjLg3ZzOVwzqQ17yCUErBVkDMMTJ0RCTziU=
 github.com/cloudfoundry/libcfbuildpack v1.62.0 h1:xobpTjMYm4Ul/mVoB1VOWDFjkJORb6HYJDyUbrGrJvc=
 github.com/cloudfoundry/libcfbuildpack v1.62.0/go.mod h1:4pMJZ/PYfjLg3ZzOVwzqQ17yCUErBVkDMMTJ0RCTziU=
-github.com/cloudfoundry/libcfbuildpack v1.75.1-0.20190702154620-95f63d4f5b4e h1:ibAotAhofEdqRxTpwLbXFk5N9ST9Qv4w6RNXksNLKx0=
-github.com/cloudfoundry/libcfbuildpack v1.75.1-0.20190702154620-95f63d4f5b4e/go.mod h1:QGm+nzixn579dvQNlS7ZQET541y2hEpZ0/5uNxkQ04Y=
+github.com/cloudfoundry/libcfbuildpack v1.76.0 h1:oMTv35mjk5Jogzy2sshVXHyolDWnWHMfANQ0UooXJq0=
+github.com/cloudfoundry/libcfbuildpack v1.76.0/go.mod h1:QGm+nzixn579dvQNlS7ZQET541y2hEpZ0/5uNxkQ04Y=
 github.com/cloudfoundry/node-engine-cnb v0.0.12 h1:eUbo8mNhMD4iUDtwHVmlpMBoEbcUx20Ff4NHqKew5bQ=
 github.com/cloudfoundry/node-engine-cnb v0.0.12/go.mod h1:hGhKQIxckykrN0eRNpfnj8Lxtc4/CSEwE8N/6poD2bg=
 github.com/cloudfoundry/npm-cnb v0.0.9 h1:FwbR9TSKI1r/RzGzty7Rw0CcoQ/jsm1wxeXR1gl9BbM=
@@ -82,6 +82,8 @@ golang.org/x/net v0.0.0-20190522155817-f3200d17e092 h1:4QSRKanuywn15aTZvI/mIDEgP
 golang.org/x/net v0.0.0-20190522155817-f3200d17e092/go.mod h1:HSz+uSET+XFnRR8LxR5pz3Of3rY3CfYBVs4xY44aLks=
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859 h1:R/3boaszxrf1GEUWTVDzSKVwLmSJpwZ1yqXm8j0v2QI=
 golang.org/x/net v0.0.0-20190620200207-3b0461eec859/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
+golang.org/x/net v0.0.0-20190628185345-da137c7871d7 h1:rTIdg5QFRR7XCaK4LCjBiPbx8j4DQRpdYMnGn/bJUEU=
+golang.org/x/net v0.0.0-20190628185345-da137c7871d7/go.mod h1:z5CRVTTTmAJ677TzLLGU+0bjPO0LkuOLi4/5GtJWs/s=
 golang.org/x/oauth2 v0.0.0-20180821212333-d2e6202438be/go.mod h1:N/0e6XlmueqKjAGxoOufVs8QHGRruUQn6yWY3a++T0U=
 golang.org/x/oauth2 v0.0.0-20190319182350-c85d3e98c914 h1:jIOcLT9BZzyJ9ce+IwwZ+aF9yeCqzrR+NrD68a/SHKw=
 golang.org/x/oauth2 v0.0.0-20190319182350-c85d3e98c914/go.mod h1:gOpvHmFTYa4IltrdGE7lF6nIHvwfUNPOp7c8zoXwtLw=
