@@ -4,4 +4,3 @@
 .bin
 yarn-cnb_*
 bin
-/buildpack.toml
