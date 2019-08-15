@@ -52,7 +52,11 @@ type Contributor struct {
 }
 
 func NewContributor(context build.Build, pkgManager PackageManager) (Contributor, bool, error) {
-	plan, shouldInstallModules := context.BuildPlan[Dependency]
+	plan, shouldInstallModules, err := context.Plans.GetShallowMerged(NodeModules)
+	if err != nil {
+		return Contributor{}, false, err
+	}
+
 	if !shouldInstallModules {
 		return Contributor{}, false, nil
 	}
@@ -70,13 +74,8 @@ func NewContributor(context build.Build, pkgManager PackageManager) (Contributor
 		cacheLayer:   context.Layers.Layer(cacheLayer),
 	}
 
-	if _, ok := plan.Metadata["build"]; ok {
-		contributor.buildContribution = true
-	}
-
-	if _, ok := plan.Metadata["launch"]; ok {
-		contributor.launchContribution = true
-	}
+	contributor.buildContribution, _ = plan.Metadata["build"].(bool)
+	contributor.launchContribution, _ = plan.Metadata["launch"].(bool)
 
 	return contributor, true, nil
 }

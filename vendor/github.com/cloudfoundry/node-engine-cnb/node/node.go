@@ -1,11 +1,8 @@
 package node
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
-
-	yaml "gopkg.in/yaml.v2"
 
 	"github.com/cloudfoundry/libcfbuildpack/build"
 	"github.com/cloudfoundry/libcfbuildpack/helper"
@@ -13,9 +10,13 @@ import (
 )
 
 const Dependency = "node"
+const BuildpackYAMLSource = "buildpack.yml"
+const PackageJsonSource = "package.json"
+const NvmrcSource = ".nvmrc"
 
 type Config struct {
-	OptimizeMemory bool `yaml:"optimize-memory"`
+	OptimizeMemory bool   `yaml:"optimize-memory"`
+	Version        string `yaml:"version"`
 }
 
 type BuildpackYAML struct {
@@ -29,13 +30,24 @@ type Contributor struct {
 	layer              layers.DependencyLayer
 }
 
+var priorities = map[interface{}]int{
+	BuildpackYAMLSource: 3,
+	PackageJsonSource:   2,
+	NvmrcSource:         1,
+	"":                  -1,
+}
+
 func NewContributor(context build.Build) (Contributor, bool, error) {
 	buildpackYAML, err := LoadBuildpackYAML(context.Application.Root)
 	if err != nil {
 		return Contributor{}, false, err
 	}
 
-	plan, wantDependency := context.BuildPlan[Dependency]
+	plan, wantDependency, err := context.Plans.GetPriorityMerged(Dependency, priorities)
+	if err != nil {
+		return Contributor{}, false, err
+	}
+
 	if !wantDependency {
 		return Contributor{}, false, nil
 	}
@@ -124,28 +136,16 @@ func (c Contributor) GetLayer() layers.DependencyLayer {
 }
 
 func LoadBuildpackYAML(appRoot string) (BuildpackYAML, error) {
-	buildpackYAML, configFile := BuildpackYAML{}, filepath.Join(appRoot, "buildpack.yml")
+	var err error
+	buildpackYAML := BuildpackYAML{}
+	bpYamlPath := filepath.Join(appRoot, "buildpack.yml")
 
-	if exists, err := helper.FileExists(configFile); err != nil {
+	if exists, err := helper.FileExists(bpYamlPath); err != nil {
 		return BuildpackYAML{}, err
 	} else if exists {
-		file, err := os.Open(configFile)
-		if err != nil {
-			return BuildpackYAML{}, err
-		}
-		defer file.Close()
-
-		contents, err := ioutil.ReadAll(file)
-		if err != nil {
-			return BuildpackYAML{}, err
-		}
-
-		err = yaml.Unmarshal(contents, &buildpackYAML)
-		if err != nil {
-			return BuildpackYAML{}, err
-		}
+		err = helper.ReadBuildpackYaml(bpYamlPath, &buildpackYAML)
 	}
-	return buildpackYAML, nil
+	return buildpackYAML, err
 }
 
 func memoryAvailable() string {

@@ -3,15 +3,15 @@ github.com/BurntSushi/toml
 # github.com/Masterminds/semver v1.4.2
 github.com/Masterminds/semver
 # github.com/buildpack/libbuildpack v1.21.0
-github.com/buildpack/libbuildpack/buildplan
 github.com/buildpack/libbuildpack/logger
+github.com/buildpack/libbuildpack/buildplan
 github.com/buildpack/libbuildpack/internal
 github.com/buildpack/libbuildpack/build
 github.com/buildpack/libbuildpack/layers
+github.com/buildpack/libbuildpack/buildpackplan
 github.com/buildpack/libbuildpack/detect
 github.com/buildpack/libbuildpack/application
 github.com/buildpack/libbuildpack/buildpack
-github.com/buildpack/libbuildpack/buildpackplan
 github.com/buildpack/libbuildpack/platform
 github.com/buildpack/libbuildpack/services
 github.com/buildpack/libbuildpack/stack
@@ -19,24 +19,24 @@ github.com/buildpack/libbuildpack/stack
 github.com/cloudfoundry/dagger
 # github.com/cloudfoundry/libcfbuildpack v1.82.1-0.20190815154108-ebdea9feb73d
 github.com/cloudfoundry/libcfbuildpack/build
+github.com/cloudfoundry/libcfbuildpack/buildpackplan
 github.com/cloudfoundry/libcfbuildpack/detect
 github.com/cloudfoundry/libcfbuildpack/helper
 github.com/cloudfoundry/libcfbuildpack/layers
 github.com/cloudfoundry/libcfbuildpack/buildpack
-github.com/cloudfoundry/libcfbuildpack/buildpackplan
 github.com/cloudfoundry/libcfbuildpack/logger
 github.com/cloudfoundry/libcfbuildpack/runner
 github.com/cloudfoundry/libcfbuildpack/services
 github.com/cloudfoundry/libcfbuildpack/test
 github.com/cloudfoundry/libcfbuildpack/internal
-# github.com/cloudfoundry/node-engine-cnb v0.0.12
+# github.com/cloudfoundry/node-engine-cnb v0.0.34
 github.com/cloudfoundry/node-engine-cnb/node
-# github.com/cloudfoundry/npm-cnb v0.0.9
+# github.com/cloudfoundry/npm-cnb v0.0.20
 github.com/cloudfoundry/npm-cnb/detector
 github.com/cloudfoundry/npm-cnb/modules
 # github.com/fatih/color v1.7.0
 github.com/fatih/color
-# github.com/golang/mock v1.3.0
+# github.com/golang/mock v1.3.1
 github.com/golang/mock/gomock
 # github.com/golang/protobuf v1.3.2
 github.com/golang/protobuf/proto

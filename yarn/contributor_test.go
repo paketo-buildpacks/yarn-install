@@ -1,11 +1,11 @@
 package yarn_test
 
 import (
+	"github.com/cloudfoundry/libcfbuildpack/buildpackplan"
 	"github.com/sclevine/spec/report"
 	"path/filepath"
 	"testing"
 
-	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/test"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 	. "github.com/onsi/gomega"
@@ -26,7 +26,7 @@ func testContributor(t *testing.T, when spec.G, it spec.S) {
 
 	when("NewContributor", func() {
 		it("returns true if the dep is in the build plan", func() {
-			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{})
+			f.AddPlan(buildpackplan.Plan{Name: yarn.Dependency})
 
 			_, willContribute, err := yarn.NewContributor(f.Build)
 			Expect(err).NotTo(HaveOccurred())
@@ -52,7 +52,7 @@ func testContributor(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("contributes yarn when included in the build plan and sets cache true", func() {
-			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{})
+			f.AddPlan(buildpackplan.Plan{Name: yarn.Dependency})
 			f.AddDependency(yarn.Dependency, stubYarnFixture)
 
 			yarnContributor, willContribute, err := yarn.NewContributor(f.Build)
@@ -67,8 +67,9 @@ func testContributor(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("contributes yarn as build and launch layers when it is requested in the build plan", func() {
-			f.AddBuildPlan(yarn.Dependency, buildplan.Dependency{
-				Metadata: buildplan.Metadata{"build": true, "launch": true},
+			f.AddPlan(buildpackplan.Plan{
+				Name: yarn.Dependency,
+				Metadata: buildpackplan.Metadata{"build": true, "launch": true},
 			})
 			f.AddDependency(yarn.Dependency, stubYarnFixture)
 

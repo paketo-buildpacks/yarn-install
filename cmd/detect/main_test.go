@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/cloudfoundry/libcfbuildpack/buildpackplan"
 	"path/filepath"
 	"testing"
 
@@ -47,19 +48,27 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 
 			Expect(code).To(Equal(detect.PassStatusCode))
 
-			Expect(factory.Output).To(Equal(buildplan.BuildPlan{
-				node.Dependency: buildplan.Dependency{
-					Version:  version,
-					Metadata: buildplan.Metadata{"build": true, "launch": true},
+			Expect(factory.Plans.Plan).To(Equal(buildplan.Plan{
+				Requires:[]buildplan.Required{
+					{
+						Name: node.Dependency,
+						Version:  version,
+						Metadata: buildplan.Metadata{"build": true, "launch": true, buildpackplan.VersionSource: node.PackageJsonSource},
+					},
+					{
+						Name: yarn.Dependency,
+						Metadata: buildplan.Metadata{"launch": true},
+					},
+					{
+						Name: modules.NodeModules,
+						Metadata: buildplan.Metadata{"launch": true},
+					},
 				},
-				yarn.Dependency: buildplan.Dependency{
-					Metadata: buildplan.Metadata{"launch": true},
-				},
-				modules.Dependency: buildplan.Dependency{
-					Metadata: buildplan.Metadata{"launch": true},
+				Provides: []buildplan.Provided{
+					{yarn.Dependency},
+					{modules.NodeModules},
 				},
 			}))
-
 		})
 	})
 
@@ -75,19 +84,27 @@ func testDetect(t *testing.T, when spec.G, it spec.S) {
 
 			Expect(code).To(Equal(detect.PassStatusCode))
 
-			Expect(factory.Output).To(Equal(buildplan.BuildPlan{
-				node.Dependency: buildplan.Dependency{
-					Version:  "",
-					Metadata: buildplan.Metadata{"build": true, "launch": true},
+			Expect(factory.Plans.Plan).To(Equal(buildplan.Plan{
+				Requires:[]buildplan.Required{
+					{
+						Name: node.Dependency,
+						Version:  "",
+						Metadata: buildplan.Metadata{"build": true, "launch": true, buildpackplan.VersionSource: node.PackageJsonSource},
+					},
+					{
+						Name: yarn.Dependency,
+						Metadata: buildplan.Metadata{"launch": true},
+					},
+					{
+						Name: modules.NodeModules,
+						Metadata: buildplan.Metadata{"launch": true},
+					},
 				},
-				yarn.Dependency: buildplan.Dependency{
-					Metadata: buildplan.Metadata{"launch": true},
-				},
-				modules.Dependency: buildplan.Dependency{
-					Metadata: buildplan.Metadata{"launch": true},
+				Provides: []buildplan.Provided{
+					{yarn.Dependency},
+					{modules.NodeModules},
 				},
 			}))
-
 		})
 	})
 

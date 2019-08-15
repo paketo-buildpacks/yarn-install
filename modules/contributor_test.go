@@ -1,6 +1,7 @@
 package modules_test
 
 import (
+	"github.com/cloudfoundry/libcfbuildpack/buildpackplan"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 
-	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/cloudfoundry/libcfbuildpack/test"
 	"github.com/golang/mock/gomock"
 	. "github.com/onsi/gomega"
@@ -46,7 +46,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 	when("NewContributor", func() {
 		when("there is no yarn.lock", func() {
 			it("fails", func() {
-				factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{})
+				factory.AddPlan(buildpackplan.Plan{Name: modules.NodeModules})
 
 				_, _, err := modules.NewContributor(factory.Build, yarn.CLI{})
 				Expect(err).To(HaveOccurred())
@@ -60,7 +60,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("returns true if a build plan exists with the dep", func() {
-				factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{})
+				factory.AddPlan(buildpackplan.Plan{Name: modules.NodeModules})
 
 				_, willContribute, err := modules.NewContributor(factory.Build, yarn.CLI{})
 				Expect(err).NotTo(HaveOccurred())
@@ -101,7 +101,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("uses yarn.lock for identity", func() {
-			factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{})
+			factory.AddPlan(buildpackplan.Plan{Name: modules.NodeModules})
 
 			contributor, ok, err := modules.NewContributor(factory.Build, mockPkgManager)
 			Expect(err).NotTo(HaveOccurred())
@@ -115,8 +115,9 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("runs yarn install, sets env vars, and creates a symlink for node_modules", func() {
-			factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
-				Metadata: buildplan.Metadata{"launch": true, "build": true},
+			factory.AddPlan(buildpackplan.Plan{
+				Name:     modules.NodeModules,
+				Metadata: buildpackplan.Metadata{"launch": true, "build": true},
 			})
 
 			contributor, ok, err := modules.NewContributor(factory.Build, mockPkgManager)
@@ -139,8 +140,9 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("contributes modules for the launch phase, cache is always true", func() {
-			factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
-				Metadata: buildplan.Metadata{"launch": true},
+			factory.AddPlan(buildpackplan.Plan{
+				Name:     modules.NodeModules,
+				Metadata: buildpackplan.Metadata{"launch": true},
 			})
 
 			contributor, ok, err := modules.NewContributor(factory.Build, mockPkgManager)
@@ -154,8 +156,9 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 		})
 
 		it("contributes modules for the build phase, cache is always true", func() {
-			factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{
-				Metadata: buildplan.Metadata{"build": true},
+			factory.AddPlan(buildpackplan.Plan{
+				Name:     modules.NodeModules,
+				Metadata: buildpackplan.Metadata{"build": true},
 			})
 
 			contributor, ok, err := modules.NewContributor(factory.Build, mockPkgManager)
@@ -182,7 +185,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			})
 
 			it("moves the app node_modules to the modules layer", func() {
-				factory.AddBuildPlan(modules.Dependency, buildplan.Dependency{})
+				factory.AddPlan(buildpackplan.Plan{Name: modules.NodeModules})
 
 				contributor, ok, err := modules.NewContributor(factory.Build, mockPkgManager)
 				Expect(err).NotTo(HaveOccurred())

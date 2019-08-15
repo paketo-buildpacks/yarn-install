@@ -21,20 +21,18 @@ type Contributor struct {
 }
 
 func NewContributor(context build.Build) (Contributor, bool, error) {
-	plan, wantDependency := context.BuildPlan[Dependency]
+	plan, wantDependency, err := context.Plans.GetShallowMerged(Dependency)
+	if err != nil {
+		return Contributor{}, false, err
+	}
+
 	if !wantDependency {
 		return Contributor{}, false, nil
 	}
 
 	contributor := Contributor{context: context}
-
-	if _, ok := plan.Metadata["build"]; ok {
-		contributor.buildContribution = true
-	}
-
-	if _, ok := plan.Metadata["launch"]; ok {
-		contributor.launchContribution = true
-	}
+	contributor.buildContribution, _ = plan.Metadata["build"].(bool)
+	contributor.launchContribution, _ = plan.Metadata["launch"].(bool)
 
 	return contributor, true, nil
 }
@@ -51,8 +49,6 @@ func (c *Contributor) Contribute() error {
 	}
 
 	c.YarnLayer = c.context.Layers.DependencyLayer(dep)
-
-
 
 	return c.YarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
 		nodeHome := os.Getenv("NODE_HOME")

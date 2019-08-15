@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/buildpack/libbuildpack/buildplan"
 	"github.com/buildpack/libbuildpack/logger"
 	"github.com/cloudfoundry/yarn-cnb/modules"
 	"os"
@@ -62,5 +61,5 @@ func runBuild(context build.Build) (int, error) {
 		}
 	}
 
-	return context.Success(buildplan.BuildPlan{})
+	return context.Success()
 }
