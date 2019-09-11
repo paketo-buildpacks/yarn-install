@@ -1,11 +1,12 @@
 package modules_test
 
 import (
-	"github.com/cloudfoundry/libcfbuildpack/buildpackplan"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/cloudfoundry/libcfbuildpack/buildpackplan"
 
 	"github.com/cloudfoundry/libcfbuildpack/layers"
 	"github.com/cloudfoundry/yarn-cnb/modules"
@@ -136,7 +137,7 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(link).To(Equal(filepath.Join(layer.Root, modules.NodeModules)))
 
-			Expect(factory.Build.Layers).To(test.HaveApplicationMetadata(layers.Metadata{Processes: []layers.Process{{"web", "yarn start"}}}))
+			Expect(factory.Build.Layers).To(test.HaveApplicationMetadata(layers.Metadata{Processes: []layers.Process{{"web", "yarn start", false}}}))
 		})
 
 		it("contributes modules for the launch phase, cache is always true", func() {
