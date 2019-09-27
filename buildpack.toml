@@ -15,12 +15,12 @@ yarn = "1.16.0"
 [[metadata.dependencies]]
 id = "yarn"
 name = "Yarn"
-sha256 = "e3835194409f1b3afa1c62ca82f561f1c29d26580c9e220c36866317e043c6f3"
-source = "https://github.com/yarnpkg/yarn/releases/download/v1.17.3/yarn-v1.17.3.tar.gz"
-source_sha256 = "e3835194409f1b3afa1c62ca82f561f1c29d26580c9e220c36866317e043c6f3"
-stacks = ["org.cloudfoundry.stacks.cflinuxfs3","io.buildpacks.stacks.bionic"]
-uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.17.3-any-stack-e3835194.tar.gz"
-version = "1.17.3"
+sha256 = "2f8d93c217ecca06eb720794c8d1484a67d37bdb58ab761108b5c651d59d3fc6"
+source = "https://github.com/yarnpkg/yarn/releases/download/v1.18.0/yarn-v1.18.0.tar.gz"
+source_sha256 = "2f8d93c217ecca06eb720794c8d1484a67d37bdb58ab761108b5c651d59d3fc6"
+stacks = ["org.cloudfoundry.stacks.cflinuxfs3","io.buildpacks.stacks.bionic","org.cloudfoundry.stacks.tiny"]
+uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.18.0-any-stack-2f8d93c2.tar.gz"
+version = "1.18.0"
 
 [[stacks]]
 id = "org.cloudfoundry.stacks.cflinuxfs3"
