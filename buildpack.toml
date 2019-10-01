@@ -10,7 +10,7 @@ include_files = ["bin/build","bin/detect","buildpack.toml"]
 pre_package = "./scripts/build.sh"
 
 [metadata.default_versions]
-yarn = "1.16.0"
+yarn = "1.19.0"
 
 [[metadata.dependencies]]
 id = "yarn"
