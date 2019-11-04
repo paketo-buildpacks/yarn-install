@@ -30,8 +30,8 @@ github.com/buildpack/libbuildpack v1.24.0 h1:RP03dlPcTNATytgQ0uEpbWMzYtO2CIQyiDn
 github.com/buildpack/libbuildpack v1.24.0/go.mod h1:mU1sClrWw0/Ua1LB+8+ydtZY5dMsa1nEzVMHhcczNVo=
 github.com/buildpack/libbuildpack v1.24.5 h1:r7AM7r8ff7ocI1KOopVHEC3EDTCdrj0YeTXkfYuqH0I=
 github.com/buildpack/libbuildpack v1.24.5/go.mod h1:cBmq8aozSDfy+RiKCERQbT6lk0M/Xf3aJWK2PLbPG1g=
-github.com/buildpack/libbuildpack v1.25.3 h1:P4J5WizNLWa1kt558aSWtGZw3HIt37nsYtrsHUzsDFY=
-github.com/buildpack/libbuildpack v1.25.3/go.mod h1:cBmq8aozSDfy+RiKCERQbT6lk0M/Xf3aJWK2PLbPG1g=
+github.com/buildpack/libbuildpack v1.25.4 h1:jlflYJWNy+WFup6/6v4ErOG6y8+4OVAb7ie/ECM5bBs=
+github.com/buildpack/libbuildpack v1.25.4/go.mod h1:GhVefAW5VEN0L2AWrupSzwMUeKd3N0UzT45oUAKcPCM=
 github.com/client9/misspell v0.3.4/go.mod h1:qj6jICC3Q7zFZvVWo7KLAzC3yx5G7kyvSDkc90ppPyw=
 github.com/cloudfoundry/dagger v0.0.0-20190910211006-e7385ebe12c4 h1:YntXPlrEIZ9/glePgiY0HTecy1EsNhdDz8zFa79tQ6o=
 github.com/cloudfoundry/dagger v0.0.0-20190910211006-e7385ebe12c4/go.mod h1:vbeid+MuoJPZXM8fGvJy87lDLvu/q0Rs1NN4M6lFFg4=
@@ -43,8 +43,8 @@ github.com/cloudfoundry/libcfbuildpack v1.85.0 h1:7ncRWtaz2zltkaKx4lrzj1xZihEu6U
 github.com/cloudfoundry/libcfbuildpack v1.85.0/go.mod h1:SU8UqWgq0UMx6FegsTxny8LPFQBC/AcLBlbc/H760Ag=
 github.com/cloudfoundry/libcfbuildpack v1.89.0 h1:A0OXihcHjvDRLYendhfqMxTBVe5pi5fmM5t4sqNRpao=
 github.com/cloudfoundry/libcfbuildpack v1.89.0/go.mod h1:ufhp/bp0LxbDDwbf2Ms3Bf4x9YnLr9dkL1RTUYSdKg0=
-github.com/cloudfoundry/libcfbuildpack v1.91.2 h1:c6hwFmHLqYWhtC3CYPsfCeo/9d1LcKwtqC+SBFGcYIY=
-github.com/cloudfoundry/libcfbuildpack v1.91.2/go.mod h1:MmVyN2ZbxoWcuJ3cK5HVQWwUmwFTRrJbKAao6f2/EZ8=
+github.com/cloudfoundry/libcfbuildpack v1.91.3 h1:SvknKBrrfX1sD6cz2RIm+zxKIbn0OaOdja1aECZITys=
+github.com/cloudfoundry/libcfbuildpack v1.91.3/go.mod h1:oHi1a/+zLoZPtxOR62SZLp0rZ/bYJ2Xp85gsoxBeYEM=
 github.com/cloudfoundry/node-engine-cnb v0.0.47 h1:1Id/DjZ2M4OisEZKJwl9pyTNut7HmCssHleXZ+fDobI=
 github.com/cloudfoundry/node-engine-cnb v0.0.47/go.mod h1:A9kgIQURchqpRxfbbI/dnQD2SOUWXf0wc8U3HBhCG6k=
 github.com/cloudfoundry/npm-cnb v0.0.30 h1:mIkXvLN3+dqjC+OyB/2VNsezbM6j+towBMRAuMCvw7w=
