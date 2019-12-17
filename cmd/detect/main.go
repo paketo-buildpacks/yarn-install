@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/cloudfoundry/libcfbuildpack/buildpackplan"
-	"github.com/cloudfoundry/yarn-cnb/modules"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"os"
 	"path/filepath"
 
-	"github.com/cloudfoundry/node-engine-cnb/node"
+	"github.com/cloudfoundry/libcfbuildpack/buildpackplan"
+	"github.com/cloudfoundry/yarn-cnb/modules"
+	"github.com/cloudfoundry/yarn-cnb/yarn"
 
-	"github.com/cloudfoundry/npm-cnb/detector"
+	"github.com/cloudfoundry/node-engine-cnb/node"
+	"github.com/cloudfoundry/npm-cnb/detection"
 
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 
@@ -44,7 +44,7 @@ func runDetect(context detect.Detect) (int, error) {
 		return context.Fail(), fmt.Errorf(`no "package.json" found at: %s`, packageJSON)
 	}
 
-	version, err := detector.GetVersion(packageJSON)
+	version, err := detection.GetNodeVersion(packageJSON)
 	if err != nil {
 		return context.Fail(), fmt.Errorf(`unable to parse "package.json": %s`, err.Error())
 	}
@@ -57,7 +57,7 @@ func runDetect(context detect.Detect) (int, error) {
 				Metadata: buildplan.Metadata{"build": true, "launch": true, buildpackplan.VersionSource: node.PackageJsonSource},
 			},
 			{
-				Name: yarn.Dependency,
+				Name:     yarn.Dependency,
 				Metadata: buildplan.Metadata{"launch": true},
 			},
 			{
@@ -66,8 +66,8 @@ func runDetect(context detect.Detect) (int, error) {
 			},
 		},
 		Provides: []buildplan.Provided{
-			{yarn.Dependency},
-			{modules.NodeModules},
+			{Name: yarn.Dependency},
+			{Name: modules.NodeModules},
 		},
 	})
 }

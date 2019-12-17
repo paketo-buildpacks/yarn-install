@@ -1,13 +1,10 @@
 package modules
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"github.com/buildpack/libbuildpack/application"
@@ -16,46 +13,21 @@ import (
 	"github.com/cloudfoundry/libcfbuildpack/layers"
 )
 
-const (
-	Dependency      = "node_modules"
-	NodeDependency  = "node"
-	Cache           = "cache"
-	ModulesDir      = "node_modules"
-	ModulesMetaName = "Node Modules"
-	CacheDir        = "npm-cache"
-	CacheMetaName   = "NPM Cache"
-	PackageLock     = "package-lock.json"
-)
-
 type PackageManager interface {
-	Install(string, string, string) error
-	Rebuild(string, string) error
-	WarnUnmetDependencies(string) error
-}
-
-type MetadataInterface interface {
-	Identity() (name string, version string)
-}
-
-type Metadata struct {
-	Name string
-	Hash string
-}
-
-func (m Metadata) Identity() (name string, version string) {
-	return m.Name, m.Hash
+	CI(cacheLayer, moduleLayer, location string) error
+	Install(cacheLayer, moduleLayer, location string) error
+	Rebuild(cacheLayer, location string) error
+	WarnUnmetDependencies(appRoot string) error
 }
 
 type Contributor struct {
-	NodeModulesMetadata MetadataInterface
-	NPMCacheMetadata    MetadataInterface
-	buildContribution   bool
-	launchContribution  bool
-	pkgManager          PackageManager
-	app                 application.Application
-	nodeModulesLayer    layers.Layer
-	npmCacheLayer       layers.Layer
-	launch              layers.Layers
+	buildContribution  bool
+	launchContribution bool
+	pkgManager         PackageManager
+	app                application.Application
+	nodeModulesLayer   layers.Layer
+	npmCacheLayer      layers.Layer
+	launch             layers.Layers
 }
 
 func NewContributor(context build.Build, pkgManager PackageManager) (Contributor, bool, error) {
@@ -76,25 +48,47 @@ func NewContributor(context build.Build, pkgManager PackageManager) (Contributor
 		launch:           context.Layers,
 	}
 
-	if err := contributor.setLayersMetadata(); err != nil {
-		return Contributor{}, false, err
-	}
-
 	contributor.buildContribution, _ = plan.Metadata["build"].(bool)
 	contributor.launchContribution, _ = plan.Metadata["launch"].(bool)
 
 	return contributor, true, nil
 }
 
-func (c Contributor) Contribute() error {
-	if err := c.nodeModulesLayer.Contribute(c.NodeModulesMetadata, c.contributeNodeModules, c.flags()...); err != nil {
+func (c Contributor) Contribute(now time.Time) error {
+	sum := NewTimeChecksum(now)
+
+	file, err := os.Open(filepath.Join(c.app.Root, PackageLock))
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
-	if err := c.npmCacheLayer.Contribute(c.NPMCacheMetadata, c.contributeNPMCache, layers.Cache); err != nil {
+	defer file.Close()
+
+	if file != nil {
+		sum = NewChecksum(file)
+	}
+
+	hash, err := sum.String()
+	if err != nil {
 		return err
 	}
 
-	return c.launch.WriteApplicationMetadata(layers.Metadata{Processes: []layers.Process{{"web", "npm start", false}}})
+	if err := c.nodeModulesLayer.Contribute(NewMetadata(ModulesMetaName, hash), c.contributeNodeModules, c.flags()...); err != nil {
+		return err
+	}
+
+	if err := c.npmCacheLayer.Contribute(NewMetadata(CacheMetaName, hash), c.contributeNPMCache, layers.Cache); err != nil {
+		return err
+	}
+
+	return c.launch.WriteApplicationMetadata(layers.Metadata{
+		Processes: []layers.Process{
+			{
+				Type:    "web",
+				Command: "npm start",
+				Direct:  false,
+			},
+		},
+	})
 }
 
 func (c Contributor) contributeNodeModules(layer layers.Layer) error {
@@ -104,19 +98,37 @@ func (c Contributor) contributeNodeModules(layer layers.Layer) error {
 		return err
 	}
 
+	locked, err := helper.FileExists(filepath.Join(c.app.Root, PackageLock))
+	if err != nil {
+		return fmt.Errorf("unable to stat node_modules: %s", err.Error())
+	}
+
+	cached, err := helper.FileExists(filepath.Join(c.app.Root, CacheDir))
+	if err != nil {
+		return fmt.Errorf("unable to stat node_modules: %s", err.Error())
+	}
+
 	vendored, err := helper.FileExists(nodeModules)
 	if err != nil {
 		return fmt.Errorf("unable to stat node_modules: %s", err.Error())
 	}
 
-	if vendored {
-		c.nodeModulesLayer.Logger.Info("Rebuilding node_modules")
+	switch {
+	case !locked && vendored, locked && vendored && !cached:
+		c.nodeModulesLayer.Logger.Info("running npm rebuild")
 		if err := c.pkgManager.Rebuild(c.npmCacheLayer.Root, c.app.Root); err != nil {
 			return fmt.Errorf("unable to rebuild node_modules: %s", err.Error())
 		}
-	} else {
-		c.nodeModulesLayer.Logger.Info("Installing node_modules")
+
+	case !locked && !vendored:
+		c.nodeModulesLayer.Logger.Info("running npm install")
 		if err := c.pkgManager.Install(layer.Root, c.npmCacheLayer.Root, c.app.Root); err != nil {
+			return fmt.Errorf("unable to install node_modules: %s", err.Error())
+		}
+
+	case locked:
+		c.nodeModulesLayer.Logger.Info("running npm ci")
+		if err := c.pkgManager.CI(layer.Root, c.npmCacheLayer.Root, c.app.Root); err != nil {
 			return fmt.Errorf("unable to install node_modules: %s", err.Error())
 		}
 	}
@@ -145,6 +157,14 @@ func (c Contributor) contributeNodeModules(layer layers.Layer) error {
 	}
 
 	if err := layer.OverrideSharedEnv("NODE_PATH", filepath.Join(layer.Root, ModulesDir)); err != nil {
+		return err
+	}
+
+	if err := layer.OverrideSharedEnv("NPM_CONFIG_PRODUCTION", "true"); err != nil {
+		return err
+	}
+
+	if err := layer.OverrideSharedEnv("NPM_CONFIG_LOGLEVEL", "error"); err != nil {
 		return err
 	}
 
@@ -219,24 +239,4 @@ func (c Contributor) flags() []layers.Flag {
 	}
 
 	return flags
-}
-
-func (c *Contributor) setLayersMetadata() error {
-	c.NodeModulesMetadata = Metadata{ModulesMetaName, strconv.FormatInt(time.Now().UnixNano(), 16)}
-	c.NPMCacheMetadata = Metadata{CacheMetaName, strconv.FormatInt(time.Now().UnixNano(), 16)}
-
-	if exists, err := helper.FileExists(filepath.Join(c.app.Root, PackageLock)); err != nil {
-		return err
-	} else if exists {
-		out, err := ioutil.ReadFile(filepath.Join(c.app.Root, PackageLock))
-		if err != nil {
-			return err
-		}
-
-		hash := sha256.Sum256(out)
-		c.NodeModulesMetadata = Metadata{ModulesMetaName, hex.EncodeToString(hash[:])}
-		c.NPMCacheMetadata = Metadata{CacheMetaName, hex.EncodeToString(hash[:])}
-	}
-
-	return nil
 }

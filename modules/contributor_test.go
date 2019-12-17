@@ -137,7 +137,13 @@ func testModules(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(link).To(Equal(filepath.Join(layer.Root, modules.NodeModules)))
 
-			Expect(factory.Build.Layers).To(test.HaveApplicationMetadata(layers.Metadata{Processes: []layers.Process{{"web", "yarn start", false}}}))
+			Expect(factory.Build.Layers).To(test.HaveApplicationMetadata(layers.Metadata{Processes: []layers.Process{
+				{
+					Type:    "web",
+					Command: "yarn start",
+					Direct:  false,
+				},
+			}}))
 		})
 
 		it("contributes modules for the launch phase, cache is always true", func() {

@@ -79,27 +79,7 @@ func (c Contributor) Contribute() error {
 			return err
 		}
 
-		if err := layer.OverrideSharedEnv("NODE_MODULES_CACHE", "true"); err != nil {
-			return err
-		}
-
 		if err := layer.OverrideSharedEnv("NODE_VERBOSE", "false"); err != nil {
-			return err
-		}
-
-		if err := layer.OverrideSharedEnv("NPM_CONFIG_PRODUCTION", "true"); err != nil {
-			return err
-		}
-
-		if err := layer.OverrideSharedEnv("NPM_CONFIG_LOGLEVEL", "error"); err != nil {
-			return err
-		}
-
-		if err := layer.OverrideSharedEnv("WEB_MEMORY", "512"); err != nil {
-			return err
-		}
-
-		if err := layer.OverrideSharedEnv("WEB_CONCURRENCY", "1"); err != nil {
 			return err
 		}
 
@@ -149,12 +129,7 @@ func LoadBuildpackYAML(appRoot string) (BuildpackYAML, error) {
 }
 
 func memoryAvailable() string {
-	return `which jq
-if [[ $? -eq 0 ]]; then
-	MEMORY_AVAILABLE="$(echo $VCAP_APPLICATION | jq .limits.mem)"
-fi
-
-if [[ -z "$MEMORY_AVAILABLE" ]]; then
+	return `if [[ -z "$MEMORY_AVAILABLE" ]]; then
 	memory_in_bytes="$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)"
 	MEMORY_AVAILABLE="$(( $memory_in_bytes / ( 1024 * 1024 ) ))"
 fi

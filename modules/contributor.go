@@ -90,7 +90,13 @@ func (c *Contributor) Contribute() error {
 	}
 
 	return c.context.Layers.WriteApplicationMetadata(layers.Metadata{
-		Processes: []layers.Process{{"web", "yarn start", false}},
+		Processes: []layers.Process{
+			{
+				Type:    "web",
+				Command: "yarn start",
+				Direct:  false,
+			},
+		},
 	})
 }
 
