@@ -2,11 +2,12 @@ package yarn
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/cloudfoundry/libcfbuildpack/build"
 	"github.com/cloudfoundry/libcfbuildpack/helper"
 	"github.com/cloudfoundry/libcfbuildpack/layers"
 	"github.com/pkg/errors"
-	"os"
 )
 
 const (
@@ -52,10 +53,10 @@ func (c *Contributor) Contribute() error {
 
 	return c.YarnLayer.Contribute(func(artifact string, layer layers.DependencyLayer) error {
 		nodeHome := os.Getenv("NODE_HOME")
-		layer.Logger.SubsequentLine(fmt.Sprintf("NODE_HOME Value %s",nodeHome))
+		layer.Logger.SubsequentLine(fmt.Sprintf("NODE_HOME Value %s", nodeHome))
 		layer.Logger.SubsequentLine("Expanding to %s", layer.Root)
 
-		return helper.ExtractTarGz(artifact, layer.Root, 1)
+		return helper.ExtractTarGz(artifact, layer.Root, 0)
 	}, c.flags()...)
 }
 
