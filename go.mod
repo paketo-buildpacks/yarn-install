@@ -1,9 +1,9 @@
 module github.com/cloudfoundry/yarn-cnb
 
 require (
-	github.com/buildpack/libbuildpack v1.25.10
+	github.com/buildpack/libbuildpack v1.25.11
 	github.com/cloudfoundry/dagger v0.0.0-20200114192520-43fb0b3ec98f
-	github.com/cloudfoundry/libcfbuildpack v1.91.21
+	github.com/cloudfoundry/libcfbuildpack v1.91.22
 	github.com/cloudfoundry/node-engine-cnb v0.0.117
 	github.com/cloudfoundry/npm-cnb v0.0.72
 	github.com/cloudfoundry/packit v0.0.0-20191213210055-5b63a8a0a976 // indirect
