@@ -33,6 +33,12 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 		mockRunner *MockRunner
 		log        logger.Logger
 		logBuf     *bytes.Buffer
+
+		tempDir    string
+		appDir     string
+		modulesDir string
+		cacheDir   string
+		yarnBin    string
 	)
 
 	it.Before(func() {
@@ -42,34 +48,22 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 		logBuf = &bytes.Buffer{}
 		log = logger.NewLogger(ioutil.Discard, logBuf)
 
+		tempDir, err := ioutil.TempDir("", "")
+		Expect(err).NotTo(HaveOccurred())
+		modulesDir = filepath.Join(tempDir, "modules")
+		appDir = filepath.Join(tempDir, "app")
+		Expect(os.MkdirAll(appDir, 0777)).To(Succeed())
+		cacheDir = filepath.Join(tempDir, "cache")
+		yarnBin = filepath.Join(tempDir, "bin", "yarn")
 	})
 
 	it.After(func() {
 		mockCtrl.Finish()
+
+		os.RemoveAll(tempDir)
 	})
 
 	when("Install", func() {
-		var (
-			tempDir    string
-			appDir     string
-			modulesDir string
-			cacheDir   string
-			yarnBin    string
-		)
-
-		it.Before(func() {
-			tempDir, err := ioutil.TempDir("", "")
-			Expect(err).NotTo(HaveOccurred())
-			modulesDir = filepath.Join(tempDir, "modules")
-			appDir = filepath.Join(tempDir, "app")
-			Expect(os.MkdirAll(appDir, 0777)).To(Succeed())
-			cacheDir = filepath.Join(tempDir, "cache")
-			yarnBin = filepath.Join("bin", "yarn")
-		})
-
-		it.After(func() {
-			os.RemoveAll(tempDir)
-		})
 
 		it("yarn installs ONLINE by default", func() {
 			pkgManager, err := yarn.NewCLI(appDir, yarnBin, mockRunner, log)
@@ -107,31 +101,32 @@ func testYarn(t *testing.T, when spec.G, it spec.S) {
 
 	when("Check", func() {
 		it("logs that yarn.lock and package.json match", func() {
-			pkgManager, err := yarn.NewCLI("some-app", "some-bin", mockRunner, log)
+			pkgManager, err := yarn.NewCLI(appDir, yarnBin, mockRunner, log)
 			Expect(err).NotTo(HaveOccurred())
-			mockRunner.EXPECT().RunWithOutput("some-bin", "some-app", true, "check").Return("", nil)
-			Expect(pkgManager.Check("some-app")).To(Succeed())
+
+			mockRunner.EXPECT().RunWithOutput(yarnBin, appDir, true, "check").Return("", nil)
+			Expect(pkgManager.Check(appDir)).To(Succeed())
 			Expect(logBuf.String()).To(ContainSubstring("yarn.lock and package.json match"))
 		})
 
 		it("warns that yarn.lock is out of date", func() {
-			pkgManager, err := yarn.NewCLI("some-app", "some-bin", mockRunner, log)
+			pkgManager, err := yarn.NewCLI(appDir, yarnBin, mockRunner, log)
 			Expect(err).NotTo(HaveOccurred())
-			mockRunner.EXPECT().RunWithOutput("some-bin", "some-app", true, "check").Return("Some yarn check output", &exec.ExitError{})
-			Expect(pkgManager.Check("some-app")).To(Succeed())
+
+			mockRunner.EXPECT().RunWithOutput(yarnBin, appDir, true, "check").Return("Some yarn check output", &exec.ExitError{})
+			Expect(pkgManager.Check(appDir)).To(Succeed())
 			Expect(logBuf.String()).To(ContainSubstring("yarn.lock is outdated"))
 		})
 
 		it("runs as offline when offline", func() {
-			err := os.MkdirAll(filepath.Join("some-app", offlineCacheDir), os.ModePerm)
-			Expect(err).NotTo(HaveOccurred())
-			defer os.RemoveAll("some-app")
-
-			pkgManager, err := yarn.NewCLI("some-app", "some-bin", mockRunner, log)
+			err := os.MkdirAll(filepath.Join(appDir, offlineCacheDir), os.ModePerm)
 			Expect(err).NotTo(HaveOccurred())
 
-			mockRunner.EXPECT().RunWithOutput("some-bin", "some-app", true, "check", "--offline")
-			Expect(pkgManager.Check("some-app")).To(Succeed())
+			pkgManager, err := yarn.NewCLI(appDir, yarnBin, mockRunner, log)
+			Expect(err).NotTo(HaveOccurred())
+
+			mockRunner.EXPECT().RunWithOutput(yarnBin, appDir, true, "check", "--offline")
+			Expect(pkgManager.Check(appDir)).To(Succeed())
 		})
 	})
 }
