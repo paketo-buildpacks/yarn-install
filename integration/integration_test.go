@@ -42,7 +42,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("when the node_modules are NOT vendored", func() {
-		it("should build a working OCI image for a simple app", func() {
+		it.Pend("should build a working OCI image for a simple app", func() {
 			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
@@ -56,7 +56,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("when the node_modules are vendored", func() {
-		it("should build a working OCI image for a simple app", func() {
+		it.Pend("should build a working OCI image for a simple app", func() {
 			app, err := dagger.PackBuild(filepath.Join("testdata", "vendored"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
@@ -70,7 +70,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("using yarn workspaces", func() {
-		it("should correctly install node modules in respective workspaces", func() {
+		it.Pend("should correctly install node modules in respective workspaces", func() {
 			app, err := dagger.PackBuild(filepath.Join("testdata", "with_yarn_workspaces"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
@@ -85,7 +85,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("the app is pushed twice", func() {
-		it("does not reinstall node_modules when yarn.lock is not changed", func() {
+		it.Pend("does not reinstall node_modules when yarn.lock is not changed", func() {
 			appDir := filepath.Join("testdata", "simple_app")
 			app, err := dagger.PackBuild(appDir, nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
@@ -109,7 +109,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("the app uses pre-gyp", func() {
-		it("should build a working OCI image for a simple app", func() {
+		it.Pend("should build a working OCI image for a simple app", func() {
 			app, err := dagger.PackBuild(filepath.Join("testdata", "yarn_pre_gyp"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
