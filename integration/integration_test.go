@@ -5,10 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cloudfoundry/yarn-cnb/modules"
-
 	"github.com/cloudfoundry/dagger"
-
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
@@ -22,10 +19,14 @@ var (
 func TestIntegration(t *testing.T) {
 	var err error
 	Expect := NewWithT(t).Expect
+
 	bpDir, err = dagger.FindBPRoot()
 	Expect(err).NotTo(HaveOccurred())
+
 	yarnURI, err = dagger.PackageBuildpack(bpDir)
 	Expect(err).ToNot(HaveOccurred())
+
+	yarnURI = fmt.Sprintf("%s.tgz", yarnURI)
 	defer dagger.DeleteBuildpack(yarnURI)
 
 	nodeURI, err = dagger.GetLatestBuildpack("node-engine-cnb")
@@ -42,8 +43,12 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("when the node_modules are NOT vendored", func() {
-		it.Pend("should build a working OCI image for a simple app", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "simple_app"), nodeURI, yarnURI)
+		it("should build a working OCI image for a simple app", func() {
+			app, err := dagger.NewPack(filepath.Join("testdata", "simple_app"),
+				dagger.RandomImage(),
+				dagger.SetBuildpacks(nodeURI, yarnURI),
+				dagger.SetVerbose(),
+			).Build()
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
@@ -91,14 +96,14 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 
-			Expect(app.BuildLogs()).To(MatchRegexp(fmt.Sprintf("%s .*: Contributing to layer", modules.DirMetadata)))
+			Expect(app.BuildLogs()).To(MatchRegexp("Node Dependencies .*: Contributing to layer"))
 
 			// pack rebuild
 			app, err = dagger.PackBuildNamedImage(app.ImageName, appDir, nodeURI, yarnURI)
 			Expect(err).NotTo(HaveOccurred())
 
-			Expect(app.BuildLogs()).To(MatchRegexp(fmt.Sprintf("%s .*: Reusing cached layer", modules.DirMetadata)))
-			Expect(app.BuildLogs()).NotTo(MatchRegexp(fmt.Sprintf("%s .*: Contributing to layer", modules.DirMetadata)))
+			Expect(app.BuildLogs()).To(MatchRegexp("Node Dependencies .*: Reusing cached layer"))
+			Expect(app.BuildLogs()).NotTo(MatchRegexp("Node Dependencies .*: Contributing to layer"))
 
 			Expect(app.Start()).To(Succeed())
 
