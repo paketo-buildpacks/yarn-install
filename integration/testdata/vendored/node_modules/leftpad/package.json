@@ -1,0 +1,25 @@
+{
+  "name": "leftpad",
+  "version": "0.0.1",
+  "description": "left pad numbers",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test.js"
+  },
+  "repository": "https://github.com/tmcw/leftpad.git",
+  "keywords": [
+    "pad",
+    "numbers",
+    "formatting",
+    "format"
+  ],
+  "files": [
+    "index.js"
+  ],
+  "author": "Tom MacWright <tom@macwright.org>",
+  "license": "BSD-3-Clause",
+  "readmeFilename": "README.md",
+  "devDependencies": {
+    "jsverify": "^0.8.2"
+  }
+}

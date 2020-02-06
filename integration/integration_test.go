@@ -13,34 +13,47 @@ import (
 )
 
 var (
-	bpDir, yarnURI, nodeURI string
+	yarnURI       string
+	yarnCachedURI string
+	nodeURI       string
+	nodeCachedURI string
 )
 
 func TestIntegration(t *testing.T) {
-	var err error
-	Expect := NewWithT(t).Expect
+	var Expect = NewWithT(t).Expect
 
-	bpDir, err = dagger.FindBPRoot()
+	bpDir, err := dagger.FindBPRoot()
 	Expect(err).NotTo(HaveOccurred())
 
 	yarnURI, err = dagger.PackageBuildpack(bpDir)
 	Expect(err).ToNot(HaveOccurred())
 
-	yarnURI = fmt.Sprintf("%s.tgz", yarnURI)
-	defer dagger.DeleteBuildpack(yarnURI)
+	yarnCachedURI, _, err = dagger.PackageCachedBuildpack(bpDir)
+	Expect(err).ToNot(HaveOccurred())
 
 	nodeURI, err = dagger.GetLatestBuildpack("node-engine-cnb")
 	Expect(err).ToNot(HaveOccurred())
-	defer dagger.DeleteBuildpack(nodeURI)
 
-	spec.Run(t, "Integration", testIntegration, spec.Report(report.Terminal{}))
+	nodeRepo, err := dagger.GetLatestUnpackagedBuildpack("node-engine-cnb")
+	Expect(err).ToNot(HaveOccurred())
+
+	nodeCachedURI, _, err = dagger.PackageCachedBuildpack(nodeRepo)
+	Expect(err).ToNot(HaveOccurred())
+
+	yarnURI = fmt.Sprintf("%s.tgz", yarnURI)
+	yarnCachedURI = fmt.Sprintf("%s.tgz", yarnCachedURI)
+	nodeCachedURI = fmt.Sprintf("%s.tgz", nodeCachedURI)
+
+	defer dagger.DeleteBuildpack(yarnURI)
+	defer dagger.DeleteBuildpack(yarnCachedURI)
+	defer dagger.DeleteBuildpack(nodeURI)
+	defer dagger.DeleteBuildpack(nodeCachedURI)
+
+	spec.Run(t, "Integration", testIntegration, spec.Report(report.Terminal{}), spec.Parallel())
 }
 
 func testIntegration(t *testing.T, when spec.G, it spec.S) {
-	var Expect func(interface{}, ...interface{}) GomegaAssertion
-	it.Before(func() {
-		Expect = NewWithT(t).Expect
-	})
+	var Expect = NewWithT(t).Expect
 
 	when("when the node_modules are NOT vendored", func() {
 		it("should build a working OCI image for a simple app", func() {
@@ -61,8 +74,13 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("when the node_modules are vendored", func() {
-		it.Pend("should build a working OCI image for a simple app", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "vendored"), nodeURI, yarnURI)
+		it("should build a working OCI image for a simple app", func() {
+			app, err := dagger.NewPack(filepath.Join("testdata", "vendored"),
+				dagger.RandomImage(),
+				dagger.SetBuildpacks(nodeCachedURI, yarnCachedURI),
+				dagger.SetVerbose(),
+				dagger.SetOffline(),
+			).Build()
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()
 

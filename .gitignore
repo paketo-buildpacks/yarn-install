@@ -1,5 +1,6 @@
 .DS_Store
 *.tgz
+!/integration/testdata/vendored/offline-mirror/*.tgz
 .idea
 .bin
 yarn-cnb_*

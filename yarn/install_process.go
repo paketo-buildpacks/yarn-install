@@ -1,10 +1,14 @@
 package yarn
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
+	"github.com/cloudfoundry/packit/fs"
 	"github.com/cloudfoundry/packit/pexec"
 )
 
@@ -24,9 +28,14 @@ type Executable interface {
 }
 
 func (ip YarnInstallProcess) Execute(workingDir, layerPath string) error {
-	err := os.Mkdir(filepath.Join(layerPath, "node_modules"), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create node_modules directory: %w", err)
+	}
+
+	err = fs.Move(filepath.Join(workingDir, "node_modules"), filepath.Join(layerPath, "node_modules"))
+	if err != nil {
+		return fmt.Errorf("failed to move node_modules directory to layer: %w", err)
 	}
 
 	err = os.Symlink(filepath.Join(layerPath, "node_modules"), filepath.Join(workingDir, "node_modules"))
@@ -34,8 +43,32 @@ func (ip YarnInstallProcess) Execute(workingDir, layerPath string) error {
 		return fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
 	}
 
+	stdout := bytes.NewBuffer(nil)
 	_, _, err = ip.executable.Execute(pexec.Execution{
-		Args: []string{"install", "--pure-lockfile", "--ignore-engines"},
+		Args:   []string{"config", "get", "yarn-offline-mirror"},
+		Stdout: stdout,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to execute yarn config: %w", err)
+	}
+
+	installArgs := []string{"install", "--pure-lockfile", "--ignore-engines"}
+
+	offlineMirrorPath := strings.TrimSpace(stdout.String())
+
+	fileInfo, err := os.Stat(offlineMirrorPath)
+	if err == nil {
+		if fileInfo.IsDir() {
+			installArgs = append(installArgs, "--offline")
+		}
+	} else {
+		if !errors.Is(err, os.ErrNotExist) {
+			return fmt.Errorf("failed to confirm existence of offline mirror directory: %w", err)
+		}
+	}
+
+	_, _, err = ip.executable.Execute(pexec.Execution{
+		Args: installArgs,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute yarn install: %w", err)
