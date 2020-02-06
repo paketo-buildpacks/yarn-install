@@ -71,6 +71,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				"install",
 				"--pure-lockfile",
 				"--ignore-engines",
+				"--modules-folder",
+				filepath.Join(layerPath, "node_modules"),
 			}))
 
 			Expect(filepath.Join(layerPath, "node_modules")).To(BeADirectory())
@@ -110,6 +112,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"--pure-lockfile",
 					"--ignore-engines",
 					"--offline",
+					"--modules-folder",
+					filepath.Join(layerPath, "node_modules"),
 				}))
 
 				Expect(filepath.Join(layerPath, "node_modules")).To(BeADirectory())

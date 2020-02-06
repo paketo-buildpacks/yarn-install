@@ -68,7 +68,7 @@ func (ip YarnInstallProcess) Execute(workingDir, layerPath string) error {
 	}
 
 	_, _, err = ip.executable.Execute(pexec.Execution{
-		Args: installArgs,
+		Args: append(installArgs, "--modules-folder", filepath.Join(layerPath, "node_modules")),
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute yarn install: %w", err)

@@ -93,17 +93,45 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("using yarn workspaces", func() {
-		it.Pend("should correctly install node modules in respective workspaces", func() {
-			app, err := dagger.PackBuild(filepath.Join("testdata", "with_yarn_workspaces"), nodeURI, yarnURI)
-			Expect(err).ToNot(HaveOccurred())
-			defer app.Destroy()
+		when("when offline", func() {
+			it("should correctly install node modules in respective workspaces", func() {
+				app, err := dagger.NewPack(filepath.Join("testdata", "with_yarn_workspaces_offline"),
+					dagger.RandomImage(),
+					dagger.SetBuildpacks(nodeCachedURI, yarnCachedURI),
+					dagger.SetVerbose(),
+					dagger.SetOffline(),
+				).Build()
 
-			Expect(app.Start()).To(Succeed())
+				Expect(err).ToNot(HaveOccurred())
+				defer app.Destroy()
 
-			body, _, err := app.HTTPGet("/")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(body).To(ContainSubstring("Package A value 1"))
-			Expect(body).To(ContainSubstring("Package A value 2"))
+				Expect(app.Start()).To(Succeed())
+
+				body, _, err := app.HTTPGet("/")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(body).To(ContainSubstring("Package A value 1"))
+				Expect(body).To(ContainSubstring("Package A value 2"))
+			})
+		})
+
+		when("online", func() {
+			it("should correctly install node modules in respective workspaces", func() {
+				app, err := dagger.NewPack(filepath.Join("testdata", "with_yarn_workspaces"),
+					dagger.RandomImage(),
+					dagger.SetBuildpacks(nodeCachedURI, yarnCachedURI),
+					dagger.SetVerbose(),
+				).Build()
+
+				Expect(err).ToNot(HaveOccurred())
+				defer app.Destroy()
+
+				Expect(app.Start()).To(Succeed())
+
+				body, _, err := app.HTTPGet("/")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(body).To(ContainSubstring("Package A value 1"))
+				Expect(body).To(ContainSubstring("Package A value 2"))
+			})
 		})
 	})
 
