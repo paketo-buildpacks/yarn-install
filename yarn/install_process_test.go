@@ -20,6 +20,103 @@ import (
 func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 	var Expect = NewWithT(t).Expect
 
+	context("ShouldRun", func() {
+		var (
+			workingDir     string
+			executable     *fakes.Executable
+			installProcess yarn.YarnInstallProcess
+			summer         *fakes.Summer
+		)
+		it.Before(func() {
+			var err error
+			workingDir, err = ioutil.TempDir("", "working-dir")
+			Expect(err).NotTo(HaveOccurred())
+
+			executable = &fakes.Executable{}
+
+			summer = &fakes.Summer{}
+
+			installProcess = yarn.NewYarnInstallProcess(executable, summer)
+
+		})
+
+		context("Success cases", func() {
+			context("we should run yarn install when", func() {
+				context("there is no yarn.lock file in the workingDir", func() {
+					it("succeeds", func() {
+						run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
+							"cache_sha": "some-sha",
+						})
+
+						Expect(run).To(BeTrue())
+						Expect(sha).To(Equal(""))
+						Expect(err).NotTo(HaveOccurred())
+					})
+				})
+
+				context("when the yarn.lock file has a different sha", func() {
+					it.Before(func() {
+						summer.SumCall.Stub = func(string) (string, error) {
+							return "some-other-sha", nil
+						}
+						Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
+					})
+
+					it("succeeds when sha is different", func() {
+						run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
+							"cache_sha": "some-sha",
+						})
+						Expect(run).To(BeTrue())
+						Expect(sha).To(Equal("some-other-sha"))
+						Expect(err).NotTo(HaveOccurred())
+					})
+
+					it("succeeds when sha is missing", func() {
+						run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{})
+						Expect(run).To(BeTrue())
+						Expect(sha).To(Equal("some-other-sha"))
+						Expect(err).NotTo(HaveOccurred())
+					})
+				})
+
+				context("we should not run install", func() {
+					context("sha of yarn.lock and metadata sha match", func() {
+						it.Before(func() {
+							summer.SumCall.Stub = func(string) (string, error) {
+								return "some-sha", nil
+							}
+							Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
+						})
+
+						it("succeeds", func() {
+							run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
+								"cache_sha": "some-sha",
+							})
+							Expect(run).To(BeFalse())
+							Expect(sha).To(Equal(""))
+							Expect(err).NotTo(HaveOccurred())
+						})
+					})
+				})
+			})
+
+			context("Failure Cases", func() {
+				context("when working dir is un-readable", func() {
+					it.Before(func() {
+						Expect(os.Chmod(workingDir, 0000)).To(Succeed())
+					})
+					it.After(func() {
+						Expect(os.Chmod(workingDir, os.ModePerm)).To(Succeed())
+					})
+					it("Fails", func() {
+						_, _, err := installProcess.ShouldRun(workingDir, map[string]interface{}{})
+						Expect(err).To(MatchError(ContainSubstring("unable to read yarn.lock file:")))
+					})
+				})
+			})
+		})
+	})
+
 	context("Execute", func() {
 		var (
 			workingDir, layerPath string
@@ -27,6 +124,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executions            []pexec.Execution
 
 			executable *fakes.Executable
+
+			summer *fakes.Summer
 		)
 
 		it.Before(func() {
@@ -36,6 +135,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			layerPath, err = ioutil.TempDir("", "layer-dir")
 			Expect(err).NotTo(HaveOccurred())
+
+			summer = &fakes.Summer{}
 
 			executions = []pexec.Execution{}
 			executable = &fakes.Executable{}
@@ -49,7 +150,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				return "", "", nil
 			}
 
-			installProcess = yarn.NewYarnInstallProcess(executable)
+			installProcess = yarn.NewYarnInstallProcess(executable, summer)
 		})
 
 		it.After(func() {

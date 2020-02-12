@@ -10,10 +10,10 @@ import (
 func TestUnitYarn(t *testing.T) {
 	suite := spec.New("yarn", spec.Report(report.Terminal{}))
 	suite("Build", testBuild)
-	suite("Buildpack", testBuildpack)
+	suite("CacheHandler", testCacheHandler)
+	suite("Clock", testClock)
 	suite("Detect", testDetect)
-	suite("PackageJSONParser", testPackageJSONParser)
-	suite("YarnDependencyInstaller", testYarnDependencyInstaller)
 	suite("InstallProcess", testInstallProcess)
+	suite("PackageJSONParser", testPackageJSONParser)
 	suite.Run(t)
 }

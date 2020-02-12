@@ -1,18 +1,26 @@
 package main
 
 import (
+	"time"
+
 	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/packit"
 	"github.com/cloudfoundry/packit/cargo"
+	"github.com/cloudfoundry/packit/fs"
 	"github.com/cloudfoundry/packit/pexec"
+	"github.com/cloudfoundry/packit/postal"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 )
 
 func main() {
 	transport := cargo.NewTransport()
 	executable := pexec.NewExecutable("yarn", lager.NewLogger("yarn"))
-	dependencyInstaller := yarn.NewYarnDependencyInstaller(transport)
-	installProcess := yarn.NewYarnInstallProcess(executable)
+	summer := fs.NewChecksumCalculator()
+	installProcess := yarn.NewYarnInstallProcess(executable, summer)
+	dependencyService := postal.NewService(transport)
 
-	packit.Build(yarn.Build(dependencyInstaller, installProcess))
+	clock := yarn.NewClock(time.Now)
+	cacheHandler := yarn.NewCacheHandler()
+
+	packit.Build(yarn.Build(dependencyService, cacheHandler, installProcess, clock))
 }

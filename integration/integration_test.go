@@ -1,56 +1,14 @@
-package integration
+package integration_test
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
 	"github.com/cloudfoundry/dagger"
 	"github.com/sclevine/spec"
-	"github.com/sclevine/spec/report"
 
 	. "github.com/onsi/gomega"
 )
-
-var (
-	yarnURI       string
-	yarnCachedURI string
-	nodeURI       string
-	nodeCachedURI string
-)
-
-func TestIntegration(t *testing.T) {
-	var Expect = NewWithT(t).Expect
-
-	bpDir, err := dagger.FindBPRoot()
-	Expect(err).NotTo(HaveOccurred())
-
-	yarnURI, err = dagger.PackageBuildpack(bpDir)
-	Expect(err).ToNot(HaveOccurred())
-
-	yarnCachedURI, _, err = dagger.PackageCachedBuildpack(bpDir)
-	Expect(err).ToNot(HaveOccurred())
-
-	nodeURI, err = dagger.GetLatestBuildpack("node-engine-cnb")
-	Expect(err).ToNot(HaveOccurred())
-
-	nodeRepo, err := dagger.GetLatestUnpackagedBuildpack("node-engine-cnb")
-	Expect(err).ToNot(HaveOccurred())
-
-	nodeCachedURI, _, err = dagger.PackageCachedBuildpack(nodeRepo)
-	Expect(err).ToNot(HaveOccurred())
-
-	yarnURI = fmt.Sprintf("%s.tgz", yarnURI)
-	yarnCachedURI = fmt.Sprintf("%s.tgz", yarnCachedURI)
-	nodeCachedURI = fmt.Sprintf("%s.tgz", nodeCachedURI)
-
-	defer dagger.DeleteBuildpack(yarnURI)
-	defer dagger.DeleteBuildpack(yarnCachedURI)
-	defer dagger.DeleteBuildpack(nodeURI)
-	defer dagger.DeleteBuildpack(nodeCachedURI)
-
-	spec.Run(t, "Integration", testIntegration, spec.Report(report.Terminal{}), spec.Parallel())
-}
 
 func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	var Expect = NewWithT(t).Expect
@@ -132,30 +90,6 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 				Expect(body).To(ContainSubstring("Package A value 1"))
 				Expect(body).To(ContainSubstring("Package A value 2"))
 			})
-		})
-	})
-
-	when("the app is pushed twice", func() {
-		it.Pend("does not reinstall node_modules when yarn.lock is not changed", func() {
-			appDir := filepath.Join("testdata", "simple_app")
-			app, err := dagger.PackBuild(appDir, nodeURI, yarnURI)
-			Expect(err).ToNot(HaveOccurred())
-			defer app.Destroy()
-
-			Expect(app.BuildLogs()).To(MatchRegexp("Node Dependencies .*: Contributing to layer"))
-
-			// pack rebuild
-			app, err = dagger.PackBuildNamedImage(app.ImageName, appDir, nodeURI, yarnURI)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(app.BuildLogs()).To(MatchRegexp("Node Dependencies .*: Reusing cached layer"))
-			Expect(app.BuildLogs()).NotTo(MatchRegexp("Node Dependencies .*: Contributing to layer"))
-
-			Expect(app.Start()).To(Succeed())
-
-			body, _, err := app.HTTPGet("/")
-			Expect(err).ToNot(HaveOccurred())
-			Expect(body).To(ContainSubstring("Hello, World!"))
 		})
 	})
 

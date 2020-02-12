@@ -12,19 +12,47 @@ import (
 	"github.com/cloudfoundry/packit/pexec"
 )
 
-type YarnInstallProcess struct {
-	executable Executable
+//go:generate faux --interface Summer --output fakes/summer.go
+type Summer interface {
+	Sum(path string) (string, error)
 }
 
-func NewYarnInstallProcess(executable Executable) YarnInstallProcess {
+type YarnInstallProcess struct {
+	executable Executable
+	summer     Summer
+}
+
+func NewYarnInstallProcess(executable Executable, summer Summer) YarnInstallProcess {
 	return YarnInstallProcess{
 		executable: executable,
+		summer:     summer,
 	}
 }
 
 //go:generate faux --interface Executable --output fakes/executable.go
 type Executable interface {
 	Execute(pexec.Execution) (stdout, stderr string, err error)
+}
+
+func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error) {
+	_, err = os.Stat(filepath.Join(workingDir, "yarn.lock"))
+	if os.IsNotExist(err) {
+		return true, "", nil
+	} else if err != nil {
+		return true, "", fmt.Errorf("unable to read yarn.lock file: %w", err)
+	}
+
+	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"))
+	if err != nil {
+		return true, "", fmt.Errorf("unable to sum yarn.lock file: %w", err)
+	}
+
+	prevSHA, ok := metadata["cache_sha"].(string)
+	if (ok && sum != prevSHA) || !ok {
+		return true, sum, nil
+	}
+
+	return false, "", nil
 }
 
 func (ip YarnInstallProcess) Execute(workingDir, layerPath string) error {
