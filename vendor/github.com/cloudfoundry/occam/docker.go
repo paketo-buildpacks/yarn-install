@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/packit/pexec"
 )
 
@@ -30,7 +29,7 @@ type Docker struct {
 
 func NewDocker() Docker {
 	var docker Docker
-	executable := pexec.NewExecutable("docker", lager.NewLogger("docker"))
+	executable := pexec.NewExecutable("docker")
 
 	docker.Image.Inspect = DockerImageInspect{executable: executable}
 	docker.Image.Remove = DockerImageRemove{executable: executable}
@@ -71,7 +70,7 @@ type DockerImageInspect struct {
 func (i DockerImageInspect) Execute(ref string) (Image, error) {
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	_, _, err := i.executable.Execute(pexec.Execution{
+	err := i.executable.Execute(pexec.Execution{
 		Args:   []string{"image", "inspect", ref},
 		Stdout: stdout,
 		Stderr: stderr,
@@ -89,7 +88,7 @@ type DockerImageRemove struct {
 
 func (r DockerImageRemove) Execute(ref string) error {
 	stderr := bytes.NewBuffer(nil)
-	_, _, err := r.executable.Execute(pexec.Execution{
+	err := r.executable.Execute(pexec.Execution{
 		Args:   []string{"image", "remove", ref},
 		Stderr: stderr,
 	})
@@ -154,7 +153,7 @@ func (r DockerContainerRun) Execute(imageID string) (Container, error) {
 
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	_, _, err := r.executable.Execute(pexec.Execution{
+	err := r.executable.Execute(pexec.Execution{
 		Args:   args,
 		Stdout: stdout,
 		Stderr: stderr,
@@ -172,7 +171,7 @@ type DockerContainerRemove struct {
 
 func (r DockerContainerRemove) Execute(containerID string) error {
 	stderr := bytes.NewBuffer(nil)
-	_, _, err := r.executable.Execute(pexec.Execution{
+	err := r.executable.Execute(pexec.Execution{
 		Args:   []string{"container", "rm", containerID, "--force"},
 		Stderr: stderr,
 	})
@@ -190,7 +189,7 @@ type DockerContainerInspect struct {
 func (i DockerContainerInspect) Execute(containerID string) (Container, error) {
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	_, _, err := i.executable.Execute(pexec.Execution{
+	err := i.executable.Execute(pexec.Execution{
 		Args:   []string{"container", "inspect", containerID},
 		Stdout: stdout,
 		Stderr: stderr,
@@ -214,7 +213,7 @@ type DockerContainerLogs struct {
 func (i DockerContainerLogs) Execute(containerID string) (fmt.Stringer, error) {
 	stdout := bytes.NewBuffer(nil)
 	stderr := bytes.NewBuffer(nil)
-	_, _, err := i.executable.Execute(pexec.Execution{
+	err := i.executable.Execute(pexec.Execution{
 		Args:   []string{"container", "logs", containerID},
 		Stdout: stdout,
 		Stderr: stderr,
@@ -235,7 +234,7 @@ func (r DockerVolumeRemove) Execute(volumes []string) error {
 	args = append(args, volumes...)
 
 	stderr := bytes.NewBuffer(nil)
-	_, _, err := r.executable.Execute(pexec.Execution{
+	err := r.executable.Execute(pexec.Execution{
 		Args:   args,
 		Stderr: stderr,
 	})

@@ -2,7 +2,6 @@ package yarn_test
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -26,7 +25,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		workingDir string
 		cnbDir     string
 		timestamp  string
-		path       string
 
 		installProcess    *fakes.InstallProcess
 		dependencyService *fakes.DependencyService
@@ -47,9 +45,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		cnbDir, err = ioutil.TempDir("", "cnb")
 		Expect(err).NotTo(HaveOccurred())
-
-		path = os.Getenv("PATH")
-		os.Setenv("PATH", "/some/bin")
 
 		now = time.Now()
 		clock = yarn.NewClock(func() time.Time {
@@ -81,8 +76,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 	})
 
 	it.After(func() {
-		os.Setenv("PATH", path)
-
 		Expect(os.RemoveAll(layersDir)).To(Succeed())
 		Expect(os.RemoveAll(workingDir)).To(Succeed())
 		Expect(os.RemoveAll(cnbDir)).To(Succeed())
@@ -164,9 +157,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(dependencyService.InstallCall.Receives.LayerPath).To(Equal(filepath.Join(layersDir, "yarn")))
 
 			Expect(installProcess.ExecuteCall.Receives.WorkingDir).To(Equal(workingDir))
-			Expect(installProcess.ExecuteCall.Receives.LayerPath).To(Equal(filepath.Join(layersDir, "modules")))
-
-			Expect(os.Getenv("PATH")).To(Equal(fmt.Sprintf("/some/bin:%s/bin", filepath.Join(layersDir, "yarn"))))
+			Expect(installProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "modules")))
+			Expect(installProcess.ExecuteCall.Receives.YarnLayerPath).To(Equal(filepath.Join(layersDir, "yarn")))
 		})
 	})
 

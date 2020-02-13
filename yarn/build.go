@@ -1,7 +1,6 @@
 package yarn
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -24,7 +23,7 @@ type DependencyService interface {
 //go:generate faux --interface InstallProcess --output fakes/install_process.go
 type InstallProcess interface {
 	ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error)
-	Execute(workingDir, layerPath string) error
+	Execute(workingDir, modulesLayerPath, yarnLayerPath string) error
 }
 
 func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, installProcess InstallProcess, clock Clock) packit.BuildFunc {
@@ -33,7 +32,6 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
-		os.Setenv("PATH", fmt.Sprintf("%s%c%s", os.Getenv("PATH"), os.PathListSeparator, filepath.Join(yarnLayer.Path, "bin")))
 
 		dependency, err := dependencyService.Resolve(filepath.Join(context.CNBPath, "buildpack.toml"), "yarn", "*", context.Stack)
 		if err != nil {
@@ -68,7 +66,7 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 				return packit.BuildResult{}, err
 			}
 
-			err = installProcess.Execute(context.WorkingDir, modulesLayer.Path)
+			err = installProcess.Execute(context.WorkingDir, modulesLayer.Path, yarnLayer.Path)
 			if err != nil {
 				return packit.BuildResult{}, err
 			}

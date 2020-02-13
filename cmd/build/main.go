@@ -3,7 +3,6 @@ package main
 import (
 	"time"
 
-	"code.cloudfoundry.org/lager"
 	"github.com/cloudfoundry/packit"
 	"github.com/cloudfoundry/packit/cargo"
 	"github.com/cloudfoundry/packit/fs"
@@ -14,7 +13,7 @@ import (
 
 func main() {
 	transport := cargo.NewTransport()
-	executable := pexec.NewExecutable("yarn", lager.NewLogger("yarn"))
+	executable := pexec.NewExecutable("yarn")
 	summer := fs.NewChecksumCalculator()
 	installProcess := yarn.NewYarnInstallProcess(executable, summer)
 	dependencyService := postal.NewService(transport)

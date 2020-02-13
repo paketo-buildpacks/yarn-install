@@ -33,74 +33,68 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			executable = &fakes.Executable{}
-
 			summer = &fakes.Summer{}
 
 			installProcess = yarn.NewYarnInstallProcess(executable, summer)
-
 		})
 
-		context("Success cases", func() {
-			context("we should run yarn install when", func() {
-				context("there is no yarn.lock file in the workingDir", func() {
-					it("succeeds", func() {
-						run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
-							"cache_sha": "some-sha",
-						})
-
-						Expect(run).To(BeTrue())
-						Expect(sha).To(Equal(""))
-						Expect(err).NotTo(HaveOccurred())
-					})
-				})
-
-				context("when the yarn.lock file has a different sha", func() {
-					it.Before(func() {
-						summer.SumCall.Stub = func(string) (string, error) {
-							return "some-other-sha", nil
-						}
-						Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
+		context("we should run yarn install when", func() {
+			context("there is no yarn.lock file in the workingDir", func() {
+				it("succeeds", func() {
+					run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
+						"cache_sha": "some-sha",
 					})
 
-					it("succeeds when sha is different", func() {
-						run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
-							"cache_sha": "some-sha",
-						})
-						Expect(run).To(BeTrue())
-						Expect(sha).To(Equal("some-other-sha"))
-						Expect(err).NotTo(HaveOccurred())
-					})
-
-					it("succeeds when sha is missing", func() {
-						run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{})
-						Expect(run).To(BeTrue())
-						Expect(sha).To(Equal("some-other-sha"))
-						Expect(err).NotTo(HaveOccurred())
-					})
-				})
-
-				context("we should not run install", func() {
-					context("sha of yarn.lock and metadata sha match", func() {
-						it.Before(func() {
-							summer.SumCall.Stub = func(string) (string, error) {
-								return "some-sha", nil
-							}
-							Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
-						})
-
-						it("succeeds", func() {
-							run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
-								"cache_sha": "some-sha",
-							})
-							Expect(run).To(BeFalse())
-							Expect(sha).To(Equal(""))
-							Expect(err).NotTo(HaveOccurred())
-						})
-					})
+					Expect(run).To(BeTrue())
+					Expect(sha).To(Equal(""))
+					Expect(err).NotTo(HaveOccurred())
 				})
 			})
 
-			context("Failure Cases", func() {
+			context("when the yarn.lock file has a different sha", func() {
+				it.Before(func() {
+					summer.SumCall.Stub = func(string) (string, error) {
+						return "some-other-sha", nil
+					}
+					Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
+				})
+
+				it("succeeds when sha is different", func() {
+					run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
+						"cache_sha": "some-sha",
+					})
+					Expect(run).To(BeTrue())
+					Expect(sha).To(Equal("some-other-sha"))
+					Expect(err).NotTo(HaveOccurred())
+				})
+
+				it("succeeds when sha is missing", func() {
+					run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{})
+					Expect(run).To(BeTrue())
+					Expect(sha).To(Equal("some-other-sha"))
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			context("when the sha of yarn.lock and metadata sha match", func() {
+				it.Before(func() {
+					summer.SumCall.Stub = func(string) (string, error) {
+						return "some-sha", nil
+					}
+					Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
+				})
+
+				it("does not run install", func() {
+					run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
+						"cache_sha": "some-sha",
+					})
+					Expect(run).To(BeFalse())
+					Expect(sha).To(Equal(""))
+					Expect(err).NotTo(HaveOccurred())
+				})
+			})
+
+			context("failure cases", func() {
 				context("when working dir is un-readable", func() {
 					it.Before(func() {
 						Expect(os.Chmod(workingDir, 0000)).To(Succeed())
@@ -108,7 +102,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					it.After(func() {
 						Expect(os.Chmod(workingDir, os.ModePerm)).To(Succeed())
 					})
-					it("Fails", func() {
+
+					it("fails", func() {
 						_, _, err := installProcess.ShouldRun(workingDir, map[string]interface{}{})
 						Expect(err).To(MatchError(ContainSubstring("unable to read yarn.lock file:")))
 					})
@@ -119,13 +114,13 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 	context("Execute", func() {
 		var (
-			workingDir, layerPath string
-			installProcess        yarn.YarnInstallProcess
-			executions            []pexec.Execution
+			workingDir, modulesLayerPath, yarnLayerPath string
+			installProcess                              yarn.YarnInstallProcess
+			executions                                  []pexec.Execution
+			path                                        string
 
 			executable *fakes.Executable
-
-			summer *fakes.Summer
+			summer     *fakes.Summer
 		)
 
 		it.Before(func() {
@@ -133,33 +128,42 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			workingDir, err = ioutil.TempDir("", "working-dir")
 			Expect(err).NotTo(HaveOccurred())
 
-			layerPath, err = ioutil.TempDir("", "layer-dir")
+			modulesLayerPath, err = ioutil.TempDir("", "modules-dir")
+			Expect(err).NotTo(HaveOccurred())
+
+			yarnLayerPath, err = ioutil.TempDir("", "yarn-dir")
 			Expect(err).NotTo(HaveOccurred())
 
 			summer = &fakes.Summer{}
 
 			executions = []pexec.Execution{}
 			executable = &fakes.Executable{}
-			executable.ExecuteCall.Stub = func(execution pexec.Execution) (string, string, error) {
+			executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 				executions = append(executions, execution)
 
 				if strings.Contains(strings.Join(execution.Args, " "), "yarn-offline-mirror") {
 					fmt.Fprintln(execution.Stdout, "undefined")
 				}
 
-				return "", "", nil
+				return nil
 			}
+
+			path = os.Getenv("PATH")
+			os.Setenv("PATH", "/some/bin")
 
 			installProcess = yarn.NewYarnInstallProcess(executable, summer)
 		})
 
 		it.After(func() {
+			os.Setenv("PATH", path)
+
 			Expect(os.RemoveAll(workingDir)).To(Succeed())
-			Expect(os.RemoveAll(layerPath)).To(Succeed())
+			Expect(os.RemoveAll(modulesLayerPath)).To(Succeed())
+			Expect(os.RemoveAll(yarnLayerPath)).To(Succeed())
 		})
 
 		it("executes yarn install", func() {
-			err := installProcess.Execute(workingDir, layerPath)
+			err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(executions).To(HaveLen(2))
@@ -168,38 +172,43 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				"get",
 				"yarn-offline-mirror",
 			}))
+			Expect(executions[0].Env).To(ContainElement(MatchRegexp(fmt.Sprintf(`^PATH=.*:%s/bin:node_modules/.bin$`, yarnLayerPath))))
+
 			Expect(executions[1].Args).To(Equal([]string{
 				"install",
 				"--pure-lockfile",
 				"--ignore-engines",
 				"--modules-folder",
-				filepath.Join(layerPath, "node_modules"),
+				filepath.Join(modulesLayerPath, "node_modules"),
 			}))
+			Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
-			Expect(filepath.Join(layerPath, "node_modules")).To(BeADirectory())
+			Expect(filepath.Join(modulesLayerPath, "node_modules")).To(BeADirectory())
 
 			link, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
 			Expect(err).NotTo(HaveOccurred())
-			Expect(link).To(Equal(filepath.Join(layerPath, "node_modules")))
+			Expect(link).To(Equal(filepath.Join(modulesLayerPath, "node_modules")))
+
+			Expect(os.Getenv("PATH")).To(Equal(fmt.Sprintf("/some/bin:%s/bin", yarnLayerPath)))
 		})
 
 		context("when there is an offline mirror directory", func() {
 			it.Before(func() {
 				Expect(os.Mkdir(filepath.Join(workingDir, "offline-mirror"), os.ModePerm)).To(Succeed())
 
-				executable.ExecuteCall.Stub = func(execution pexec.Execution) (string, string, error) {
+				executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 					executions = append(executions, execution)
 
 					if strings.Contains(strings.Join(execution.Args, " "), "yarn-offline-mirror") {
 						fmt.Fprintln(execution.Stdout, filepath.Join(workingDir, "offline-mirror"))
 					}
 
-					return "", "", nil
+					return nil
 				}
 			})
 
 			it("executes yarn install in offline mode", func() {
-				err := installProcess.Execute(workingDir, layerPath)
+				err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(executions).To(HaveLen(2))
@@ -208,20 +217,23 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"get",
 					"yarn-offline-mirror",
 				}))
+				Expect(executions[0].Env).To(ContainElement(MatchRegexp(fmt.Sprintf(`^PATH=.*:%s/bin:node_modules/.bin$`, yarnLayerPath))))
+
 				Expect(executions[1].Args).To(Equal([]string{
 					"install",
 					"--pure-lockfile",
 					"--ignore-engines",
 					"--offline",
 					"--modules-folder",
-					filepath.Join(layerPath, "node_modules"),
+					filepath.Join(modulesLayerPath, "node_modules"),
 				}))
+				Expect(executions[1].Env).To(ContainElement(MatchRegexp(fmt.Sprintf(`^PATH=.*:%s/bin:node_modules/.bin$`, yarnLayerPath))))
 
-				Expect(filepath.Join(layerPath, "node_modules")).To(BeADirectory())
+				Expect(filepath.Join(modulesLayerPath, "node_modules")).To(BeADirectory())
 
 				link, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
 				Expect(err).NotTo(HaveOccurred())
-				Expect(link).To(Equal(filepath.Join(layerPath, "node_modules")))
+				Expect(link).To(Equal(filepath.Join(modulesLayerPath, "node_modules")))
 			})
 		})
 
@@ -234,16 +246,16 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			})
 
 			it("executes yarn install after copying the node_modules directory to the layer", func() {
-				err := installProcess.Execute(workingDir, layerPath)
+				err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 
-				content, err := ioutil.ReadFile(filepath.Join(layerPath, "node_modules", "some-file"))
+				content, err := ioutil.ReadFile(filepath.Join(modulesLayerPath, "node_modules", "some-file"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(string(content)).To(Equal("some-content"))
 
 				link, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
 				Expect(err).NotTo(HaveOccurred())
-				Expect(link).To(Equal(filepath.Join(layerPath, "node_modules")))
+				Expect(link).To(Equal(filepath.Join(modulesLayerPath, "node_modules")))
 			})
 		})
 
@@ -258,7 +270,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, layerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to create node_modules directory:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
@@ -266,15 +278,15 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			context("node_modules directory cannot be created in layer directory", func() {
 				it.Before(func() {
-					Expect(os.Chmod(layerPath, 0000)).To(Succeed())
+					Expect(os.Chmod(modulesLayerPath, 0000)).To(Succeed())
 				})
 
 				it.After(func() {
-					Expect(os.Chmod(layerPath, os.ModePerm)).To(Succeed())
+					Expect(os.Chmod(modulesLayerPath, os.ModePerm)).To(Succeed())
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, layerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to move node_modules directory to layer:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
@@ -282,17 +294,17 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			context("the yarn executable fails to get config", func() {
 				it.Before(func() {
-					executable.ExecuteCall.Stub = func(execution pexec.Execution) (string, string, error) {
+					executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 						if strings.Contains(strings.Join(execution.Args, " "), "config") {
-							return "", "", errors.New("yarn config failed")
+							return errors.New("yarn config failed")
 						}
 
-						return "", "", nil
+						return nil
 					}
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, layerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config:")))
 					Expect(err).To(MatchError(ContainSubstring("yarn config failed")))
 				})
@@ -300,17 +312,17 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			context("the offline mirror directory cannot be read", func() {
 				it.Before(func() {
-					executable.ExecuteCall.Stub = func(execution pexec.Execution) (string, string, error) {
+					executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 						if strings.Contains(strings.Join(execution.Args, " "), "config") {
-							return "", "", errors.New("yarn config failed")
+							return errors.New("yarn config failed")
 						}
 
-						return "", "", nil
+						return nil
 					}
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, layerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config:")))
 					Expect(err).To(MatchError(ContainSubstring("yarn config failed")))
 				})
@@ -318,17 +330,17 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			context("the yarn executable fails to install", func() {
 				it.Before(func() {
-					executable.ExecuteCall.Stub = func(execution pexec.Execution) (string, string, error) {
+					executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 						if strings.Contains(strings.Join(execution.Args, " "), "install") {
-							return "", "", errors.New("yarn install failed")
+							return errors.New("yarn install failed")
 						}
 
-						return "", "", nil
+						return nil
 					}
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, layerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn install:")))
 					Expect(err).To(MatchError(ContainSubstring("yarn install failed")))
 				})

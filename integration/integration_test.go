@@ -94,7 +94,7 @@ func testIntegration(t *testing.T, when spec.G, it spec.S) {
 	})
 
 	when("the app uses pre-gyp", func() {
-		it.Pend("should build a working OCI image for a simple app", func() {
+		it("should build a working OCI image for a simple app", func() {
 			app, err := dagger.PackBuild(filepath.Join("testdata", "yarn_pre_gyp"), nodeURI, yarnURI)
 			Expect(err).ToNot(HaveOccurred())
 			defer app.Destroy()

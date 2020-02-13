@@ -17,6 +17,11 @@ type Summer interface {
 	Sum(path string) (string, error)
 }
 
+//go:generate faux --interface Executable --output fakes/executable.go
+type Executable interface {
+	Execute(pexec.Execution) error
+}
+
 type YarnInstallProcess struct {
 	executable Executable
 	summer     Summer
@@ -27,11 +32,6 @@ func NewYarnInstallProcess(executable Executable, summer Summer) YarnInstallProc
 		executable: executable,
 		summer:     summer,
 	}
-}
-
-//go:generate faux --interface Executable --output fakes/executable.go
-type Executable interface {
-	Execute(pexec.Execution) (stdout, stderr string, err error)
 }
 
 func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error) {
@@ -55,26 +55,38 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	return false, "", nil
 }
 
-func (ip YarnInstallProcess) Execute(workingDir, layerPath string) error {
+func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath string) error {
 	err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create node_modules directory: %w", err)
 	}
 
-	err = fs.Move(filepath.Join(workingDir, "node_modules"), filepath.Join(layerPath, "node_modules"))
+	err = fs.Move(filepath.Join(workingDir, "node_modules"), filepath.Join(modulesLayerPath, "node_modules"))
 	if err != nil {
 		return fmt.Errorf("failed to move node_modules directory to layer: %w", err)
 	}
 
-	err = os.Symlink(filepath.Join(layerPath, "node_modules"), filepath.Join(workingDir, "node_modules"))
+	err = os.Symlink(filepath.Join(modulesLayerPath, "node_modules"), filepath.Join(workingDir, "node_modules"))
 	if err != nil {
 		return fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
 	}
 
+	os.Setenv("PATH", fmt.Sprintf("%s%c%s", os.Getenv("PATH"), os.PathListSeparator, filepath.Join(yarnLayerPath, "bin")))
+
+	var variables []string
+	for _, env := range os.Environ() {
+		if strings.HasPrefix(env, "PATH=") {
+			env = fmt.Sprintf("%s%c%s", env, os.PathListSeparator, filepath.Join("node_modules", ".bin"))
+		}
+
+		variables = append(variables, env)
+	}
+
 	stdout := bytes.NewBuffer(nil)
-	_, _, err = ip.executable.Execute(pexec.Execution{
+	err = ip.executable.Execute(pexec.Execution{
 		Args:   []string{"config", "get", "yarn-offline-mirror"},
 		Stdout: stdout,
+		Env:    variables,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute yarn config: %w", err)
@@ -95,8 +107,9 @@ func (ip YarnInstallProcess) Execute(workingDir, layerPath string) error {
 		}
 	}
 
-	_, _, err = ip.executable.Execute(pexec.Execution{
-		Args: append(installArgs, "--modules-folder", filepath.Join(layerPath, "node_modules")),
+	err = ip.executable.Execute(pexec.Execution{
+		Args: append(installArgs, "--modules-folder", filepath.Join(modulesLayerPath, "node_modules")),
+		Env:  variables,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute yarn install: %w", err)
