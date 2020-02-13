@@ -1,7 +1,9 @@
-.DS_Store
-*.tgz
 !/integration/testdata/vendored/offline-mirror/*.tgz
+!/integration/testdata/with_yarn_workspaces_offline/yarn-offline-mirror/*.tgz
+
+*.tgz
+.DS_Store
 .idea
-.bin
-yarn-cnb_*
+/.bin
 bin
+yarn-cnb_*
