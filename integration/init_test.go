@@ -60,8 +60,11 @@ func TestIntegration(t *testing.T) {
 	SetDefaultEventuallyTimeout(5 * time.Second)
 
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
-	suite("GeneralIntegration", testIntegration)
 	suite("Caching", testCaching)
+	suite("PreGyp", testPreGyp)
+	suite("SimpleApp", testSimpleApp)
+	suite("Vendored", testVendored)
+	suite("Workspaces", testWorkspaces)
 
 	dagger.SyncParallelOutput(func() { suite.Run(t) })
 }
