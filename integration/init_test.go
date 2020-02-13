@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/cloudfoundry/dagger"
 	"github.com/cloudfoundry/occam"
@@ -55,6 +56,8 @@ func TestIntegration(t *testing.T) {
 	defer dagger.DeleteBuildpack(nodeURI)
 	defer os.RemoveAll(nodeRepo)
 	defer dagger.DeleteBuildpack(nodeCachedURI)
+
+	SetDefaultEventuallyTimeout(5 * time.Second)
 
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
 	suite("GeneralIntegration", testIntegration)
