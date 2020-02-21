@@ -1,6 +1,7 @@
 package yarn_test
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/cloudfoundry/packit/pexec"
+	"github.com/cloudfoundry/packit/scribe"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"github.com/cloudfoundry/yarn-cnb/yarn/fakes"
 	"github.com/sclevine/spec"
@@ -35,7 +37,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable = &fakes.Executable{}
 			summer = &fakes.Summer{}
 
-			installProcess = yarn.NewYarnInstallProcess(executable, summer)
+			installProcess = yarn.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
 		})
 
 		context("we should run yarn install when", func() {
@@ -151,7 +153,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			path = os.Getenv("PATH")
 			os.Setenv("PATH", "/some/bin")
 
-			installProcess = yarn.NewYarnInstallProcess(executable, summer)
+			installProcess = yarn.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
 		})
 
 		it.After(func() {

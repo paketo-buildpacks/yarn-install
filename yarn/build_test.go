@@ -1,6 +1,7 @@
 package yarn_test
 
 import (
+	"bytes"
 	"errors"
 	"io/ioutil"
 	"os"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/cloudfoundry/packit"
 	"github.com/cloudfoundry/packit/postal"
+	"github.com/cloudfoundry/packit/scribe"
 	"github.com/cloudfoundry/yarn-cnb/yarn"
 	"github.com/cloudfoundry/yarn-cnb/yarn/fakes"
 	"github.com/sclevine/spec"
@@ -31,6 +33,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		cacheMatcher      *fakes.CacheMatcher
 		clock             yarn.Clock
 		now               time.Time
+		buffer            *bytes.Buffer
 
 		build packit.BuildFunc
 	)
@@ -72,7 +75,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		cacheMatcher = &fakes.CacheMatcher{}
 
-		build = yarn.Build(dependencyService, cacheMatcher, installProcess, clock)
+		buffer = bytes.NewBuffer(nil)
+
+		build = yarn.Build(dependencyService, cacheMatcher, installProcess, clock, scribe.NewLogger(buffer))
 	})
 
 	it.After(func() {
@@ -398,6 +403,27 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			})
 		})
 
+		context("when the check for the install process fails", func() {
+			it.Before(func() {
+				installProcess.ShouldRunCall.Stub = nil
+				installProcess.ShouldRunCall.Returns.Err = errors.New("failed to determine if process should run")
+			})
+
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "yarn"},
+						},
+					},
+				})
+				Expect(err).To(MatchError("failed to determine if process should run"))
+			})
+		})
+
 		context("when the install process cannot be executed", func() {
 			it.Before(func() {
 				installProcess.ExecuteCall.Returns.Error = errors.New("failed to execute install process")
@@ -415,6 +441,30 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					},
 				})
 				Expect(err).To(MatchError("failed to execute install process"))
+			})
+		})
+		context("when install is skipped and node_modules cannot be removed", func() {
+			it.Before(func() {
+				installProcess.ShouldRunCall.Stub = nil
+				installProcess.ShouldRunCall.Returns.Run = false
+				Expect(os.Chmod(filepath.Join(workingDir), 0000)).To(Succeed())
+			})
+
+			it.After(func() {
+				Expect(os.Chmod(filepath.Join(workingDir), os.ModePerm)).To(Succeed())
+			})
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "yarn"},
+						},
+					},
+				})
+				Expect(err).To(MatchError(ContainSubstring("permission denied")))
 			})
 		})
 	})

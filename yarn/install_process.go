@@ -10,6 +10,7 @@ import (
 
 	"github.com/cloudfoundry/packit/fs"
 	"github.com/cloudfoundry/packit/pexec"
+	"github.com/cloudfoundry/packit/scribe"
 )
 
 //go:generate faux --interface Summer --output fakes/summer.go
@@ -25,22 +26,31 @@ type Executable interface {
 type YarnInstallProcess struct {
 	executable Executable
 	summer     Summer
+	logger     scribe.Logger
 }
 
-func NewYarnInstallProcess(executable Executable, summer Summer) YarnInstallProcess {
+func NewYarnInstallProcess(executable Executable, summer Summer, logger scribe.Logger) YarnInstallProcess {
 	return YarnInstallProcess{
 		executable: executable,
 		summer:     summer,
+		logger:     logger,
 	}
 }
 
 func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error) {
+	ip.logger.Subprocess("Process inputs:")
+
 	_, err = os.Stat(filepath.Join(workingDir, "yarn.lock"))
 	if os.IsNotExist(err) {
+		ip.logger.Action("yarn.lock -> Not found")
+		ip.logger.Break()
 		return true, "", nil
 	} else if err != nil {
 		return true, "", fmt.Errorf("unable to read yarn.lock file: %w", err)
 	}
+
+	ip.logger.Action("yarn.lock -> Found")
+	ip.logger.Break()
 
 	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"))
 	if err != nil {
@@ -99,12 +109,14 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 	fileInfo, err := os.Stat(offlineMirrorPath)
 	if err == nil {
 		if fileInfo.IsDir() {
+			ip.logger.Subprocess("Running offline 'yarn install'")
 			installArgs = append(installArgs, "--offline")
 		}
 	} else {
 		if !errors.Is(err, os.ErrNotExist) {
 			return fmt.Errorf("failed to confirm existence of offline mirror directory: %w", err)
 		}
+		ip.logger.Subprocess("Running 'yarn install'")
 	}
 
 	err = ip.executable.Execute(pexec.Execution{

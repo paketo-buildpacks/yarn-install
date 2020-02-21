@@ -1,6 +1,7 @@
 package integration_test
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -53,7 +54,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 			it("reuses the node_modules layer", func() {
 				sourcePath := filepath.Join("testdata", "simple_app")
 
-				build := pack.Build.WithBuildpacks(nodeURI, yarnURI)
+				build := pack.WithNoColor().Build.WithBuildpacks(nodeURI, yarnURI)
+				var logs fmt.Stringer
 
 				firstImage, logs, err := build.Execute(imageName, sourcePath)
 				Expect(err).NotTo(HaveOccurred(), logs.String)
@@ -88,8 +90,29 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				Eventually(container).Should(BeAvailable(), ContainerLogs(container.ID))
 
 				Expect(secondImage.ID).To(Equal(firstImage.ID))
+				Expect(secondImage.Buildpacks[1].Layers["yarn"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[1].Layers["yarn"].Metadata["built_at"]))
+				Expect(secondImage.Buildpacks[1].Layers["yarn"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[1].Layers["yarn"].Metadata["cache_sha"]))
+
 				Expect(secondImage.Buildpacks[1].Layers["modules"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[1].Layers["modules"].Metadata["built_at"]))
 				Expect(secondImage.Buildpacks[1].Layers["modules"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[1].Layers["modules"].Metadata["cache_sha"]))
+
+				buildpackVersion, err := GetGitVersion()
+				Expect(err).ToNot(HaveOccurred())
+
+				splitLogs := GetBuildLogs(logs.String())
+				Expect(splitLogs).To(ContainSequence([]interface{}{
+					fmt.Sprintf("Yarn Buildpack %s", buildpackVersion),
+					"  Reusing cached layer /layers/org.cloudfoundry.yarn/yarn",
+					"",
+					"  Resolving installation process",
+					"    Process inputs:",
+					"      yarn.lock -> Found",
+					"",
+					"    Selected default build process: 'yarn install'",
+					"",
+					"  Reusing cached layer /layers/org.cloudfoundry.yarn/modules",
+				},
+				), logs.String)
 			})
 		})
 	})

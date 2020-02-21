@@ -11,7 +11,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/sclevine/spec v1.4.0
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
-	golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4 // indirect
+	golang.org/x/sys v0.0.0-20200219091948-cb0a6d8edb6c // indirect
 )
 
 go 1.13
