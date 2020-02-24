@@ -92,6 +92,17 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 		variables = append(variables, env)
 	}
 
+	installArgs := []string{"install", "--ignore-engines"}
+
+	_, err = os.Stat(filepath.Join(workingDir, "yarn.lock"))
+	if err == nil {
+		installArgs = append(installArgs, "--frozen-lockfile")
+	} else if !os.IsNotExist(err) {
+		panic(err)
+	} else {
+		installArgs = append(installArgs, "--pure-lockfile")
+	}
+
 	stdout := bytes.NewBuffer(nil)
 	err = ip.executable.Execute(pexec.Execution{
 		Args:   []string{"config", "get", "yarn-offline-mirror"},
@@ -101,8 +112,6 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 	if err != nil {
 		return fmt.Errorf("failed to execute yarn config: %w", err)
 	}
-
-	installArgs := []string{"install", "--pure-lockfile", "--ignore-engines"}
 
 	offlineMirrorPath := strings.TrimSpace(stdout.String())
 

@@ -178,8 +178,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(executions[1].Args).To(Equal([]string{
 				"install",
-				"--pure-lockfile",
 				"--ignore-engines",
+				"--pure-lockfile",
 				"--modules-folder",
 				filepath.Join(modulesLayerPath, "node_modules"),
 			}))
@@ -223,8 +223,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 				Expect(executions[1].Args).To(Equal([]string{
 					"install",
-					"--pure-lockfile",
 					"--ignore-engines",
+					"--pure-lockfile",
 					"--offline",
 					"--modules-folder",
 					filepath.Join(modulesLayerPath, "node_modules"),
@@ -236,6 +236,27 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				link, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(link).To(Equal(filepath.Join(modulesLayerPath, "node_modules")))
+			})
+		})
+
+		context("when their is a yarn.lock file", func() {
+			it.Before(func() {
+				err := ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte("some-lockfile-content"), 0644)
+				Expect(err).NotTo(HaveOccurred())
+			})
+
+			it("executes yarn install with the --frozen-lockfile flag", func() {
+				err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(executions).To(HaveLen(2))
+				Expect(executions[1].Args).To(Equal([]string{
+					"install",
+					"--ignore-engines",
+					"--frozen-lockfile",
+					"--modules-folder",
+					filepath.Join(modulesLayerPath, "node_modules"),
+				}))
 			})
 		})
 
