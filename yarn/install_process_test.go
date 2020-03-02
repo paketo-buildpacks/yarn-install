@@ -29,6 +29,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			installProcess yarn.YarnInstallProcess
 			summer         *fakes.Summer
 		)
+
 		it.Before(func() {
 			var err error
 			workingDir, err = ioutil.TempDir("", "working-dir")
@@ -101,6 +102,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					it.Before(func() {
 						Expect(os.Chmod(workingDir, 0000)).To(Succeed())
 					})
+
 					it.After(func() {
 						Expect(os.Chmod(workingDir, os.ModePerm)).To(Succeed())
 					})
@@ -116,13 +118,16 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 	context("Execute", func() {
 		var (
-			workingDir, modulesLayerPath, yarnLayerPath string
-			installProcess                              yarn.YarnInstallProcess
-			executions                                  []pexec.Execution
-			path                                        string
+			workingDir       string
+			modulesLayerPath string
+			yarnLayerPath    string
+			path             string
+			executions       []pexec.Execution
+			buffer           *bytes.Buffer
+			executable       *fakes.Executable
+			summer           *fakes.Summer
 
-			executable *fakes.Executable
-			summer     *fakes.Summer
+			installProcess yarn.YarnInstallProcess
 		)
 
 		it.Before(func() {
@@ -137,6 +142,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			summer = &fakes.Summer{}
+			buffer = bytes.NewBuffer(nil)
 
 			executions = []pexec.Execution{}
 			executable = &fakes.Executable{}
@@ -153,7 +159,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			path = os.Getenv("PATH")
 			os.Setenv("PATH", "/some/bin")
 
-			installProcess = yarn.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
+			installProcess = yarn.NewYarnInstallProcess(executable, summer, scribe.NewLogger(buffer))
 		})
 
 		it.After(func() {
@@ -179,7 +185,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			Expect(executions[1].Args).To(Equal([]string{
 				"install",
 				"--ignore-engines",
-				"--pure-lockfile",
+				"--frozen-lockfile",
 				"--modules-folder",
 				filepath.Join(modulesLayerPath, "node_modules"),
 			}))
@@ -224,7 +230,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				Expect(executions[1].Args).To(Equal([]string{
 					"install",
 					"--ignore-engines",
-					"--pure-lockfile",
+					"--frozen-lockfile",
 					"--offline",
 					"--modules-folder",
 					filepath.Join(modulesLayerPath, "node_modules"),
@@ -236,27 +242,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				link, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
 				Expect(err).NotTo(HaveOccurred())
 				Expect(link).To(Equal(filepath.Join(modulesLayerPath, "node_modules")))
-			})
-		})
-
-		context("when their is a yarn.lock file", func() {
-			it.Before(func() {
-				err := ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte("some-lockfile-content"), 0644)
-				Expect(err).NotTo(HaveOccurred())
-			})
-
-			it("executes yarn install with the --frozen-lockfile flag", func() {
-				err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
-				Expect(err).NotTo(HaveOccurred())
-
-				Expect(executions).To(HaveLen(2))
-				Expect(executions[1].Args).To(Equal([]string{
-					"install",
-					"--ignore-engines",
-					"--frozen-lockfile",
-					"--modules-folder",
-					filepath.Join(modulesLayerPath, "node_modules"),
-				}))
 			})
 		})
 
@@ -355,6 +340,9 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				it.Before(func() {
 					executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 						if strings.Contains(strings.Join(execution.Args, " "), "install") {
+							execution.Stdout.Write([]byte("stdout output"))
+							execution.Stderr.Write([]byte("stderr output"))
+
 							return errors.New("yarn install failed")
 						}
 
@@ -362,10 +350,13 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					}
 				})
 
-				it("returns an error", func() {
+				it("prints the execution output and returns an error", func() {
 					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn install:")))
 					Expect(err).To(MatchError(ContainSubstring("yarn install failed")))
+
+					Expect(buffer.String()).To(ContainSubstring("stdout output"))
+					Expect(buffer.String()).To(ContainSubstring("stderr output"))
 				})
 			})
 		})

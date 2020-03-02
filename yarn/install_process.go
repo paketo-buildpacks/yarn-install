@@ -92,17 +92,6 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 		variables = append(variables, env)
 	}
 
-	installArgs := []string{"install", "--ignore-engines"}
-
-	_, err = os.Stat(filepath.Join(workingDir, "yarn.lock"))
-	if err == nil {
-		installArgs = append(installArgs, "--frozen-lockfile")
-	} else if !os.IsNotExist(err) {
-		panic(err)
-	} else {
-		installArgs = append(installArgs, "--pure-lockfile")
-	}
-
 	stdout := bytes.NewBuffer(nil)
 	err = ip.executable.Execute(pexec.Execution{
 		Args:   []string{"config", "get", "yarn-offline-mirror"},
@@ -113,26 +102,29 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 		return fmt.Errorf("failed to execute yarn config: %w", err)
 	}
 
-	offlineMirrorPath := strings.TrimSpace(stdout.String())
+	installArgs := []string{"install", "--ignore-engines", "--frozen-lockfile"}
 
-	fileInfo, err := os.Stat(offlineMirrorPath)
-	if err == nil {
-		if fileInfo.IsDir() {
-			ip.logger.Subprocess("Running offline 'yarn install'")
-			installArgs = append(installArgs, "--offline")
-		}
-	} else {
-		if !errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("failed to confirm existence of offline mirror directory: %w", err)
-		}
-		ip.logger.Subprocess("Running 'yarn install'")
+	info, err := os.Stat(strings.TrimSpace(stdout.String()))
+	if err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to confirm existence of offline mirror directory: %w", err)
 	}
 
+	if info != nil && info.IsDir() {
+		installArgs = append(installArgs, "--offline")
+	}
+
+	installArgs = append(installArgs, "--modules-folder", filepath.Join(modulesLayerPath, "node_modules"))
+	ip.logger.Subprocess("Running yarn %s", strings.Join(installArgs, " "))
+
+	buffer := bytes.NewBuffer(nil)
 	err = ip.executable.Execute(pexec.Execution{
-		Args: append(installArgs, "--modules-folder", filepath.Join(modulesLayerPath, "node_modules")),
-		Env:  variables,
+		Args:   installArgs,
+		Env:    variables,
+		Stdout: buffer,
+		Stderr: buffer,
 	})
 	if err != nil {
+		ip.logger.Action("%s", buffer)
 		return fmt.Errorf("failed to execute yarn install: %w", err)
 	}
 

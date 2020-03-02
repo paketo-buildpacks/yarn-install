@@ -19,7 +19,7 @@ github.com/cloudfoundry/libcfbuildpack/helper
 # github.com/cloudfoundry/occam v0.0.0-20200213190909-18bc67c54cd3
 github.com/cloudfoundry/occam
 github.com/cloudfoundry/occam/matchers
-# github.com/cloudfoundry/packit v0.0.0-20200213185904-9d0fc689e7af
+# github.com/cloudfoundry/packit v0.0.0-20200302171850-93bd55387916
 github.com/cloudfoundry/packit
 github.com/cloudfoundry/packit/cargo
 github.com/cloudfoundry/packit/fs
@@ -36,7 +36,7 @@ github.com/golang/protobuf/proto
 github.com/google/go-github/github
 # github.com/google/go-querystring v1.0.0
 github.com/google/go-querystring/query
-# github.com/mattn/go-colorable v0.1.4
+# github.com/mattn/go-colorable v0.1.6
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
@@ -73,7 +73,7 @@ golang.org/x/net/html/charset
 # golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
-# golang.org/x/sys v0.0.0-20200212091648-12a6c2dcc1e4
+# golang.org/x/sys v0.0.0-20200302150141-5c8b2ff67527
 golang.org/x/sys/unix
 # golang.org/x/text v0.3.2
 golang.org/x/text/encoding
