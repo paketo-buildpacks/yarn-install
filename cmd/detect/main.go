@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/cloudfoundry/packit"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
+	"github.com/cloudfoundry/yarn-install-cnb/yarn"
 )
 
 func main() {

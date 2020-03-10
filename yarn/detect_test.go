@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/cloudfoundry/packit"
-	"github.com/cloudfoundry/yarn-cnb/yarn"
-	"github.com/cloudfoundry/yarn-cnb/yarn/fakes"
+	"github.com/cloudfoundry/yarn-install-cnb/yarn"
+	"github.com/cloudfoundry/yarn-install-cnb/yarn/fakes"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"

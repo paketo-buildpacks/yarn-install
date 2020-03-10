@@ -63,7 +63,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				imageIDs[firstImage.ID] = struct{}{}
 
 				Expect(firstImage.Buildpacks).To(HaveLen(2))
-				Expect(firstImage.Buildpacks[1].Key).To(Equal("org.cloudfoundry.yarn"))
+				Expect(firstImage.Buildpacks[1].Key).To(Equal("org.cloudfoundry.yarn-install"))
+				Expect(firstImage.Buildpacks[1].Layers).To(HaveKey("yarn"))
 				Expect(firstImage.Buildpacks[1].Layers).To(HaveKey("modules"))
 
 				container, err := docker.Container.Run.Execute(firstImage.ID)
@@ -79,7 +80,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				imageIDs[secondImage.ID] = struct{}{}
 
 				Expect(secondImage.Buildpacks).To(HaveLen(2))
-				Expect(secondImage.Buildpacks[1].Key).To(Equal("org.cloudfoundry.yarn"))
+				Expect(secondImage.Buildpacks[1].Key).To(Equal("org.cloudfoundry.yarn-install"))
+				Expect(secondImage.Buildpacks[1].Layers).To(HaveKey("yarn"))
 				Expect(secondImage.Buildpacks[1].Layers).To(HaveKey("modules"))
 
 				container, err = docker.Container.Run.Execute(secondImage.ID)
@@ -89,20 +91,21 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 				Eventually(container).Should(BeAvailable(), ContainerLogs(container.ID))
 
-				Expect(secondImage.ID).To(Equal(firstImage.ID))
 				Expect(secondImage.Buildpacks[1].Layers["yarn"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[1].Layers["yarn"].Metadata["built_at"]))
 				Expect(secondImage.Buildpacks[1].Layers["yarn"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[1].Layers["yarn"].Metadata["cache_sha"]))
 
 				Expect(secondImage.Buildpacks[1].Layers["modules"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[1].Layers["modules"].Metadata["built_at"]))
 				Expect(secondImage.Buildpacks[1].Layers["modules"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[1].Layers["modules"].Metadata["cache_sha"]))
 
+				Expect(secondImage.ID).To(Equal(firstImage.ID))
+
 				buildpackVersion, err := GetGitVersion()
 				Expect(err).ToNot(HaveOccurred())
 
 				splitLogs := GetBuildLogs(logs.String())
 				Expect(splitLogs).To(ContainSequence([]interface{}{
-					fmt.Sprintf("Yarn Buildpack %s", buildpackVersion),
-					"  Reusing cached layer /layers/org.cloudfoundry.yarn/yarn",
+					fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
+					"  Reusing cached layer /layers/org.cloudfoundry.yarn-install/yarn",
 					"",
 					"  Resolving installation process",
 					"    Process inputs:",
@@ -110,7 +113,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					"",
 					"    Selected default build process: 'yarn install'",
 					"",
-					"  Reusing cached layer /layers/org.cloudfoundry.yarn/modules",
+					"  Reusing cached layer /layers/org.cloudfoundry.yarn-install/modules",
 				},
 				), logs.String)
 			})

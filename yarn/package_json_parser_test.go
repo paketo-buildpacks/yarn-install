@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/cloudfoundry/yarn-cnb/yarn"
+	"github.com/cloudfoundry/yarn-install-cnb/yarn"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"

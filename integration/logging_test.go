@@ -56,7 +56,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 
 			splitLogs := GetBuildLogs(logs.String())
 			Expect(splitLogs).To(ContainSequence([]interface{}{
-				fmt.Sprintf("Yarn Buildpack %s", buildpackVersion),
+				fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
 				"  Executing build process",
 				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
 				MatchRegexp(`      Completed in (\d+\.\d+|\d{3})`),
@@ -68,11 +68,10 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing build process",
-				"    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/org.cloudfoundry.yarn/modules/node_modules",
+				"    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/org.cloudfoundry.yarn-install/modules/node_modules",
 				MatchRegexp(`      Completed in (\d+\.\d+|\d{3})`),
 			},
 			), logs.String)
-
 		})
 	})
 
@@ -108,7 +107,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 
 			splitLogs := GetBuildLogs(logs.String())
 			Expect(splitLogs).To(ContainSequence([]interface{}{
-				fmt.Sprintf("Yarn Buildpack %s", buildpackVersion),
+				fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
 				"  Executing build process",
 				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
 				MatchRegexp(`      Completed in (\d+\.\d+|\d{3})`),
@@ -120,7 +119,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing build process",
-				"    Running yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/org.cloudfoundry.yarn/modules/node_modules",
+				"    Running yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/org.cloudfoundry.yarn-install/modules/node_modules",
 				MatchRegexp(`      Completed in (\d+\.\d+|\d{3})`),
 			},
 			), logs.String)
