@@ -70,6 +70,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"  Executing build process",
 				"    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/org.cloudfoundry.yarn-install/modules/node_modules",
 				MatchRegexp(`      Completed in (\d+\.\d+|\d{3})`),
+				"",
+				"  Configuring environment",
+				`    PATH -> "$PATH:/layers/org.cloudfoundry.yarn-install/modules/node_modules/.bin"`,
 			},
 			), logs.String)
 		})
@@ -121,6 +124,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"  Executing build process",
 				"    Running yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/org.cloudfoundry.yarn-install/modules/node_modules",
 				MatchRegexp(`      Completed in (\d+\.\d+|\d{3})`),
+				"",
+				"  Configuring environment",
+				`    PATH -> "$PATH:/layers/org.cloudfoundry.yarn-install/modules/node_modules/.bin"`,
 			},
 			), logs.String)
 		})

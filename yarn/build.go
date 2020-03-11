@@ -105,6 +105,12 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 				"built_at":  clock.Now().Format(time.RFC3339Nano),
 				"cache_sha": sha,
 			}
+
+			path := filepath.Join(modulesLayer.Path, "node_modules", ".bin")
+			modulesLayer.SharedEnv.Append("PATH", path, string(os.PathListSeparator))
+
+			logger.Process("Configuring environment")
+			logger.Subprocess("%s", scribe.NewFormattedMapFromEnvironment(modulesLayer.SharedEnv))
 		} else {
 			logger.Process("Reusing cached layer %s", modulesLayer.Path)
 

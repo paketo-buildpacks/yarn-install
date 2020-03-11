@@ -106,6 +106,7 @@ type DockerContainerRun struct {
 	command string
 	env     map[string]string
 	memory  string
+	tty     bool
 }
 
 func (r DockerContainerRun) WithEnv(env map[string]string) DockerContainerRun {
@@ -123,8 +124,17 @@ func (r DockerContainerRun) WithCommand(command string) DockerContainerRun {
 	return r
 }
 
+func (r DockerContainerRun) WithTTY() DockerContainerRun {
+	r.tty = true
+	return r
+}
+
 func (r DockerContainerRun) Execute(imageID string) (Container, error) {
 	args := []string{"container", "run", "--detach"}
+
+	if r.tty {
+		args = append(args, "--tty")
+	}
 
 	if len(r.env) > 0 {
 		var keys []string

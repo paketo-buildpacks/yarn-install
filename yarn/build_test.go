@@ -121,9 +121,12 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 							"cache_sha": "some-sha",
 						},
 					}, {
-						Name:      "modules",
-						Path:      filepath.Join(layersDir, "modules"),
-						SharedEnv: packit.Environment{},
+						Name: "modules",
+						Path: filepath.Join(layersDir, "modules"),
+						SharedEnv: packit.Environment{
+							"PATH.append": filepath.Join(layersDir, "modules", "node_modules", ".bin"),
+							"PATH.delim":  ":",
+						},
 						BuildEnv:  packit.Environment{},
 						LaunchEnv: packit.Environment{},
 						Build:     false,
@@ -202,9 +205,12 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						Launch:    true,
 						Cache:     true,
 					}, {
-						Name:      "modules",
-						Path:      filepath.Join(layersDir, "modules"),
-						SharedEnv: packit.Environment{},
+						Name: "modules",
+						Path: filepath.Join(layersDir, "modules"),
+						SharedEnv: packit.Environment{
+							"PATH.append": filepath.Join(layersDir, "modules", "node_modules", ".bin"),
+							"PATH.delim":  ":",
+						},
 						BuildEnv:  packit.Environment{},
 						LaunchEnv: packit.Environment{},
 						Build:     false,

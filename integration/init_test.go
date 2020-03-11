@@ -68,11 +68,12 @@ func TestIntegration(t *testing.T) {
 
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
 	suite("Caching", testCaching)
+	suite("Logging", testLogging)
+	suite("ModuleBinaries", testModuleBinaries)
 	suite("PreGyp", testPreGyp)
 	suite("SimpleApp", testSimpleApp)
 	suite("Vendored", testVendored)
 	suite("Workspaces", testWorkspaces)
-	suite("Logging", testLogging)
 
 	dagger.SyncParallelOutput(func() { suite.Run(t) })
 }
