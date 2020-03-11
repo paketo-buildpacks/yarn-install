@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	PlanDependencyYarn = "yarn"
-	PlanDependencyNode = "node"
+	PlanDependencyNodeModules = "node_modules"
+	PlanDependencyNode        = "node"
 )
 
 type BuildPlanMetadata struct {
@@ -64,10 +64,10 @@ func Detect(parser VersionParser) packit.DetectFunc {
 		return packit.DetectResult{
 			Plan: packit.BuildPlan{
 				Provides: []packit.BuildPlanProvision{
-					{Name: PlanDependencyYarn},
+					{Name: PlanDependencyNodeModules},
 				},
 				Requires: []packit.BuildPlanRequirement{
-					{Name: PlanDependencyYarn},
+					{Name: PlanDependencyNodeModules},
 					nodeRequirement,
 				},
 			},

@@ -38,17 +38,17 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		detect = yarn.Detect(versionParser)
 	})
 
-	it("returns a plan that provides yarn", func() {
+	it("returns a plan that provides node_modules", func() {
 		result, err := detect(packit.DetectContext{
 			WorkingDir: workingDir,
 		})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(result.Plan).To(Equal(packit.BuildPlan{
 			Provides: []packit.BuildPlanProvision{
-				{Name: "yarn"},
+				{Name: "node_modules"},
 			},
 			Requires: []packit.BuildPlanRequirement{
-				{Name: "yarn"},
+				{Name: "node_modules"},
 				{
 					Name:    "node",
 					Version: "some-version",
@@ -69,17 +69,17 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			versionParser.ParseVersionCall.Returns.Version = ""
 		})
 
-		it("returns a plan that provides yarn", func() {
+		it("returns a plan that provides node_modules", func() {
 			result, err := detect(packit.DetectContext{
 				WorkingDir: workingDir,
 			})
 			Expect(err).NotTo(HaveOccurred())
 			Expect(result.Plan).To(Equal(packit.BuildPlan{
 				Provides: []packit.BuildPlanProvision{
-					{Name: "yarn"},
+					{Name: "node_modules"},
 				},
 				Requires: []packit.BuildPlanRequirement{
-					{Name: "yarn"},
+					{Name: "node_modules"},
 					{
 						Name: "node",
 						Metadata: yarn.BuildPlanMetadata{
