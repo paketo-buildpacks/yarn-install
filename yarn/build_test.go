@@ -94,7 +94,18 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Layers:     packit.Layers{Path: layersDir},
 				Plan: packit.BuildpackPlan{
 					Entries: []packit.BuildpackPlanEntry{
-						{Name: "yarn"},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"launch": true,
+							},
+						},
 					},
 				},
 				Stack: "some-stack",
@@ -103,7 +114,18 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(result).To(Equal(packit.BuildResult{
 				Plan: packit.BuildpackPlan{
 					Entries: []packit.BuildpackPlanEntry{
-						{Name: "yarn"},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"launch": true,
+							},
+						},
 					},
 				},
 				Layers: []packit.Layer{
@@ -129,7 +151,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						},
 						BuildEnv:  packit.Environment{},
 						LaunchEnv: packit.Environment{},
-						Build:     false,
+						Build:     true,
 						Launch:    true,
 						Cache:     true,
 						Metadata: map[string]interface{}{
@@ -183,7 +205,18 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Stack:      "some-stack",
 				Plan: packit.BuildpackPlan{
 					Entries: []packit.BuildpackPlanEntry{
-						{Name: "yarn"},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"launch": true,
+							},
+						},
 					},
 				},
 			})
@@ -191,7 +224,18 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(result).To(Equal(packit.BuildResult{
 				Plan: packit.BuildpackPlan{
 					Entries: []packit.BuildpackPlanEntry{
-						{Name: "yarn"},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"launch": true,
+							},
+						},
 					},
 				},
 				Layers: []packit.Layer{
@@ -213,7 +257,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						},
 						BuildEnv:  packit.Environment{},
 						LaunchEnv: packit.Environment{},
-						Build:     false,
+						Build:     true,
 						Launch:    true,
 						Cache:     true,
 						Metadata: map[string]interface{}{
@@ -254,7 +298,18 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Stack:      "some-stack",
 				Plan: packit.BuildpackPlan{
 					Entries: []packit.BuildpackPlanEntry{
-						{Name: "yarn"},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"launch": true,
+							},
+						},
 					},
 				},
 			})
@@ -262,7 +317,18 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(result).To(Equal(packit.BuildResult{
 				Plan: packit.BuildpackPlan{
 					Entries: []packit.BuildpackPlanEntry{
-						{Name: "yarn"},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"launch": true,
+							},
+						},
 					},
 				},
 				Layers: []packit.Layer{
@@ -285,7 +351,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						SharedEnv: packit.Environment{},
 						BuildEnv:  packit.Environment{},
 						LaunchEnv: packit.Environment{},
-						Build:     false,
+						Build:     true,
 						Launch:    true,
 						Cache:     true,
 					},
@@ -337,7 +403,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers:     packit.Layers{Path: layersDir},
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
-							{Name: "yarn"},
+							{Name: "node_modules"},
 						},
 					},
 				})
@@ -359,7 +425,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers:     packit.Layers{Path: layersDir},
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
-							{Name: "yarn"},
+							{Name: "node_modules"},
 						},
 					},
 				})
@@ -379,7 +445,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers:     packit.Layers{Path: layersDir},
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
-							{Name: "yarn"},
+							{Name: "node_modules"},
 						},
 					},
 				})
@@ -399,7 +465,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers:     packit.Layers{Path: layersDir},
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
-							{Name: "yarn"},
+							{Name: "node_modules"},
 						},
 					},
 				})
@@ -422,7 +488,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers:     packit.Layers{Path: layersDir},
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
-							{Name: "yarn"},
+							{Name: "node_modules"},
 						},
 					},
 				})
@@ -442,7 +508,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers:     packit.Layers{Path: layersDir},
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
-							{Name: "yarn"},
+							{Name: "node_modules"},
 						},
 					},
 				})
@@ -466,7 +532,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers:     packit.Layers{Path: layersDir},
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
-							{Name: "yarn"},
+							{Name: "node_modules"},
 						},
 					},
 				})

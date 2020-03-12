@@ -55,10 +55,9 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				sourcePath := filepath.Join("testdata", "simple_app")
 
 				build := pack.WithNoColor().Build.WithBuildpacks(nodeURI, yarnURI)
-				var logs fmt.Stringer
 
-				firstImage, logs, err := build.Execute(imageName, sourcePath)
-				Expect(err).NotTo(HaveOccurred(), logs.String)
+				firstImage, firstLogs, err := build.Execute(imageName, sourcePath)
+				Expect(err).NotTo(HaveOccurred(), firstLogs.String)
 
 				imageIDs[firstImage.ID] = struct{}{}
 
@@ -74,8 +73,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 				Eventually(container).Should(BeAvailable(), ContainerLogs(container.ID))
 
-				secondImage, logs, err := build.Execute(imageName, sourcePath)
-				Expect(err).NotTo(HaveOccurred(), logs.String)
+				secondImage, secondLogs, err := build.Execute(imageName, sourcePath)
+				Expect(err).NotTo(HaveOccurred(), secondLogs.String)
 
 				imageIDs[secondImage.ID] = struct{}{}
 
@@ -97,12 +96,12 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				Expect(secondImage.Buildpacks[1].Layers["modules"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[1].Layers["modules"].Metadata["built_at"]))
 				Expect(secondImage.Buildpacks[1].Layers["modules"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[1].Layers["modules"].Metadata["cache_sha"]))
 
-				Expect(secondImage.ID).To(Equal(firstImage.ID))
+				Expect(secondImage.ID).To(Equal(firstImage.ID), fmt.Sprintf("%s\n\n%s", firstLogs, secondLogs))
 
 				buildpackVersion, err := GetGitVersion()
 				Expect(err).ToNot(HaveOccurred())
 
-				splitLogs := GetBuildLogs(logs.String())
+				splitLogs := GetBuildLogs(secondLogs.String())
 				Expect(splitLogs).To(ContainSequence([]interface{}{
 					fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
 					"  Reusing cached layer /layers/org.cloudfoundry.yarn-install/yarn",
@@ -115,7 +114,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					"",
 					"  Reusing cached layer /layers/org.cloudfoundry.yarn-install/modules",
 				},
-				), logs.String)
+				), secondLogs.String)
 			})
 		})
 	})

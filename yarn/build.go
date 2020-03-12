@@ -71,7 +71,7 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 
 		logger.Process("Resolving installation process")
 
-		modulesLayer, err := context.Layers.Get("modules", packit.LaunchLayer, packit.CacheLayer)
+		modulesLayer, err := context.Layers.Get("modules", layerFlags(context.Plan.Entries)...)
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
@@ -139,4 +139,26 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 			},
 		}, nil
 	}
+}
+
+func layerFlags(entries []packit.BuildpackPlanEntry) []packit.LayerType {
+	var flags []packit.LayerType
+
+	for _, entry := range entries {
+		launch, ok := entry.Metadata["launch"].(bool)
+		if ok && launch {
+			flags = append(flags, packit.LaunchLayer)
+			flags = append(flags, packit.CacheLayer)
+		}
+	}
+
+	for _, entry := range entries {
+		build, ok := entry.Metadata["build"].(bool)
+		if ok && build {
+			flags = append(flags, packit.BuildLayer)
+			flags = append(flags, packit.CacheLayer)
+		}
+	}
+
+	return flags
 }

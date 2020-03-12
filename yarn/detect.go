@@ -67,7 +67,12 @@ func Detect(parser VersionParser) packit.DetectFunc {
 					{Name: PlanDependencyNodeModules},
 				},
 				Requires: []packit.BuildPlanRequirement{
-					{Name: PlanDependencyNodeModules},
+					{
+						Name: PlanDependencyNodeModules,
+						Metadata: BuildPlanMetadata{
+							Launch: true,
+						},
+					},
 					nodeRequirement,
 				},
 			},

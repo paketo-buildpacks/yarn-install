@@ -48,7 +48,12 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 				{Name: "node_modules"},
 			},
 			Requires: []packit.BuildPlanRequirement{
-				{Name: "node_modules"},
+				{
+					Name: "node_modules",
+					Metadata: yarn.BuildPlanMetadata{
+						Launch: true,
+					},
+				},
 				{
 					Name:    "node",
 					Version: "some-version",
@@ -79,7 +84,12 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 					{Name: "node_modules"},
 				},
 				Requires: []packit.BuildPlanRequirement{
-					{Name: "node_modules"},
+					{
+						Name: "node_modules",
+						Metadata: yarn.BuildPlanMetadata{
+							Launch: true,
+						},
+					},
 					{
 						Name: "node",
 						Metadata: yarn.BuildPlanMetadata{
