@@ -14,11 +14,11 @@ api = "0.2"
   [[metadata.dependencies]]
     id = "yarn"
     name = "Yarn"
-    sha256 = "0b78b1217a077fecaad101276e5175835546958e6671fa42046e1deeddf95e29"
+    sha256 = "18b50f203fd0048024b8a73fa5e2ccc98857dea1452da44c5399e063ba44e965"
     source = "https://github.com/yarnpkg/yarn/releases/download/v1.22.2/yarn-v1.22.2.tar.gz"
     source_sha256 = "de4cff575ae7151f8189bf1d747f026695d768d0563e2860df407ab79c70693d"
     stacks = ["io.buildpacks.stacks.bionic", "org.cloudfoundry.stacks.cflinuxfs3"]
-    uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.22.2-any-stack-0b78b121.tgz"
+    uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn-1.22.2-any-stack-18b50f20.tgz"
     version = "1.22.2"
 
   [[metadata.dependencies]]
