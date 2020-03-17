@@ -74,6 +74,7 @@ func TestIntegration(t *testing.T) {
 	suite("SimpleApp", testSimpleApp)
 	suite("Vendored", testVendored)
 	suite("Workspaces", testWorkspaces)
+	suite("NoHoist", testNoHoist)
 
 	dagger.SyncParallelOutput(func() { suite.Run(t) })
 }
