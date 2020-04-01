@@ -304,6 +304,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				it.Before(func() {
 					executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 						if strings.Contains(strings.Join(execution.Args, " "), "config") {
+							fmt.Fprintf(execution.Stdout, "some stdout error")
+							fmt.Fprintf(execution.Stderr, "some stderr error")
 							return errors.New("yarn config failed")
 						}
 
@@ -313,7 +315,9 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 				it("returns an error", func() {
 					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
-					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config:")))
+					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config")))
+					Expect(err).To(MatchError(ContainSubstring("some stdout error")))
+					Expect(err).To(MatchError(ContainSubstring("some stderr error")))
 					Expect(err).To(MatchError(ContainSubstring("yarn config failed")))
 				})
 			})
@@ -331,7 +335,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 				it("returns an error", func() {
 					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
-					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config:")))
+					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config")))
 					Expect(err).To(MatchError(ContainSubstring("yarn config failed")))
 				})
 			})

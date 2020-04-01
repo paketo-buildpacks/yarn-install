@@ -92,19 +92,20 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 		variables = append(variables, env)
 	}
 
-	stdout := bytes.NewBuffer(nil)
+	buffer := bytes.NewBuffer(nil)
 	err = ip.executable.Execute(pexec.Execution{
 		Args:   []string{"config", "get", "yarn-offline-mirror"},
-		Stdout: stdout,
+		Stdout: buffer,
+		Stderr: buffer,
 		Env:    variables,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to execute yarn config: %w", err)
+		return fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
 	}
 
 	installArgs := []string{"install", "--ignore-engines", "--frozen-lockfile"}
 
-	info, err := os.Stat(strings.TrimSpace(stdout.String()))
+	info, err := os.Stat(strings.TrimSpace(buffer.String()))
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to confirm existence of offline mirror directory: %w", err)
 	}
@@ -116,7 +117,7 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 	installArgs = append(installArgs, "--modules-folder", filepath.Join(modulesLayerPath, "node_modules"))
 	ip.logger.Subprocess("Running yarn %s", strings.Join(installArgs, " "))
 
-	buffer := bytes.NewBuffer(nil)
+	buffer = bytes.NewBuffer(nil)
 	err = ip.executable.Execute(pexec.Execution{
 		Args:   installArgs,
 		Env:    variables,
