@@ -62,7 +62,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				imageIDs[firstImage.ID] = struct{}{}
 
 				Expect(firstImage.Buildpacks).To(HaveLen(2))
-				Expect(firstImage.Buildpacks[1].Key).To(Equal("org.cloudfoundry.yarn-install"))
+				Expect(firstImage.Buildpacks[1].Key).To(Equal("paketo-buildpacks/yarn-install"))
 				Expect(firstImage.Buildpacks[1].Layers).To(HaveKey("yarn"))
 				Expect(firstImage.Buildpacks[1].Layers).To(HaveKey("modules"))
 
@@ -79,7 +79,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				imageIDs[secondImage.ID] = struct{}{}
 
 				Expect(secondImage.Buildpacks).To(HaveLen(2))
-				Expect(secondImage.Buildpacks[1].Key).To(Equal("org.cloudfoundry.yarn-install"))
+				Expect(secondImage.Buildpacks[1].Key).To(Equal("paketo-buildpacks/yarn-install"))
 				Expect(secondImage.Buildpacks[1].Layers).To(HaveKey("yarn"))
 				Expect(secondImage.Buildpacks[1].Layers).To(HaveKey("modules"))
 
@@ -104,7 +104,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				splitLogs := GetBuildLogs(secondLogs.String())
 				Expect(splitLogs).To(ContainSequence([]interface{}{
 					fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
-					"  Reusing cached layer /layers/org.cloudfoundry.yarn-install/yarn",
+					"  Reusing cached layer /layers/paketo-buildpacks_yarn-install/yarn",
 					"",
 					"  Resolving installation process",
 					"    Process inputs:",
@@ -112,7 +112,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					"",
 					"    Selected default build process: 'yarn install'",
 					"",
-					"  Reusing cached layer /layers/org.cloudfoundry.yarn-install/modules",
+					"  Reusing cached layer /layers/paketo-buildpacks_yarn-install/modules",
 				},
 				), secondLogs.String)
 			})

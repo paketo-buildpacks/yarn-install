@@ -1,7 +1,7 @@
 api = "0.2"
 
 [buildpack]
-  id = "org.cloudfoundry.yarn-install"
+  id = "paketo-buildpacks/yarn-install"
   name = "Yarn Install Buildpack"
   version = "{{ .Version }}"
 
