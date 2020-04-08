@@ -14,10 +14,12 @@ code.cloudfoundry.org/lager v2.0.0+incompatible/go.mod h1:O2sS7gKP3HM2iemG+Enwvy
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
+github.com/MasterMinds/semver v1.5.0/go.mod h1:VgTz+o1W0Y0VH2fNMYqTNX5yF13A7uet9xzz3Iqu2pY=
 github.com/Masterminds/semver v1.5.0 h1:H65muMkzWKEuNDnfl9d70GUjFniHKHRbFPGBuZ3QEww=
 github.com/Masterminds/semver v1.5.0/go.mod h1:MB6lktGJrhw8PrUyiEoblNEGEQ+RzHPF078ddwwvV3Y=
 github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
+github.com/blang/semver v3.5.1+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/buildpack/libbuildpack v1.24.5 h1:r7AM7r8ff7ocI1KOopVHEC3EDTCdrj0YeTXkfYuqH0I=
 github.com/buildpack/libbuildpack v1.24.5/go.mod h1:cBmq8aozSDfy+RiKCERQbT6lk0M/Xf3aJWK2PLbPG1g=
 github.com/cheggaaa/pb v2.0.7+incompatible h1:gLKifR1UkZ/kLkda5gC0K6c8g+jU2sINPtBeOiNlMhU=
@@ -33,8 +35,8 @@ github.com/cloudfoundry/occam v0.0.0-20200227222407-1c4318bd26e2 h1:u1RZplNdF1zt
 github.com/cloudfoundry/occam v0.0.0-20200227222407-1c4318bd26e2/go.mod h1:stUR8Lj7wzXGPU7zjYqGdfk/Rtlgq44hD3Vf6lCswms=
 github.com/cloudfoundry/packit v0.0.0-20200213185904-9d0fc689e7af h1:G6pQ5RECHT19D/xLRb25E/mYeTgTvD83PCRnrGlUaNE=
 github.com/cloudfoundry/packit v0.0.0-20200213185904-9d0fc689e7af/go.mod h1:L9r26GHPYpUReBWTpkU5BgyDuNVU01JSG4QsHybI0Bg=
-github.com/cloudfoundry/packit v0.0.0-20200302171850-93bd55387916 h1:QJpjJ/nH8hXlQ9Y0aVc6LyCE47vhykQNDBf1nZ4hCso=
-github.com/cloudfoundry/packit v0.0.0-20200302171850-93bd55387916/go.mod h1:L9r26GHPYpUReBWTpkU5BgyDuNVU01JSG4QsHybI0Bg=
+github.com/cloudfoundry/packit v0.0.1 h1:PMxtDb/qGlIAd6HiNbK47qz9yT3I50QEBCsS63pX5BQ=
+github.com/cloudfoundry/packit v0.0.1/go.mod h1:uDKHDsuoHGRdrF8WPU/l6wNnfW3RJrLZS3sWtTcbLIE=
 github.com/fatih/color v1.7.0 h1:DkWD4oS2D8LGGgTQ6IvwJJXSL5Vp2ffcQg58nFV38Ys=
 github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5KwzbycvMj4=
 github.com/fatih/color v1.9.0 h1:8xPHl4/q1VyqGIPif1F+1V3Y3lSmrq01EabUW3CoW5s=
