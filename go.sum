@@ -29,8 +29,8 @@ github.com/cloudfoundry/dagger v0.0.0-20200213200846-c2a9723f08c4 h1:J2mh0/z+4BN
 github.com/cloudfoundry/dagger v0.0.0-20200213200846-c2a9723f08c4/go.mod h1:u5NQ0WO/W1nwFEwmLuvLoJVrKF4LIFVkKTh9hGODwZs=
 github.com/cloudfoundry/libcfbuildpack v1.89.0 h1:A0OXihcHjvDRLYendhfqMxTBVe5pi5fmM5t4sqNRpao=
 github.com/cloudfoundry/libcfbuildpack v1.89.0/go.mod h1:ufhp/bp0LxbDDwbf2Ms3Bf4x9YnLr9dkL1RTUYSdKg0=
-github.com/cloudfoundry/occam v0.0.0-20200227222407-1c4318bd26e2 h1:u1RZplNdF1ztioOZl35ozq83OJSHTYur9ybK3jCaFwA=
-github.com/cloudfoundry/occam v0.0.0-20200227222407-1c4318bd26e2/go.mod h1:stUR8Lj7wzXGPU7zjYqGdfk/Rtlgq44hD3Vf6lCswms=
+github.com/cloudfoundry/occam v0.0.1 h1:wF3xCm8HZDbuggxZE3+ndDQx4f3DS3F49qi9eZ4kXCI=
+github.com/cloudfoundry/occam v0.0.1/go.mod h1:stUR8Lj7wzXGPU7zjYqGdfk/Rtlgq44hD3Vf6lCswms=
 github.com/cloudfoundry/packit v0.0.0-20200213185904-9d0fc689e7af h1:G6pQ5RECHT19D/xLRb25E/mYeTgTvD83PCRnrGlUaNE=
 github.com/cloudfoundry/packit v0.0.0-20200213185904-9d0fc689e7af/go.mod h1:L9r26GHPYpUReBWTpkU5BgyDuNVU01JSG4QsHybI0Bg=
 github.com/cloudfoundry/packit v0.0.3 h1:ABdSvNQ8g63bjiy3rFeoEkI/VYWftYySDYF6R1kmrsk=
