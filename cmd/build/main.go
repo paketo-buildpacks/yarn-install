@@ -10,7 +10,7 @@ import (
 	"github.com/cloudfoundry/packit/pexec"
 	"github.com/cloudfoundry/packit/postal"
 	"github.com/cloudfoundry/packit/scribe"
-	"github.com/cloudfoundry/yarn-install-cnb/yarn"
+	"github.com/paketo-buildpacks/yarn-install/yarn"
 )
 
 func main() {
