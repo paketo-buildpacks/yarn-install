@@ -1,5 +1,10 @@
 # Yarn Install Cloud Native Buildpack
 
+The Yarn Install CNB both installs the [`yarn`](https://yarnpkg.com/) binary and puts it on the `$PATH`
+which makes the binary available to itself and subsequent buildpacks. It also
+manages application dependencies, then writes the start command for the given
+application.
+
 ## Integration
 
 The Yarn Install CNB provides node_modules as a dependency. Downstream
@@ -18,7 +23,21 @@ file that looks like the following:
   # Note: The version field is unsupported as there is no version for a set of
   # node_modules.
 
-  # The Yarn Install buildpack does not support any non-required metadata options.
+  # The Yarn Install buildpack supports some non-required metadata options.
+  [requires.metadata]
+
+    # Setting the build flag to true will ensure that the Node modules and the yarn
+    # binary are available for subsequent buildpacks during their build phase.
+    # If you are writing a buildpack that needs to run a node module
+    # or the yarn binary during its build process, this flag should be set to true.
+    build = true
+
+    # Setting the launch flag to true will ensure that the packages managed by
+    # Yarn and the yarn binary will be available for the running application. If you
+    # are writing an application that needs to run Node modules or the yarn binary
+    # at runtime, this flag should be set to true.
+    launch = true
+
 ```
 
 ## Usage
