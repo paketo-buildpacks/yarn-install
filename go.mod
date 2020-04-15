@@ -1,4 +1,4 @@
-module github.com/cloudfoundry/yarn-install-cnb
+module github.com/paketo-buildpacks/yarn-install
 
 require (
 	github.com/cloudfoundry/dagger v0.0.0-20200213200846-c2a9723f08c4

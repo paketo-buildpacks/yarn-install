@@ -64,7 +64,7 @@ func TestIntegration(t *testing.T) {
 	defer os.RemoveAll(nodeRepo)
 	defer dagger.DeleteBuildpack(nodeCachedURI)
 
-	SetDefaultEventuallyTimeout(5 * time.Second)
+	SetDefaultEventuallyTimeout(10 * time.Second)
 
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
 	suite("Caching", testCaching)
