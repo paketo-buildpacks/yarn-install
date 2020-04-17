@@ -65,6 +65,10 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	return false, "", nil
 }
 
+// The build process here relies on yarn install ... --frozen-lockfile note that
+// even if we provide a node_modules directory we must run a 'yarn install' as
+// this is the ONLY way to rebuild native extensions.
+
 func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath string) error {
 	err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
 	if err != nil {
