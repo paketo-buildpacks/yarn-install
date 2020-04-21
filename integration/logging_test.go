@@ -8,6 +8,7 @@ import (
 	"github.com/cloudfoundry/occam"
 	"github.com/sclevine/spec"
 
+	. "github.com/cloudfoundry/occam/matchers"
 	. "github.com/onsi/gomega"
 )
 
@@ -54,8 +55,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 			buildpackVersion, err := GetGitVersion()
 			Expect(err).ToNot(HaveOccurred())
 
-			splitLogs := GetBuildLogs(logs.String())
-			Expect(splitLogs).To(ContainSequence([]interface{}{
+			Expect(logs).To(ContainLines(
 				fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
 				"  Executing build process",
 				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
@@ -73,8 +73,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"",
 				"  Configuring environment",
 				`    PATH -> "$PATH:/layers/paketo-buildpacks_yarn-install/modules/node_modules/.bin"`,
-			},
-			), logs.String)
+			))
 		})
 	})
 
@@ -108,8 +107,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 			buildpackVersion, err := GetGitVersion()
 			Expect(err).ToNot(HaveOccurred())
 
-			splitLogs := GetBuildLogs(logs.String())
-			Expect(splitLogs).To(ContainSequence([]interface{}{
+			Expect(logs).To(ContainLines(
 				fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
 				"  Executing build process",
 				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
@@ -127,8 +125,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"",
 				"  Configuring environment",
 				`    PATH -> "$PATH:/layers/paketo-buildpacks_yarn-install/modules/node_modules/.bin"`,
-			},
-			), logs.String)
+			))
 		})
 	})
 }
