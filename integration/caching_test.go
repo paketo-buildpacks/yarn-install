@@ -101,8 +101,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				buildpackVersion, err := GetGitVersion()
 				Expect(err).ToNot(HaveOccurred())
 
-				splitLogs := GetBuildLogs(secondLogs.String())
-				Expect(splitLogs).To(ContainSequence([]interface{}{
+				Expect(secondLogs).To(ContainLines(
 					fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
 					"  Reusing cached layer /layers/paketo-buildpacks_yarn-install/yarn",
 					"",
@@ -113,8 +112,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					"    Selected default build process: 'yarn install'",
 					"",
 					"  Reusing cached layer /layers/paketo-buildpacks_yarn-install/modules",
-				},
-				), secondLogs.String)
+				))
 			})
 		})
 	})
