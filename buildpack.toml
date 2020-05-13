@@ -4,6 +4,7 @@ api = "0.2"
   id = "paketo-buildpacks/yarn-install"
   name = "Yarn Install Buildpack"
   version = "{{ .Version }}"
+  homepage = "https://github.com/paketo-buildpacks/yarn-install"
 
 [metadata]
   include_files = ["bin/build", "bin/detect", "buildpack.toml"]
