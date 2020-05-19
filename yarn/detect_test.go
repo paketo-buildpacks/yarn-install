@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/cloudfoundry/packit"
+	"github.com/paketo-buildpacks/packit"
 	"github.com/paketo-buildpacks/yarn-install/yarn"
 	"github.com/paketo-buildpacks/yarn-install/yarn/fakes"
 	"github.com/sclevine/spec"

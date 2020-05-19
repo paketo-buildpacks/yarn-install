@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudfoundry/packit/pexec"
-	"github.com/cloudfoundry/packit/scribe"
+	"github.com/paketo-buildpacks/packit/pexec"
+	"github.com/paketo-buildpacks/packit/scribe"
 	"github.com/paketo-buildpacks/yarn-install/yarn"
 	"github.com/paketo-buildpacks/yarn-install/yarn/fakes"
 	"github.com/sclevine/spec"
