@@ -3,7 +3,6 @@ api = "0.2"
 [buildpack]
   id = "paketo-buildpacks/yarn-install"
   name = "Yarn Install Buildpack"
-  version = "{{ .Version }}"
   homepage = "https://github.com/paketo-buildpacks/yarn-install"
 
 [metadata]
