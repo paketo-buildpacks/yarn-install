@@ -11,7 +11,6 @@ func TestUnitYarn(t *testing.T) {
 	suite := spec.New("yarn", spec.Report(report.Terminal{}))
 	suite("Build", testBuild)
 	suite("CacheHandler", testCacheHandler)
-	suite("Clock", testClock)
 	suite("Detect", testDetect)
 	suite("InstallProcess", testInstallProcess)
 	suite("PackageJSONParser", testPackageJSONParser)

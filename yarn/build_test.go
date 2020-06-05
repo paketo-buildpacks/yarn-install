@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/paketo-buildpacks/packit"
+	"github.com/paketo-buildpacks/packit/chronos"
 	"github.com/paketo-buildpacks/packit/postal"
 	"github.com/paketo-buildpacks/packit/scribe"
 	"github.com/paketo-buildpacks/yarn-install/yarn"
@@ -31,7 +32,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		installProcess    *fakes.InstallProcess
 		dependencyService *fakes.DependencyService
 		cacheMatcher      *fakes.CacheMatcher
-		clock             yarn.Clock
+		clock             chronos.Clock
 		now               time.Time
 		buffer            *bytes.Buffer
 
@@ -50,7 +51,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		Expect(err).NotTo(HaveOccurred())
 
 		now = time.Now()
-		clock = yarn.NewClock(func() time.Time {
+		clock = chronos.NewClock(func() time.Time {
 			return now
 		})
 

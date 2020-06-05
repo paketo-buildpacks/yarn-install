@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/cloudfoundry/dagger"
-	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/paketo-buildpacks/occam"
+	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
@@ -18,7 +19,6 @@ import (
 )
 
 var (
-	bpDir         string
 	yarnURI       string
 	yarnCachedURI string
 	nodeURI       string
@@ -31,13 +31,13 @@ func TestIntegration(t *testing.T) {
 		err    error
 	)
 
-	bpDir, err = dagger.FindBPRoot()
+	root, err := filepath.Abs("./..")
 	Expect(err).NotTo(HaveOccurred())
 
-	yarnURI, err = dagger.PackageBuildpack(bpDir)
+	yarnURI, err = dagger.PackageBuildpack(root)
 	Expect(err).ToNot(HaveOccurred())
 
-	yarnCachedURI, _, err = dagger.PackageCachedBuildpack(bpDir)
+	yarnCachedURI, _, err = dagger.PackageCachedBuildpack(root)
 	Expect(err).ToNot(HaveOccurred())
 
 	nodeURI, err = dagger.GetLatestCommunityBuildpack("paketo-buildpacks", "node-engine")
