@@ -2,10 +2,10 @@ package main
 
 import (
 	"os"
-	"time"
 
 	"github.com/paketo-buildpacks/packit"
 	"github.com/paketo-buildpacks/packit/cargo"
+	"github.com/paketo-buildpacks/packit/chronos"
 	"github.com/paketo-buildpacks/packit/fs"
 	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/paketo-buildpacks/packit/postal"
@@ -21,9 +21,7 @@ func main() {
 	summer := fs.NewChecksumCalculator()
 	installProcess := yarn.NewYarnInstallProcess(executable, summer, logger)
 	dependencyService := postal.NewService(transport)
-
-	clock := yarn.NewClock(time.Now)
 	cacheHandler := yarn.NewCacheHandler()
 
-	packit.Build(yarn.Build(dependencyService, cacheHandler, installProcess, clock, logger))
+	packit.Build(yarn.Build(dependencyService, cacheHandler, installProcess, chronos.DefaultClock, logger))
 }

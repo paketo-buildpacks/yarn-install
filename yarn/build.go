@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/paketo-buildpacks/packit"
+	"github.com/paketo-buildpacks/packit/chronos"
 	"github.com/paketo-buildpacks/packit/postal"
 	"github.com/paketo-buildpacks/packit/scribe"
 )
@@ -27,7 +28,7 @@ type InstallProcess interface {
 	Execute(workingDir, modulesLayerPath, yarnLayerPath string) error
 }
 
-func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, installProcess InstallProcess, clock Clock, logger scribe.Logger) packit.BuildFunc {
+func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, installProcess InstallProcess, clock chronos.Clock, logger scribe.Logger) packit.BuildFunc {
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
@@ -50,14 +51,14 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 			}
 
 			logger.Subprocess("Installing Yarn %s", dependency.Version)
-			then := clock.Now()
-
-			err = dependencyService.Install(dependency, context.CNBPath, yarnLayer.Path)
+			duration, err := clock.Measure(func() error {
+				return dependencyService.Install(dependency, context.CNBPath, yarnLayer.Path)
+			})
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
 
-			logger.Action("Completed in %s", time.Since(then).Round(time.Millisecond))
+			logger.Action("Completed in %s", duration.Round(time.Millisecond))
 			logger.Break()
 
 			yarnLayer.Metadata = map[string]interface{}{
@@ -92,13 +93,13 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 				return packit.BuildResult{}, err
 			}
 
-			then := clock.Now()
-
-			err = installProcess.Execute(context.WorkingDir, modulesLayer.Path, yarnLayer.Path)
+			duration, err := clock.Measure(func() error {
+				return installProcess.Execute(context.WorkingDir, modulesLayer.Path, yarnLayer.Path)
+			})
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
-			logger.Action("Completed in %s", time.Since(then).Round(time.Millisecond))
+			logger.Action("Completed in %s", duration.Round(time.Millisecond))
 			logger.Break()
 
 			modulesLayer.Metadata = map[string]interface{}{
