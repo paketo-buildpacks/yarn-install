@@ -344,8 +344,10 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				it.Before(func() {
 					executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 						if strings.Contains(strings.Join(execution.Args, " "), "install") {
-							execution.Stdout.Write([]byte("stdout output"))
-							execution.Stderr.Write([]byte("stderr output"))
+							_, err := execution.Stdout.Write([]byte("stdout output"))
+							Expect(err).NotTo(HaveOccurred())
+							_, err = execution.Stderr.Write([]byte("stderr output"))
+							Expect(err).NotTo(HaveOccurred())
 
 							return errors.New("yarn install failed")
 						}
