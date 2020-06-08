@@ -1,4 +1,4 @@
-package yarn_test
+package yarninstall_test
 
 import (
 	"testing"

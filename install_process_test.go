@@ -1,4 +1,4 @@
-package yarn_test
+package yarninstall_test
 
 import (
 	"bytes"
@@ -12,8 +12,8 @@ import (
 
 	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/paketo-buildpacks/packit/scribe"
-	"github.com/paketo-buildpacks/yarn-install/yarn"
-	"github.com/paketo-buildpacks/yarn-install/yarn/fakes"
+	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -26,7 +26,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		var (
 			workingDir     string
 			executable     *fakes.Executable
-			installProcess yarn.YarnInstallProcess
+			installProcess yarninstall.YarnInstallProcess
 			summer         *fakes.Summer
 		)
 
@@ -38,7 +38,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable = &fakes.Executable{}
 			summer = &fakes.Summer{}
 
-			installProcess = yarn.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
+			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
 		})
 
 		context("we should run yarn install when", func() {
@@ -127,7 +127,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable       *fakes.Executable
 			summer           *fakes.Summer
 
-			installProcess yarn.YarnInstallProcess
+			installProcess yarninstall.YarnInstallProcess
 		)
 
 		it.Before(func() {
@@ -159,7 +159,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			path = os.Getenv("PATH")
 			os.Setenv("PATH", "/some/bin")
 
-			installProcess = yarn.NewYarnInstallProcess(executable, summer, scribe.NewLogger(buffer))
+			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(buffer))
 		})
 
 		it.After(func() {

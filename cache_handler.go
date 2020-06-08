@@ -1,4 +1,4 @@
-package yarn
+package yarninstall
 
 type CacheHandler struct{}
 

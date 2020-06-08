@@ -6,7 +6,7 @@ api = "0.2"
   homepage = "https://github.com/paketo-buildpacks/yarn-install"
 
 [metadata]
-  include_files = ["bin/build", "bin/detect", "buildpack.toml"]
+  include_files = ["bin/build", "bin/detect", "bin/run", "buildpack.toml"]
   pre_package = "./scripts/build.sh"
   [metadata.default_versions]
     yarn = "1.*"
