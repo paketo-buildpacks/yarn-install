@@ -4,7 +4,7 @@ require (
 	github.com/cloudfoundry/dagger v0.0.0-20200213200846-c2a9723f08c4
 	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/onsi/gomega v1.10.1
-	github.com/paketo-buildpacks/occam v0.0.10
+	github.com/paketo-buildpacks/occam v0.0.11
 	github.com/paketo-buildpacks/packit v0.0.14
 	github.com/sclevine/spec v1.4.0
 )
