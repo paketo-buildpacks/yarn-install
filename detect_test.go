@@ -1,4 +1,4 @@
-package yarn_test
+package yarninstall_test
 
 import (
 	"errors"
@@ -8,8 +8,8 @@ import (
 	"testing"
 
 	"github.com/paketo-buildpacks/packit"
-	"github.com/paketo-buildpacks/yarn-install/yarn"
-	"github.com/paketo-buildpacks/yarn-install/yarn/fakes"
+	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -35,7 +35,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		versionParser = &fakes.VersionParser{}
 		versionParser.ParseVersionCall.Returns.Version = "some-version"
 
-		detect = yarn.Detect(versionParser)
+		detect = yarninstall.Detect(versionParser)
 	})
 
 	it("returns a plan that provides node_modules", func() {
@@ -50,14 +50,14 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			Requires: []packit.BuildPlanRequirement{
 				{
 					Name: "node_modules",
-					Metadata: yarn.BuildPlanMetadata{
+					Metadata: yarninstall.BuildPlanMetadata{
 						Launch: true,
 					},
 				},
 				{
 					Name:    "node",
 					Version: "some-version",
-					Metadata: yarn.BuildPlanMetadata{
+					Metadata: yarninstall.BuildPlanMetadata{
 						VersionSource: "package.json",
 						Build:         true,
 						Launch:        true,
@@ -86,13 +86,13 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 				Requires: []packit.BuildPlanRequirement{
 					{
 						Name: "node_modules",
-						Metadata: yarn.BuildPlanMetadata{
+						Metadata: yarninstall.BuildPlanMetadata{
 							Launch: true,
 						},
 					},
 					{
 						Name: "node",
-						Metadata: yarn.BuildPlanMetadata{
+						Metadata: yarninstall.BuildPlanMetadata{
 							Build:  true,
 							Launch: true,
 						},

@@ -1,4 +1,4 @@
-package yarn_test
+package yarninstall_test
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 	"github.com/paketo-buildpacks/packit/chronos"
 	"github.com/paketo-buildpacks/packit/postal"
 	"github.com/paketo-buildpacks/packit/scribe"
-	"github.com/paketo-buildpacks/yarn-install/yarn"
-	"github.com/paketo-buildpacks/yarn-install/yarn/fakes"
+	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -78,7 +78,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		buffer = bytes.NewBuffer(nil)
 
-		build = yarn.Build(dependencyService, cacheMatcher, installProcess, clock, scribe.NewLogger(buffer))
+		build = yarninstall.Build(dependencyService, cacheMatcher, installProcess, clock, scribe.NewLogger(buffer))
 	})
 
 	it.After(func() {

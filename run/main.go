@@ -10,18 +10,27 @@ import (
 	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/paketo-buildpacks/packit/postal"
 	"github.com/paketo-buildpacks/packit/scribe"
-	"github.com/paketo-buildpacks/yarn-install/yarn"
+	yarninstall "github.com/paketo-buildpacks/yarn-install"
 )
 
 func main() {
+	packageJSONParser := yarninstall.NewPackageJSONParser()
 	logger := scribe.NewLogger(os.Stdout)
-
 	transport := cargo.NewTransport()
 	executable := pexec.NewExecutable("yarn")
 	summer := fs.NewChecksumCalculator()
-	installProcess := yarn.NewYarnInstallProcess(executable, summer, logger)
+	installProcess := yarninstall.NewYarnInstallProcess(executable, summer, logger)
 	dependencyService := postal.NewService(transport)
-	cacheHandler := yarn.NewCacheHandler()
+	cacheHandler := yarninstall.NewCacheHandler()
 
-	packit.Build(yarn.Build(dependencyService, cacheHandler, installProcess, chronos.DefaultClock, logger))
+	packit.Run(
+		yarninstall.Detect(packageJSONParser),
+		yarninstall.Build(
+			dependencyService,
+			cacheHandler,
+			installProcess,
+			chronos.DefaultClock,
+			logger,
+		),
+	)
 }
