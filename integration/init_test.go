@@ -2,14 +2,13 @@ package integration_test
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/cloudfoundry/dagger"
 	"github.com/paketo-buildpacks/occam"
 	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/sclevine/spec"
@@ -26,41 +25,43 @@ var (
 )
 
 func TestIntegration(t *testing.T) {
-	var (
-		Expect = NewWithT(t).Expect
-		err    error
-	)
+	var Expect = NewWithT(t).Expect
+
+	var config struct {
+		NodeEngine string `json:"node-engine"`
+	}
+
+	file, err := os.Open("./../integration.json")
+	Expect(err).NotTo(HaveOccurred())
+
+	Expect(json.NewDecoder(file).Decode(&config)).To(Succeed())
 
 	root, err := filepath.Abs("./..")
 	Expect(err).NotTo(HaveOccurred())
 
-	yarnURI, err = dagger.PackageBuildpack(root)
+	buildpackStore := occam.NewBuildpackStore()
+
+	version, err := GetGitVersion()
 	Expect(err).ToNot(HaveOccurred())
 
-	yarnCachedURI, _, err = dagger.PackageCachedBuildpack(root)
+	yarnURI, err = buildpackStore.Get.
+		WithVersion(version).
+		Execute(root)
 	Expect(err).ToNot(HaveOccurred())
 
-	nodeURI, err = dagger.GetLatestCommunityBuildpack("paketo-buildpacks", "node-engine")
+	yarnCachedURI, err = buildpackStore.Get.
+		WithOfflineDependencies().
+		WithVersion(version).
+		Execute(root)
 	Expect(err).ToNot(HaveOccurred())
 
-	nodeRepo, err := dagger.GetLatestUnpackagedCommunityBuildpack("paketo-buildpacks", "node-engine")
+	nodeURI, err = buildpackStore.Get.Execute(config.NodeEngine)
 	Expect(err).ToNot(HaveOccurred())
 
-	nodeCachedURI, _, err = dagger.PackageCachedBuildpack(nodeRepo)
+	nodeCachedURI, err = buildpackStore.Get.
+		WithOfflineDependencies().
+		Execute(config.NodeEngine)
 	Expect(err).ToNot(HaveOccurred())
-
-	// HACK: we need to fix dagger and the package.sh scripts so that this isn't required
-	yarnURI = fmt.Sprintf("%s.tgz", yarnURI)
-	yarnCachedURI = fmt.Sprintf("%s.tgz", yarnCachedURI)
-	nodeCachedURI = fmt.Sprintf("%s.tgz", nodeCachedURI)
-
-	defer func() {
-	 Expect(dagger.DeleteBuildpack(yarnURI)).To(Succeed())
-	 Expect(dagger.DeleteBuildpack(yarnCachedURI)).To(Succeed())
-	 Expect(dagger.DeleteBuildpack(nodeURI)).To(Succeed())
-	 Expect(os.RemoveAll(nodeRepo)).To(Succeed())
-	 Expect(dagger.DeleteBuildpack(nodeCachedURI)).To(Succeed())
-	}()
 
 	SetDefaultEventuallyTimeout(10 * time.Second)
 
@@ -73,8 +74,7 @@ func TestIntegration(t *testing.T) {
 	suite("Vendored", testVendored)
 	suite("Workspaces", testWorkspaces)
 	suite("NoHoist", testNoHoist)
-
-	dagger.SyncParallelOutput(func() { suite.Run(t) })
+	suite.Run(t)
 }
 
 func ContainerLogs(id string) func() string {
