@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/BurntSushi/toml"
 	"github.com/paketo-buildpacks/occam"
 	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/sclevine/spec"
@@ -22,6 +23,12 @@ var (
 	yarnCachedURI string
 	nodeURI       string
 	nodeCachedURI string
+	buildpackInfo struct {
+		Buildpack struct {
+			ID   string
+			Name string
+		}
+	}
 )
 
 func TestIntegration(t *testing.T) {
@@ -37,6 +44,12 @@ func TestIntegration(t *testing.T) {
 	Expect(json.NewDecoder(file).Decode(&config)).To(Succeed())
 
 	root, err := filepath.Abs("./..")
+	Expect(err).NotTo(HaveOccurred())
+
+	file, err = os.Open("../buildpack.toml")
+	Expect(err).NotTo(HaveOccurred())
+
+	_, err = toml.DecodeReader(file, &buildpackInfo)
 	Expect(err).NotTo(HaveOccurred())
 
 	buildpackStore := occam.NewBuildpackStore()
