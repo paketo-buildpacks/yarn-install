@@ -3,6 +3,7 @@ package integration_test
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/paketo-buildpacks/occam"
@@ -62,7 +63,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				imageIDs[firstImage.ID] = struct{}{}
 
 				Expect(firstImage.Buildpacks).To(HaveLen(2))
-				Expect(firstImage.Buildpacks[1].Key).To(Equal("paketo-buildpacks/yarn-install"))
+				Expect(firstImage.Buildpacks[1].Key).To(Equal(buildpackInfo.Buildpack.ID))
 				Expect(firstImage.Buildpacks[1].Layers).To(HaveKey("yarn"))
 				Expect(firstImage.Buildpacks[1].Layers).To(HaveKey("modules"))
 
@@ -79,7 +80,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				imageIDs[secondImage.ID] = struct{}{}
 
 				Expect(secondImage.Buildpacks).To(HaveLen(2))
-				Expect(secondImage.Buildpacks[1].Key).To(Equal("paketo-buildpacks/yarn-install"))
+				Expect(secondImage.Buildpacks[1].Key).To(Equal(buildpackInfo.Buildpack.ID))
 				Expect(secondImage.Buildpacks[1].Layers).To(HaveKey("yarn"))
 				Expect(secondImage.Buildpacks[1].Layers).To(HaveKey("modules"))
 
@@ -102,8 +103,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(secondLogs).To(ContainLines(
-					fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
-					"  Reusing cached layer /layers/paketo-buildpacks_yarn-install/yarn",
+					fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, buildpackVersion),
+					fmt.Sprintf("  Reusing cached layer /layers/%s/yarn", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 					"",
 					"  Resolving installation process",
 					"    Process inputs:",
@@ -111,7 +112,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					"",
 					"    Selected default build process: 'yarn install'",
 					"",
-					"  Reusing cached layer /layers/paketo-buildpacks_yarn-install/modules",
+					fmt.Sprintf("  Reusing cached layer /layers/%s/modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				))
 			})
 		})

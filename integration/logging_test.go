@@ -3,6 +3,7 @@ package integration_test
 import (
 	"fmt"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/paketo-buildpacks/occam"
@@ -56,7 +57,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs).To(ContainLines(
-				fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
+				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, buildpackVersion),
 				"  Executing build process",
 				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
@@ -68,11 +69,11 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing build process",
-				"    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/paketo-buildpacks_yarn-install/modules/node_modules",
+				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
 				"",
 				"  Configuring environment",
-				`    PATH -> "$PATH:/layers/paketo-buildpacks_yarn-install/modules/node_modules/.bin"`,
+				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 			))
 		})
 	})
@@ -108,7 +109,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(logs).To(ContainLines(
-				fmt.Sprintf("Yarn Install Buildpack %s", buildpackVersion),
+				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, buildpackVersion),
 				"  Executing build process",
 				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
@@ -120,11 +121,11 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing build process",
-				"    Running yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/paketo-buildpacks_yarn-install/modules/node_modules",
+				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
 				"",
 				"  Configuring environment",
-				`    PATH -> "$PATH:/layers/paketo-buildpacks_yarn-install/modules/node_modules/.bin"`,
+				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 			))
 		})
 	})
