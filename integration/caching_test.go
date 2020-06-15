@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -18,12 +19,14 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 		Expect     = NewWithT(t).Expect
 		Eventually = NewWithT(t).Eventually
 
-		pack         occam.Pack
-		docker       occam.Docker
+		pack   occam.Pack
+		docker occam.Docker
+
 		imageIDs     map[string]struct{}
 		containerIDs map[string]struct{}
 
-		imageName string
+		name   string
+		source string
 	)
 
 	it.Before(func() {
@@ -34,7 +37,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 		docker = occam.NewDocker()
 
 		var err error
-		imageName, err = occam.RandomName()
+		name, err = occam.RandomName()
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -47,17 +50,20 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 			Expect(docker.Image.Remove.Execute(id)).To(Succeed())
 		}
 
-		Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(imageName))).To(Succeed())
+		Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
+		Expect(os.RemoveAll(source)).To(Succeed())
 	})
 
 	context("a fixture is pushed twice", func() {
 		context("online", func() {
 			it("reuses the node_modules layer", func() {
-				sourcePath := filepath.Join("testdata", "simple_app")
+				var err error
+				source, err = occam.Source(filepath.Join("testdata", "simple_app"))
+				Expect(err).NotTo(HaveOccurred())
 
 				build := pack.WithNoColor().Build.WithBuildpacks(nodeURI, yarnURI)
 
-				firstImage, firstLogs, err := build.Execute(imageName, sourcePath)
+				firstImage, firstLogs, err := build.Execute(name, source)
 				Expect(err).NotTo(HaveOccurred(), firstLogs.String)
 
 				imageIDs[firstImage.ID] = struct{}{}
@@ -74,7 +80,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 				Eventually(container).Should(BeAvailable(), ContainerLogs(container.ID))
 
-				secondImage, secondLogs, err := build.Execute(imageName, sourcePath)
+				secondImage, secondLogs, err := build.Execute(name, source)
 				Expect(err).NotTo(HaveOccurred(), secondLogs.String)
 
 				imageIDs[secondImage.ID] = struct{}{}
