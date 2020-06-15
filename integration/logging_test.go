@@ -2,6 +2,7 @@ package integration_test
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -30,7 +31,8 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 		var (
 			image occam.Image
 
-			name string
+			name   string
+			source string
 		)
 
 		it.Before(func() {
@@ -42,15 +44,19 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 		it.After(func() {
 			Expect(docker.Image.Remove.Execute(image.ID)).To(Succeed())
 			Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
+			Expect(os.RemoveAll(source)).To(Succeed())
 		})
 
 		it("should build a working OCI image for a simple app", func() {
 			var err error
+			source, err = occam.Source(filepath.Join("testdata", "simple_app"))
+			Expect(err).NotTo(HaveOccurred())
+
 			var logs fmt.Stringer
 			image, logs, err = pack.WithNoColor().Build.
 				WithBuildpacks(nodeURI, yarnURI).
 				WithNoPull().
-				Execute(name, filepath.Join("testdata", "simple_app"))
+				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
 			buildpackVersion, err := GetGitVersion()
@@ -82,7 +88,8 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 		var (
 			image occam.Image
 
-			name string
+			name   string
+			source string
 		)
 
 		it.Before(func() {
@@ -94,15 +101,19 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 		it.After(func() {
 			Expect(docker.Image.Remove.Execute(image.ID)).To(Succeed())
 			Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
+			Expect(os.RemoveAll(source)).To(Succeed())
 		})
 
 		it("should build a working OCI image for a simple app", func() {
 			var err error
+			source, err = occam.Source(filepath.Join("testdata", "vendored"))
+			Expect(err).NotTo(HaveOccurred())
+
 			var logs fmt.Stringer
 			image, logs, err = pack.WithNoColor().Build.
 				WithBuildpacks(nodeURI, yarnURI).
 				WithNoPull().
-				Execute(name, filepath.Join("testdata", "vendored"))
+				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
 			buildpackVersion, err := GetGitVersion()

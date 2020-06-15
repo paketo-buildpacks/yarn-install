@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -33,7 +34,8 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 			image     occam.Image
 			container occam.Container
 
-			name string
+			name   string
+			source string
 		)
 
 		it.Before(func() {
@@ -46,13 +48,17 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 			Expect(docker.Container.Remove.Execute(container.ID)).To(Succeed())
 			Expect(docker.Image.Remove.Execute(image.ID)).To(Succeed())
 			Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
+			Expect(os.RemoveAll(source)).To(Succeed())
 		})
 
 		it("should correctly run the app", func() {
 			var err error
+			source, err = occam.Source(filepath.Join("testdata", "with_workspaces_nohoist"))
+			Expect(err).NotTo(HaveOccurred())
+
 			image, _, err = pack.Build.
 				WithBuildpacks(nodeURI, yarnURI).
-				Execute(name, filepath.Join("testdata", "with_workspaces_nohoist"))
+				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
 			container, err = docker.Container.Run.Execute(image.ID)
@@ -72,9 +78,12 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 
 		it("should correctly install node modules without hoisting", func() {
 			var err error
+			source, err = occam.Source(filepath.Join("testdata", "with_workspaces_nohoist"))
+			Expect(err).NotTo(HaveOccurred())
+
 			image, _, err = pack.Build.
 				WithBuildpacks(nodeURI, yarnURI).
-				Execute(name, filepath.Join("testdata", "with_workspaces_nohoist"))
+				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
 			expressModuleHoistPath := "/workspace/node_modules/express"

@@ -3,6 +3,7 @@ package integration_test
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -32,7 +33,8 @@ func testVendored(t *testing.T, context spec.G, it spec.S) {
 			image     occam.Image
 			container occam.Container
 
-			name string
+			name   string
+			source string
 		)
 
 		it.Before(func() {
@@ -45,14 +47,18 @@ func testVendored(t *testing.T, context spec.G, it spec.S) {
 			Expect(docker.Container.Remove.Execute(container.ID)).To(Succeed())
 			Expect(docker.Image.Remove.Execute(image.ID)).To(Succeed())
 			Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
+			Expect(os.RemoveAll(source)).To(Succeed())
 		})
 
 		it("should build a working OCI image for a simple app", func() {
 			var err error
+			source, err = occam.Source(filepath.Join("testdata", "vendored"))
+			Expect(err).NotTo(HaveOccurred())
+
 			image, _, err = pack.Build.
 				WithBuildpacks(nodeCachedURI, yarnCachedURI).
 				WithNetwork("none").
-				Execute(name, filepath.Join("testdata", "vendored"))
+				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
 			container, err = docker.Container.Run.Execute(image.ID)

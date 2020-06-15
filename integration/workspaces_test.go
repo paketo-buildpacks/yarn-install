@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -33,7 +34,8 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 			image     occam.Image
 			container occam.Container
 
-			name string
+			name   string
+			source string
 		)
 
 		it.Before(func() {
@@ -46,15 +48,19 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 			Expect(docker.Container.Remove.Execute(container.ID)).To(Succeed())
 			Expect(docker.Image.Remove.Execute(image.ID)).To(Succeed())
 			Expect(docker.Volume.Remove.Execute(occam.CacheVolumeNames(name))).To(Succeed())
+			Expect(os.RemoveAll(source)).To(Succeed())
 		})
 
 		context("when offline", func() {
 			it("should correctly install node modules in respective workspaces", func() {
 				var err error
+				source, err = occam.Source(filepath.Join("testdata", "with_yarn_workspaces_offline"))
+				Expect(err).NotTo(HaveOccurred())
+
 				image, _, err = pack.Build.
 					WithBuildpacks(nodeCachedURI, yarnCachedURI).
 					WithNetwork("none").
-					Execute(name, filepath.Join("testdata", "with_yarn_workspaces_offline"))
+					Execute(name, source)
 				Expect(err).NotTo(HaveOccurred())
 
 				container, err = docker.Container.Run.Execute(image.ID)
@@ -76,9 +82,12 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 		context("when online", func() {
 			it("should correctly install node modules in respective workspaces", func() {
 				var err error
+				source, err = occam.Source(filepath.Join("testdata", "with_yarn_workspaces"))
+				Expect(err).NotTo(HaveOccurred())
+
 				image, _, err = pack.Build.
 					WithBuildpacks(nodeURI, yarnURI).
-					Execute(name, filepath.Join("testdata", "with_yarn_workspaces"))
+					Execute(name, source)
 				Expect(err).NotTo(HaveOccurred())
 
 				container, err = docker.Container.Run.Execute(image.ID)
