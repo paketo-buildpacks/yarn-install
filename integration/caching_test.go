@@ -78,7 +78,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 				containerIDs[container.ID] = struct{}{}
 
-				Eventually(container).Should(BeAvailable(), ContainerLogs(container.ID))
+				Eventually(container).Should(BeAvailable())
 
 				secondImage, secondLogs, err := build.Execute(name, source)
 				Expect(err).NotTo(HaveOccurred(), secondLogs.String)
@@ -95,7 +95,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 				containerIDs[container.ID] = struct{}{}
 
-				Eventually(container).Should(BeAvailable(), ContainerLogs(container.ID))
+				Eventually(container).Should(BeAvailable())
 
 				Expect(secondImage.Buildpacks[1].Layers["yarn"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[1].Layers["yarn"].Metadata["built_at"]))
 				Expect(secondImage.Buildpacks[1].Layers["yarn"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[1].Layers["yarn"].Metadata["cache_sha"]))
