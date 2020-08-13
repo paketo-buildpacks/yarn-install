@@ -2,7 +2,7 @@ api = "0.2"
 
 [buildpack]
   id = "paketo-buildpacks/yarn-install"
-  name = "Yarn Install Buildpack"
+  name = "Paketo Yarn Install Buildpack"
   homepage = "https://github.com/paketo-buildpacks/yarn-install"
 
 [metadata]
