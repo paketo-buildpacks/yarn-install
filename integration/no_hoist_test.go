@@ -73,7 +73,6 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(string(content)).To(ContainSubstring("Package A value 1"))
 			Expect(string(content)).To(ContainSubstring("Package A value 2"))
-
 		})
 
 		it("should correctly install node modules without hoisting", func() {
@@ -92,10 +91,11 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 			container, err = docker.Container.Run.WithCommand(command).Execute(image.ID)
 			Expect(err).NotTo(HaveOccurred())
 
-			logs, err := docker.Container.Logs.Execute(container.ID)
-			Expect(err).NotTo(HaveOccurred())
-
-			Expect(logs.String()).To(ContainSubstring("NOTEXIST"))
+			Eventually(func() string {
+				cLogs, err := docker.Container.Logs.Execute(container.ID)
+				Expect(err).NotTo(HaveOccurred())
+				return cLogs.String()
+			}).Should(ContainSubstring("NOTEXIST"))
 		})
 	})
 }
