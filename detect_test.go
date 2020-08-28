@@ -55,9 +55,9 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 					},
 				},
 				{
-					Name:    "node",
-					Version: "some-version",
+					Name: "node",
 					Metadata: yarninstall.BuildPlanMetadata{
+						Version:       "some-version",
 						VersionSource: "package.json",
 						Build:         true,
 						Launch:        true,
