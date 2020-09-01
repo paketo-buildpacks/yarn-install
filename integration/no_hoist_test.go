@@ -86,16 +86,16 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			expressModuleHoistPath := "/workspace/node_modules/express"
-			command := fmt.Sprintf("/bin/sh -c '[ ! -d %s ]' && echo NOTEXIST", expressModuleHoistPath)
-
-			container, err = docker.Container.Run.WithCommand(command).Execute(image.ID)
+			container, err = docker.Container.Run.
+				WithEntrypoint("stat").
+				WithCommand(expressModuleHoistPath).
+				Execute(image.ID)
 			Expect(err).NotTo(HaveOccurred())
 
 			Eventually(func() string {
-				cLogs, err := docker.Container.Logs.Execute(container.ID)
-				Expect(err).NotTo(HaveOccurred())
-				return cLogs.String()
-			}).Should(ContainSubstring("NOTEXIST"))
+				logs, _ := docker.Container.Logs.Execute(container.ID)
+				return logs.String()
+			}).Should(ContainSubstring("No such file or directory"))
 		})
 	})
 }

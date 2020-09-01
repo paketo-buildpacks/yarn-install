@@ -14,6 +14,7 @@ const (
 )
 
 type BuildPlanMetadata struct {
+	Version       string `toml:"version"`
 	VersionSource string `toml:"version-source"`
 	Build         bool   `toml:"build"`
 	Launch        bool   `toml:"launch"`
@@ -53,8 +54,8 @@ func Detect(parser VersionParser) packit.DetectFunc {
 		}
 
 		if nodeVersion != "" {
-			nodeRequirement.Version = nodeVersion
 			nodeRequirement.Metadata = BuildPlanMetadata{
+				Version:       nodeVersion,
 				VersionSource: "package.json",
 				Build:         true,
 				Launch:        true,
