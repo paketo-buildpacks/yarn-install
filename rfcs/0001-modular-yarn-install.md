@@ -45,10 +45,10 @@ cached, and yarn install will only run if the `yarn.lock` file has changed.
 The buildpack passes the `--frozen-lockfile` argument to every `yarn install` call,
 which will not update the `yarn.lock` file, and will fail if the `yarn.lock` file
 needs to be updated. So, developers must run `yarn install` locally in order to update
-their apps `yarn.lock` file.
+their app's `yarn.lock` file.
 
 To use the buildpack in an offline environment
-the application must include a `offline-mirror` and `.yarnrc` file. The `yarn
+the application must include an [`offline-mirror`](https://classic.yarnpkg.com/blog/2016/11/24/offline-mirror/) and [`.yarnrc`](https://classic.yarnpkg.com/en/docs/yarnrc/) file. The `yarn
 install` command will be run with the `--offline` flag if the offline mirror
 directory is present. The `offline-mirror` directory must be discoverable with the
 `yarn config get yarn-offline-mirror` command.
