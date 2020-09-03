@@ -1,17 +1,14 @@
 package integration_test
 
 import (
-	"bytes"
 	"encoding/json"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/paketo-buildpacks/occam"
-	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
 
@@ -19,11 +16,14 @@ import (
 )
 
 var (
-	yarnURI       string
-	yarnCachedURI string
-	nodeURI       string
-	nodeCachedURI string
-	buildpackInfo struct {
+	buildpackURI        string
+	buildpackOfflineURI string
+	nodeURI             string
+	nodeOfflineURI      string
+	yarnURI             string
+	yarnOfflineURI      string
+	buildPlanURI        string
+	buildpackInfo       struct {
 		Buildpack struct {
 			ID   string
 			Name string
@@ -35,7 +35,9 @@ func TestIntegration(t *testing.T) {
 	var Expect = NewWithT(t).Expect
 
 	var config struct {
+		BuildPlan  string `json:"build-plan"`
 		NodeEngine string `json:"node-engine"`
+		Yarn       string `json:"yarn"`
 	}
 
 	file, err := os.Open("./../integration.json")
@@ -54,27 +56,36 @@ func TestIntegration(t *testing.T) {
 
 	buildpackStore := occam.NewBuildpackStore()
 
-	version, err := GetGitVersion()
-	Expect(err).ToNot(HaveOccurred())
-
-	yarnURI, err = buildpackStore.Get.
-		WithVersion(version).
+	buildpackURI, err = buildpackStore.Get.
+		WithVersion("1.2.3").
 		Execute(root)
 	Expect(err).ToNot(HaveOccurred())
 
-	yarnCachedURI, err = buildpackStore.Get.
+	buildpackOfflineURI, err = buildpackStore.Get.
 		WithOfflineDependencies().
-		WithVersion(version).
+		WithVersion("1.2.3").
 		Execute(root)
 	Expect(err).ToNot(HaveOccurred())
 
 	nodeURI, err = buildpackStore.Get.Execute(config.NodeEngine)
 	Expect(err).ToNot(HaveOccurred())
 
-	nodeCachedURI, err = buildpackStore.Get.
+	nodeOfflineURI, err = buildpackStore.Get.
 		WithOfflineDependencies().
 		Execute(config.NodeEngine)
 	Expect(err).ToNot(HaveOccurred())
+
+	yarnURI, err = buildpackStore.Get.Execute(config.Yarn)
+	Expect(err).ToNot(HaveOccurred())
+
+	yarnOfflineURI, err = buildpackStore.Get.
+		WithOfflineDependencies().
+		Execute(config.Yarn)
+	Expect(err).ToNot(HaveOccurred())
+
+	buildPlanURI, err = buildpackStore.Get.
+		Execute(config.BuildPlan)
+	Expect(err).NotTo(HaveOccurred())
 
 	SetDefaultEventuallyTimeout(10 * time.Second)
 
@@ -88,33 +99,4 @@ func TestIntegration(t *testing.T) {
 	suite("Workspaces", testWorkspaces)
 	suite("NoHoist", testNoHoist)
 	suite.Run(t)
-}
-
-func GetGitVersion() (string, error) {
-	gitExec := pexec.NewExecutable("git")
-	revListOut := bytes.NewBuffer(nil)
-
-	err := gitExec.Execute(pexec.Execution{
-		Args:   []string{"rev-list", "--tags", "--max-count=1"},
-		Stdout: revListOut,
-	})
-
-	if revListOut.String() == "" {
-		return "0.0.0", nil
-	}
-
-	if err != nil {
-		return "", err
-	}
-
-	stdout := bytes.NewBuffer(nil)
-	err = gitExec.Execute(pexec.Execution{
-		Args:   []string{"describe", "--tags", strings.TrimSpace(revListOut.String())},
-		Stdout: stdout,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return strings.TrimSpace(strings.TrimPrefix(stdout.String(), "v")), nil
 }

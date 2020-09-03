@@ -38,7 +38,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		detect = yarninstall.Detect(versionParser)
 	})
 
-	it("returns a plan that provides node_modules", func() {
+	it("returns a plan that provides node_modules and requires node and yarn", func() {
 		result, err := detect(packit.DetectContext{
 			WorkingDir: workingDir,
 		})
@@ -49,18 +49,17 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			},
 			Requires: []packit.BuildPlanRequirement{
 				{
-					Name: "node_modules",
-					Metadata: yarninstall.BuildPlanMetadata{
-						Launch: true,
-					},
-				},
-				{
 					Name: "node",
 					Metadata: yarninstall.BuildPlanMetadata{
 						Version:       "some-version",
 						VersionSource: "package.json",
 						Build:         true,
-						Launch:        true,
+					},
+				},
+				{
+					Name: "yarn",
+					Metadata: yarninstall.BuildPlanMetadata{
+						Build: true,
 					},
 				},
 			},
@@ -85,16 +84,15 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 				},
 				Requires: []packit.BuildPlanRequirement{
 					{
-						Name: "node_modules",
+						Name: "node",
 						Metadata: yarninstall.BuildPlanMetadata{
-							Launch: true,
+							Build: true,
 						},
 					},
 					{
-						Name: "node",
+						Name: "yarn",
 						Metadata: yarninstall.BuildPlanMetadata{
-							Build:  true,
-							Launch: true,
+							Build: true,
 						},
 					},
 				},

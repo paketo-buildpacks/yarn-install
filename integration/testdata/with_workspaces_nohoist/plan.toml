@@ -1,0 +1,17 @@
+[[requires]]
+  name = "node_modules"
+
+  [requires.metadata]
+    launch = true
+
+[[requires]]
+  name = "yarn"
+
+  [requires.metadata]
+    launch = true
+
+[[requires]]
+  name = "node"
+
+  [requires.metadata]
+    launch = true

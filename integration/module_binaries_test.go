@@ -2,8 +2,6 @@ package integration_test
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,13 +10,11 @@ import (
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
-	. "github.com/paketo-buildpacks/occam/matchers"
 )
 
 func testModuleBinaries(t *testing.T, context spec.G, it spec.S) {
 	var (
-		Expect     = NewWithT(t).Expect
-		Eventually = NewWithT(t).Eventually
+		Expect = NewWithT(t).Expect
 
 		pack   occam.Pack
 		docker occam.Docker
@@ -59,22 +55,19 @@ func testModuleBinaries(t *testing.T, context spec.G, it spec.S) {
 			var logs fmt.Stringer
 			image, logs, err = pack.WithVerbose().WithNoColor().Build.
 				WithNoPull().
-				WithBuildpacks(nodeURI, yarnURI).
+				WithBuildpacks(
+					nodeURI,
+					yarnURI,
+					buildpackURI,
+					buildPlanURI,
+				).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred(), logs.String)
 
-			container, err = docker.Container.Run.WithTTY().WithCommand(`chalk bold 'PAKETO' && yarn start`).Execute(image.ID)
+			container, err = docker.Container.Run.WithTTY().
+				WithCommand(`chalk bold 'PAKETO' && yarn start`).
+				Execute(image.ID)
 			Expect(err).NotTo(HaveOccurred())
-
-			Eventually(container).Should(BeAvailable())
-
-			response, err := http.Get(fmt.Sprintf("http://localhost:%s", container.HostPort()))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
-
-			content, err := ioutil.ReadAll(response.Body)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(string(content)).To(ContainSubstring("Hello, World!"))
 		})
 	})
 }

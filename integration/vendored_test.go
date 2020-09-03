@@ -1,8 +1,6 @@
 package integration_test
 
 import (
-	"fmt"
-	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +9,6 @@ import (
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
-	. "github.com/paketo-buildpacks/occam/matchers"
 )
 
 func testVendored(t *testing.T, context spec.G, it spec.S) {
@@ -56,19 +53,26 @@ func testVendored(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			image, _, err = pack.Build.
-				WithBuildpacks(nodeCachedURI, yarnCachedURI).
+				WithBuildpacks(
+					nodeOfflineURI,
+					yarnOfflineURI,
+					buildpackOfflineURI,
+					buildPlanURI,
+				).
 				WithNetwork("none").
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
-			container, err = docker.Container.Run.Execute(image.ID)
+			container, err = docker.Container.Run.
+				WithCommand("ls -alR /layers/paketo-buildpacks_yarn-install/modules/node_modules").
+				Execute(image.ID)
 			Expect(err).NotTo(HaveOccurred())
 
-			Eventually(container).Should(BeAvailable())
-
-			response, err := http.Get(fmt.Sprintf("http://localhost:%s", container.HostPort()))
-			Expect(err).NotTo(HaveOccurred())
-			Expect(response.StatusCode).To(Equal(http.StatusOK))
+			Eventually(func() string {
+				cLogs, err := docker.Container.Logs.Execute(container.ID)
+				Expect(err).NotTo(HaveOccurred())
+				return cLogs.String()
+			}).Should(ContainSubstring("leftpad"))
 		})
 	})
 }

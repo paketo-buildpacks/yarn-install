@@ -69,7 +69,7 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 // even if we provide a node_modules directory we must run a 'yarn install' as
 // this is the ONLY way to rebuild native extensions.
 
-func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath string) error {
+func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error {
 	err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("failed to create node_modules directory: %w", err)
@@ -84,8 +84,6 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath, yarnLayerPath
 	if err != nil {
 		return fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
 	}
-
-	os.Setenv("PATH", fmt.Sprintf("%s%c%s", os.Getenv("PATH"), os.PathListSeparator, filepath.Join(yarnLayerPath, "bin")))
 
 	var variables []string
 	for _, env := range os.Environ() {

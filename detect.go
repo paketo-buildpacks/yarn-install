@@ -8,16 +8,10 @@ import (
 	"github.com/paketo-buildpacks/packit"
 )
 
-const (
-	PlanDependencyNodeModules = "node_modules"
-	PlanDependencyNode        = "node"
-)
-
 type BuildPlanMetadata struct {
 	Version       string `toml:"version"`
 	VersionSource string `toml:"version-source"`
 	Build         bool   `toml:"build"`
-	Launch        bool   `toml:"launch"`
 }
 
 //go:generate faux --interface VersionParser --output fakes/version_parser.go
@@ -48,8 +42,7 @@ func Detect(parser VersionParser) packit.DetectFunc {
 		nodeRequirement := packit.BuildPlanRequirement{
 			Name: PlanDependencyNode,
 			Metadata: BuildPlanMetadata{
-				Build:  true,
-				Launch: true,
+				Build: true,
 			},
 		}
 
@@ -58,7 +51,6 @@ func Detect(parser VersionParser) packit.DetectFunc {
 				Version:       nodeVersion,
 				VersionSource: "package.json",
 				Build:         true,
-				Launch:        true,
 			}
 		}
 
@@ -68,13 +60,13 @@ func Detect(parser VersionParser) packit.DetectFunc {
 					{Name: PlanDependencyNodeModules},
 				},
 				Requires: []packit.BuildPlanRequirement{
+					nodeRequirement,
 					{
-						Name: PlanDependencyNodeModules,
+						Name: PlanDependencyYarn,
 						Metadata: BuildPlanMetadata{
-							Launch: true,
+							Build: true,
 						},
 					},
-					nodeRequirement,
 				},
 			},
 		}, nil
