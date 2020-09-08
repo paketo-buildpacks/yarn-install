@@ -54,20 +54,18 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 
 			var logs fmt.Stringer
 			image, logs, err = pack.WithNoColor().Build.
-				WithBuildpacks(nodeURI, yarnURI).
+				WithBuildpacks(
+					nodeURI,
+					yarnURI,
+					buildpackURI,
+					buildPlanURI,
+				).
 				WithNoPull().
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
-			buildpackVersion, err := GetGitVersion()
-			Expect(err).ToNot(HaveOccurred())
-
 			Expect(logs).To(ContainLines(
-				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, buildpackVersion),
-				"  Executing build process",
-				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
+				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, "1.2.3"),
 				"  Resolving installation process",
 				"    Process inputs:",
 				"      yarn.lock -> Found",
@@ -111,20 +109,18 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 
 			var logs fmt.Stringer
 			image, logs, err = pack.WithNoColor().Build.
-				WithBuildpacks(nodeURI, yarnURI).
+				WithBuildpacks(
+					nodeURI,
+					yarnURI,
+					buildpackURI,
+					buildPlanURI,
+				).
 				WithNoPull().
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
-			buildpackVersion, err := GetGitVersion()
-			Expect(err).ToNot(HaveOccurred())
-
 			Expect(logs).To(ContainLines(
-				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, buildpackVersion),
-				"  Executing build process",
-				MatchRegexp(`    Installing Yarn 1\.\d+\.\d+`),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
+				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, "1.2.3"),
 				"  Resolving installation process",
 				"    Process inputs:",
 				"      yarn.lock -> Found",

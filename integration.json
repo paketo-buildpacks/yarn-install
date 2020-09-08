@@ -1,3 +1,5 @@
 {
-  "node-engine": "github.com/paketo-buildpacks/node-engine"
+  "build-plan": "github.com/ForestEckhardt/build-plan",
+  "node-engine": "github.com/paketo-buildpacks/node-engine",
+  "yarn": "github.com/paketo-buildpacks/yarn"
 }

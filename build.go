@@ -25,50 +25,12 @@ type DependencyService interface {
 //go:generate faux --interface InstallProcess --output fakes/install_process.go
 type InstallProcess interface {
 	ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error)
-	Execute(workingDir, modulesLayerPath, yarnLayerPath string) error
+	Execute(workingDir, modulesLayerPath string) error
 }
 
 func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, installProcess InstallProcess, clock chronos.Clock, logger scribe.Logger) packit.BuildFunc {
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
-
-		yarnLayer, err := context.Layers.Get("yarn", packit.LaunchLayer, packit.CacheLayer)
-		if err != nil {
-			return packit.BuildResult{}, err
-		}
-
-		dependency, err := dependencyService.Resolve(filepath.Join(context.CNBPath, "buildpack.toml"), "yarn", "*", context.Stack)
-		if err != nil {
-			return packit.BuildResult{}, err
-		}
-
-		if !cacheMatcher.Match(yarnLayer.Metadata, "cache_sha", dependency.SHA256) {
-			logger.Process("Executing build process")
-
-			err = yarnLayer.Reset()
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-
-			logger.Subprocess("Installing Yarn %s", dependency.Version)
-			duration, err := clock.Measure(func() error {
-				return dependencyService.Install(dependency, context.CNBPath, yarnLayer.Path)
-			})
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-
-			logger.Action("Completed in %s", duration.Round(time.Millisecond))
-			logger.Break()
-
-			yarnLayer.Metadata = map[string]interface{}{
-				"built_at":  clock.Now().Format(time.RFC3339Nano),
-				"cache_sha": dependency.SHA256,
-			}
-		} else {
-			logger.Process("Reusing cached layer %s", yarnLayer.Path)
-			logger.Break()
-		}
 
 		logger.Process("Resolving installation process")
 
@@ -94,7 +56,7 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 			}
 
 			duration, err := clock.Measure(func() error {
-				return installProcess.Execute(context.WorkingDir, modulesLayer.Path, yarnLayer.Path)
+				return installProcess.Execute(context.WorkingDir, modulesLayer.Path)
 			})
 			if err != nil {
 				return packit.BuildResult{}, err
@@ -119,9 +81,9 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
-
 			err = os.Symlink(filepath.Join(modulesLayer.Path, "node_modules"), filepath.Join(context.WorkingDir, "node_modules"))
 			if err != nil {
+				// not tested
 				return packit.BuildResult{}, err
 			}
 		}
@@ -129,14 +91,7 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 		return packit.BuildResult{
 			Plan: context.Plan,
 			Layers: []packit.Layer{
-				yarnLayer,
 				modulesLayer,
-			},
-			Processes: []packit.Process{
-				{
-					Type:    "web",
-					Command: "yarn start",
-				},
 			},
 		}, nil
 	}

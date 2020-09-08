@@ -120,7 +120,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		var (
 			workingDir       string
 			modulesLayerPath string
-			yarnLayerPath    string
 			path             string
 			executions       []pexec.Execution
 			buffer           *bytes.Buffer
@@ -136,9 +135,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			modulesLayerPath, err = ioutil.TempDir("", "modules-dir")
-			Expect(err).NotTo(HaveOccurred())
-
-			yarnLayerPath, err = ioutil.TempDir("", "yarn-dir")
 			Expect(err).NotTo(HaveOccurred())
 
 			summer = &fakes.Summer{}
@@ -167,11 +163,10 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(os.RemoveAll(workingDir)).To(Succeed())
 			Expect(os.RemoveAll(modulesLayerPath)).To(Succeed())
-			Expect(os.RemoveAll(yarnLayerPath)).To(Succeed())
 		})
 
 		it("executes yarn install", func() {
-			err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+			err := installProcess.Execute(workingDir, modulesLayerPath)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(executions).To(HaveLen(2))
@@ -180,7 +175,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				"get",
 				"yarn-offline-mirror",
 			}))
-			Expect(executions[0].Env).To(ContainElement(MatchRegexp(fmt.Sprintf(`^PATH=.*:%s/bin:node_modules/.bin$`, yarnLayerPath))))
+			Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
 			Expect(executions[1].Args).To(Equal([]string{
 				"install",
@@ -196,8 +191,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			link, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(link).To(Equal(filepath.Join(modulesLayerPath, "node_modules")))
-
-			Expect(os.Getenv("PATH")).To(Equal(fmt.Sprintf("/some/bin:%s/bin", yarnLayerPath)))
 		})
 
 		context("when there is an offline mirror directory", func() {
@@ -216,7 +209,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			})
 
 			it("executes yarn install in offline mode", func() {
-				err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+				err := installProcess.Execute(workingDir, modulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 
 				Expect(executions).To(HaveLen(2))
@@ -225,7 +218,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"get",
 					"yarn-offline-mirror",
 				}))
-				Expect(executions[0].Env).To(ContainElement(MatchRegexp(fmt.Sprintf(`^PATH=.*:%s/bin:node_modules/.bin$`, yarnLayerPath))))
+				Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
 				Expect(executions[1].Args).To(Equal([]string{
 					"install",
@@ -235,7 +228,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"--modules-folder",
 					filepath.Join(modulesLayerPath, "node_modules"),
 				}))
-				Expect(executions[1].Env).To(ContainElement(MatchRegexp(fmt.Sprintf(`^PATH=.*:%s/bin:node_modules/.bin$`, yarnLayerPath))))
+				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
 				Expect(filepath.Join(modulesLayerPath, "node_modules")).To(BeADirectory())
 
@@ -254,7 +247,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			})
 
 			it("executes yarn install after copying the node_modules directory to the layer", func() {
-				err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+				err := installProcess.Execute(workingDir, modulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 
 				content, err := ioutil.ReadFile(filepath.Join(modulesLayerPath, "node_modules", "some-file"))
@@ -278,7 +271,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to create node_modules directory:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
@@ -294,7 +287,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to move node_modules directory to layer:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
@@ -314,7 +307,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config")))
 					Expect(err).To(MatchError(ContainSubstring("some stdout error")))
 					Expect(err).To(MatchError(ContainSubstring("some stderr error")))
@@ -334,7 +327,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config")))
 					Expect(err).To(MatchError(ContainSubstring("yarn config failed")))
 				})
@@ -357,7 +350,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("prints the execution output and returns an error", func() {
-					err := installProcess.Execute(workingDir, modulesLayerPath, yarnLayerPath)
+					err := installProcess.Execute(workingDir, modulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn install:")))
 					Expect(err).To(MatchError(ContainSubstring("yarn install failed")))
 
