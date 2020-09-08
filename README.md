@@ -1,15 +1,13 @@
 # Yarn Install Cloud Native Buildpack
 
-The Yarn Install CNB both installs the [`yarn`](https://yarnpkg.com/) binary and puts it on the `$PATH`
-which makes the binary available to itself and subsequent buildpacks. It also
-manages application dependencies, then writes the start command for the given
-application.
+The Yarn Install CNB generates and provides application dependencies for node
+applications that use the [yarn](https://yarnpkg.com) package manager.
 
 ## Integration
 
-The Yarn Install CNB provides node_modules as a dependency. Downstream
-buildpacks can require the node dependency by generating a [Build Plan
-TOML](https://github.com/buildpacks/spec/blob/master/buildpack.md#build-plan-toml)
+The Yarn Install CNB provides `node_modules` as a dependency. Downstream
+buildpacks can require the `node_modules` dependency by generating a [Build
+Plan TOML](https://github.com/buildpacks/spec/blob/master/buildpack.md#build-plan-toml)
 file that looks like the following:
 
 ```toml
@@ -47,9 +45,6 @@ To package this buildpack for consumption:
 ```
 $ ./scripts/package.sh
 ```
-
-This builds the buildpack's Go source using `GOOS=linux` by default. You can
-supply another value as the first argument to `package.sh`.
 
 ## `buildpack.yml` Configurations
 
