@@ -175,6 +175,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				"get",
 				"yarn-offline-mirror",
 			}))
+			Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
 			Expect(executions[1].Args).To(Equal([]string{
 				"install",
@@ -183,6 +184,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				"--modules-folder",
 				filepath.Join(modulesLayerPath, "node_modules"),
 			}))
+			Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
 			Expect(filepath.Join(modulesLayerPath, "node_modules")).To(BeADirectory())
 
@@ -216,6 +218,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"get",
 					"yarn-offline-mirror",
 				}))
+				Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
 				Expect(executions[1].Args).To(Equal([]string{
 					"install",
@@ -225,6 +228,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"--modules-folder",
 					filepath.Join(modulesLayerPath, "node_modules"),
 				}))
+				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 
 				Expect(filepath.Join(modulesLayerPath, "node_modules")).To(BeADirectory())
 

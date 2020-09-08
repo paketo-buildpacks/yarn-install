@@ -75,7 +75,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				Expect(firstImage.Buildpacks[2].Layers).To(HaveKey("modules"))
 
 				container, err = docker.Container.Run.
-					WithCommand("ls -alR /layers/paketo-buildpacks_yarn-install/modules/node_modules").
+					WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 					Execute(firstImage.ID)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -97,7 +97,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				Expect(secondImage.Buildpacks[2].Layers).To(HaveKey("modules"))
 
 				container, err = docker.Container.Run.
-					WithCommand("ls -alR /layers/paketo-buildpacks_yarn-install/modules/node_modules").
+					WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 					Execute(secondImage.ID)
 				Expect(err).NotTo(HaveOccurred())
 
