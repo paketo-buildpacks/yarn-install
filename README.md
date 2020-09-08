@@ -24,7 +24,7 @@ file that looks like the following:
   # The Yarn Install buildpack supports some non-required metadata options.
   [requires.metadata]
 
-    # Setting the build flag to true will ensure that the Node modules
+    # Setting the build flag to true will ensure that the node modules
     # are available for subsequent buildpacks during their build phase.
     # If you are writing a buildpack that needs a node module during
     # its build process, this flag should be set to true.
