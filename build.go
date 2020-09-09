@@ -88,6 +88,8 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 			}
 		}
 
+		logger.Break()
+
 		return packit.BuildResult{
 			Plan: context.Plan,
 			Layers: []packit.Layer{
