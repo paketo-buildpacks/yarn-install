@@ -24,16 +24,16 @@ file that looks like the following:
   # The Yarn Install buildpack supports some non-required metadata options.
   [requires.metadata]
 
-    # Setting the build flag to true will ensure that the Node modules and the yarn
-    # binary are available for subsequent buildpacks during their build phase.
-    # If you are writing a buildpack that needs to run a node module
-    # or the yarn binary during its build process, this flag should be set to true.
+    # Setting the build flag to true will ensure that the node modules
+    # are available for subsequent buildpacks during their build phase.
+    # If you are writing a buildpack that needs a node module during
+    # its build process, this flag should be set to true.
     build = true
 
-    # Setting the launch flag to true will ensure that the packages managed by
-    # Yarn and the yarn binary will be available for the running application. If you
-    # are writing an application that needs to run Node modules or the yarn binary
-    # at runtime, this flag should be set to true.
+    # Setting the launch flag to true will ensure that the packages
+    # managed by Yarn are available for the running application. If you
+    # are writing an application that needs node modules at runtime,
+    # this flag should be set to true.
     launch = true
 
 ```
