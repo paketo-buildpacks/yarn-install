@@ -78,6 +78,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"",
 				"  Configuring environment",
 				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				"",
 			))
 		})
 	})
@@ -133,6 +134,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"",
 				"  Configuring environment",
 				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				"",
 			))
 		})
 	})
