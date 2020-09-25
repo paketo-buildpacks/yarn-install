@@ -43,10 +43,28 @@ file that looks like the following:
 To package this buildpack for consumption:
 
 ```
-$ ./scripts/package.sh
+$ ./scripts/package.sh --version <version-number>
+```
+
+This will create a `buildpackage.cnb` file under the `build` directory which you
+can use to build your app as follows:
+```
+pack build <app-name> -p <path-to-app> -b <path/to/node-engine.cnb> -b <path/to/yarn.cnb> /
+-b build/buildpackage.cnb
 ```
 
 ## `buildpack.yml` Configurations
 
 The `yarn-install` buildpack does not support configurations using `buildpack.yml`.
 
+## Run Tests
+
+To run all unit tests, run:
+```
+./scripts/unit.sh
+```
+
+To run all integration tests, run:
+```
+/scripts/integration.sh
+```
