@@ -9,6 +9,16 @@ api = "0.2"
   include_files = ["bin/build", "bin/detect", "bin/run", "buildpack.toml"]
   pre_package = "./scripts/build.sh"
 
+  [[metadata.dependencies]]
+    id = "yarn"
+    name = "Yarn"
+    sha256 = "0057c1c90c3eadc953cc3e6772fd1477179d30a7007ac46ca148dd7bfab1d188"
+    source = "https://github.com/yarnpkg/yarn/releases/download/v1.22.10/yarn-v1.22.10.tar.gz"
+    source_sha256 = "7e433d4a77e2c79e6a7ae4866782608a8e8bcad3ec6783580577c59538381a6e"
+    stacks = ["io.buildpacks.stacks.bionic", "org.cloudfoundry.stacks.cflinuxfs3"]
+    uri = "https://buildpacks.cloudfoundry.org/dependencies/yarn/yarn_1.22.10_linux_noarch_any-stack_0057c1c9.tgz"
+    version = "1.22.10"
+
 [[stacks]]
   id = "io.buildpacks.stacks.bionic"
 
