@@ -61,7 +61,7 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 					buildpackURI,
 					buildPlanURI,
 				).
-				WithNoPull().
+				WithPullPolicy("never").
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
