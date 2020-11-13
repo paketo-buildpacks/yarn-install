@@ -1,7 +1,6 @@
 {
   "name": "simple_app_vendored",
   "version": "1.0.0",
-  "main": "server.js",
   "license": "MIT",
   "dependencies": {
     "leftpad": "^0.0.1"
