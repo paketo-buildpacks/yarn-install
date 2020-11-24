@@ -56,7 +56,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			context("when the yarn.lock file has a different sha", func() {
 				it.Before(func() {
-					summer.SumCall.Stub = func(string) (string, error) {
+					summer.SumCall.Stub = func(...string) (string, error) {
 						return "some-other-sha", nil
 					}
 					Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
@@ -81,7 +81,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			context("when the sha of yarn.lock and metadata sha match", func() {
 				it.Before(func() {
-					summer.SumCall.Stub = func(string) (string, error) {
+					summer.SumCall.Stub = func(...string) (string, error) {
 						return "some-sha", nil
 					}
 					Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
