@@ -15,7 +15,7 @@ import (
 
 //go:generate faux --interface Summer --output fakes/summer.go
 type Summer interface {
-	Sum(path string) (string, error)
+	Sum(paths ...string) (string, error)
 }
 
 //go:generate faux --interface Executable --output fakes/executable.go
