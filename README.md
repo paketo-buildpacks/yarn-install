@@ -68,3 +68,13 @@ To run all integration tests, run:
 ```
 /scripts/integration.sh
 ```
+
+## Stack support
+
+For most apps, the Yarn Install Buildpack runs fine on the [Base
+builder](https://github.com/paketo-buildpacks/stacks#metadata-for-paketo-buildrun-stack-images).
+But when the app requires compilation of native extensions using `node-gyp`,
+the buildpack requires that you use the [Full
+builder](https://github.com/paketo-buildpacks/stacks#metadata-for-paketo-buildrun-stack-images).
+This is because `node-gyp` requires `python` that's absent on the Base builder,
+and the module may require other shared objects.
