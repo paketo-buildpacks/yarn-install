@@ -1,4 +1,5 @@
 {
+  "builder": "index.docker.io/paketobuildpacks/builder:full",
   "build-plan": "github.com/ForestEckhardt/build-plan",
   "node-engine": "github.com/paketo-buildpacks/node-engine",
   "yarn": "github.com/paketo-buildpacks/yarn"
