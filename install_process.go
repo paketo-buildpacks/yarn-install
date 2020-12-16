@@ -107,16 +107,16 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 
 	installArgs := []string{"install", "--ignore-engines", "--frozen-lockfile"}
 
-	output_lines := strings.Split(buffer.String(), "\n")
-
+	// Parse yarn config get yarn-offline-mirror output
+	// in case there are any warning lines in the output like:
+	// warning You don't appear to have an internet connection.
 	var offline_mirror_dir string
-	for _, line := range output_lines {
+	for _, line := range strings.Split(buffer.String(), "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "/") {
 			offline_mirror_dir = strings.TrimSpace(line)
 			break
 		}
 	}
-
 	info, err := os.Stat(offline_mirror_dir)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to confirm existence of offline mirror directory: %w", err)
