@@ -34,10 +34,12 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 
 		logger.Process("Resolving installation process")
 
-		modulesLayer, err := context.Layers.Get("modules", layerFlags(context.Plan.Entries)...)
+		modulesLayer, err := context.Layers.Get("modules")
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
+
+		modulesLayer = setLayerFlags(modulesLayer, context.Plan.Entries)
 
 		run, sha, err := installProcess.ShouldRun(context.WorkingDir, modulesLayer.Metadata)
 		if err != nil {
@@ -50,10 +52,12 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 		if run {
 			logger.Process("Executing build process")
 
-			err = modulesLayer.Reset()
+			modulesLayer, err = modulesLayer.Reset()
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
+
+			modulesLayer = setLayerFlags(modulesLayer, context.Plan.Entries)
 
 			duration, err := clock.Measure(func() error {
 				return installProcess.Execute(context.WorkingDir, modulesLayer.Path)
@@ -99,24 +103,23 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 	}
 }
 
-func layerFlags(entries []packit.BuildpackPlanEntry) []packit.LayerType {
-	var flags []packit.LayerType
+func setLayerFlags(layer packit.Layer, entries []packit.BuildpackPlanEntry) packit.Layer {
 
 	for _, entry := range entries {
 		launch, ok := entry.Metadata["launch"].(bool)
 		if ok && launch {
-			flags = append(flags, packit.LaunchLayer)
-			flags = append(flags, packit.CacheLayer)
+			layer.Launch = true
+			layer.Cache = true
 		}
 	}
 
 	for _, entry := range entries {
 		build, ok := entry.Metadata["build"].(bool)
 		if ok && build {
-			flags = append(flags, packit.BuildLayer)
-			flags = append(flags, packit.CacheLayer)
+			layer.Build = true
+			layer.Cache = true
 		}
 	}
 
-	return flags
+	return layer
 }
