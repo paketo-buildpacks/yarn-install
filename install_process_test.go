@@ -201,6 +201,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					executions = append(executions, execution)
 
 					if strings.Contains(strings.Join(execution.Args, " "), "yarn-offline-mirror") {
+						fmt.Fprintln(execution.Stdout, "warning some extraneous warning")
+						fmt.Fprintln(execution.Stdout, "warning some other warning")
 						fmt.Fprintln(execution.Stdout, filepath.Join(workingDir, "offline-mirror"))
 					}
 

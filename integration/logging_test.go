@@ -111,11 +111,12 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 			var logs fmt.Stringer
 			image, logs, err = pack.WithNoColor().Build.
 				WithBuildpacks(
-					nodeURI,
-					yarnURI,
-					buildpackURI,
+					nodeOfflineURI,
+					yarnOfflineURI,
+					buildpackOfflineURI,
 					buildPlanURI,
 				).
+				WithNetwork("none").
 				WithPullPolicy("never").
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
