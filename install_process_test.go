@@ -28,6 +28,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable     *fakes.Executable
 			installProcess yarninstall.YarnInstallProcess
 			summer         *fakes.Summer
+			execution      pexec.Execution
 		)
 
 		it.Before(func() {
@@ -35,9 +36,17 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			workingDir, err = ioutil.TempDir("", "working-dir")
 			Expect(err).NotTo(HaveOccurred())
 
+			err = ioutil.WriteFile(filepath.Join(workingDir, "config-file"), []byte("hi"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
+
 			executable = &fakes.Executable{}
 			summer = &fakes.Summer{}
 
+			executable.ExecuteCall.Stub = func(exec pexec.Execution) error {
+				execution = exec
+				fmt.Fprintln(exec.Stdout, "undefined")
+				return nil
+			}
 			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
 		})
 
@@ -54,7 +63,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 			})
 
-			context("when the yarn.lock file has a different sha", func() {
+			context("when the yarn.lock or config file has changed", func() {
 				it.Before(func() {
 					summer.SumCall.Stub = func(...string) (string, error) {
 						return "some-other-sha", nil
@@ -66,9 +75,17 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					run, sha, err := installProcess.ShouldRun(workingDir, map[string]interface{}{
 						"cache_sha": "some-sha",
 					})
+					Expect(summer.SumCall.Receives.Paths[0]).To(Equal(filepath.Join(workingDir, "yarn.lock")))
+					Expect(summer.SumCall.Receives.Paths[1]).To(ContainSubstring("config-file"))
+					Expect(summer.SumCall.Receives.Paths[2]).To(ContainSubstring("node-env"))
 					Expect(run).To(BeTrue())
 					Expect(sha).To(Equal("some-other-sha"))
 					Expect(err).NotTo(HaveOccurred())
+					Expect(execution.Args).To(Equal([]string{
+						"config",
+						"list",
+						"--silent",
+					}))
 				})
 
 				it("succeeds when sha is missing", func() {
@@ -110,6 +127,22 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					it("fails", func() {
 						_, _, err := installProcess.ShouldRun(workingDir, map[string]interface{}{})
 						Expect(err).To(MatchError(ContainSubstring("unable to read yarn.lock file:")))
+					})
+				})
+
+				context("when yarn config list fails to execute", func() {
+					it.Before(func() {
+						Expect(ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte(""), os.ModePerm)).To(Succeed())
+						executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
+							return errors.New("very bad error")
+						}
+						installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
+					})
+
+					it("fails", func() {
+						_, _, err := installProcess.ShouldRun(workingDir, map[string]interface{}{})
+						Expect(err).To(MatchError(ContainSubstring("very bad error")))
+						Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config output")))
 					})
 				})
 			})
