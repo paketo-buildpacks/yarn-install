@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,9 +53,30 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	ip.logger.Action("yarn.lock -> Found")
 	ip.logger.Break()
 
-	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"))
+	buffer := bytes.NewBuffer(nil)
+	err = ip.executable.Execute(pexec.Execution{
+		Args:   []string{"config", "list", "--silent"},
+		Stdout: buffer,
+		Stderr: buffer,
+	})
 	if err != nil {
-		return true, "", fmt.Errorf("unable to sum yarn.lock file: %w", err)
+		return true, "", fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
+	}
+
+	configFile, err := createTempFileAndWriteContents(buffer.Bytes(), "config-file")
+	if err != nil {
+		return true, "", err
+	}
+
+	nodeEnv := os.Getenv("NODE_ENV")
+	nodeEnvFile, err := createTempFileAndWriteContents([]byte(nodeEnv), "node-env")
+	if err != nil {
+		return true, "", err
+	}
+
+	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"), configFile.Name(), nodeEnvFile.Name())
+	if err != nil {
+		return true, "", fmt.Errorf("unable to sum config files: %w", err)
 	}
 
 	prevSHA, ok := metadata["cache_sha"].(string)
@@ -63,6 +85,20 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	}
 
 	return false, "", nil
+}
+
+func createTempFileAndWriteContents(contents []byte, fileName string) (*os.File, error) {
+	file, err := ioutil.TempFile("", fileName)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create temp file for %s: %w", fileName, err)
+	}
+
+	_, err = file.Write(contents)
+	if err != nil {
+		return nil, fmt.Errorf("failed to write temp file for %s: %w", fileName, err)
+	}
+
+	return file, nil
 }
 
 // The build process here relies on yarn install ... --frozen-lockfile note that
