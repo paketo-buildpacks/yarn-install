@@ -63,18 +63,23 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 		return true, "", fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
 	}
 
-	configFile, err := createTempFileAndWriteContents(buffer.Bytes(), "config-file")
-	if err != nil {
-		return true, "", err
-	}
-
 	nodeEnv := os.Getenv("NODE_ENV")
-	nodeEnvFile, err := createTempFileAndWriteContents([]byte(nodeEnv), "node-env")
+	_, err = buffer.WriteString(nodeEnv)
 	if err != nil {
-		return true, "", err
+		return true, "", fmt.Errorf("failed to add NODE_ENV to buffer: %w", err)
 	}
 
-	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"), configFile.Name(), nodeEnvFile.Name())
+	file, err := ioutil.TempFile("", "config-file")
+	if err != nil {
+		return true, "", fmt.Errorf("failed to create temp file for %s: %w", file.Name(), err)
+	}
+	
+	_, err = file.Write(buffer.Bytes())
+	if err != nil {
+		return true, "", fmt.Errorf("failed to write temp file for %s: %w", file.Name(), err)
+	}
+
+	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"), file.Name())
 	if err != nil {
 		return true, "", fmt.Errorf("unable to sum config files: %w", err)
 	}
@@ -85,20 +90,6 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	}
 
 	return false, "", nil
-}
-
-func createTempFileAndWriteContents(contents []byte, fileName string) (*os.File, error) {
-	file, err := ioutil.TempFile("", fileName)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create temp file for %s: %w", fileName, err)
-	}
-
-	_, err = file.Write(contents)
-	if err != nil {
-		return nil, fmt.Errorf("failed to write temp file for %s: %w", fileName, err)
-	}
-
-	return file, nil
 }
 
 // The build process here relies on yarn install ... --frozen-lockfile note that
