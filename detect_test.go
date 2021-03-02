@@ -19,23 +19,28 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	var (
 		Expect = NewWithT(t).Expect
 
-		versionParser *fakes.VersionParser
-		workingDir    string
-		detect        packit.DetectFunc
+		versionParser     *fakes.VersionParser
+		projectPathParser *fakes.PathParser
+		workingDir        string
+		detect            packit.DetectFunc
 	)
 
 	it.Before(func() {
 		var err error
 		workingDir, err = ioutil.TempDir("", "working-dir")
 		Expect(err).NotTo(HaveOccurred())
+		Expect(os.Mkdir(filepath.Join(workingDir, "custom"), os.ModePerm)).To(Succeed())
 
-		err = ioutil.WriteFile(filepath.Join(workingDir, "yarn.lock"), []byte{}, 0644)
+		err = ioutil.WriteFile(filepath.Join(workingDir, "custom", "yarn.lock"), []byte{}, 0644)
 		Expect(err).NotTo(HaveOccurred())
 
 		versionParser = &fakes.VersionParser{}
 		versionParser.ParseVersionCall.Returns.Version = "some-version"
 
-		detect = yarninstall.Detect(versionParser)
+		projectPathParser = &fakes.PathParser{}
+		projectPathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "custom")
+
+		detect = yarninstall.Detect(projectPathParser, versionParser)
 	})
 
 	it("returns a plan that provides node_modules and requires node and yarn", func() {
@@ -65,7 +70,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			},
 		}))
 
-		Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "package.json")))
+		Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
 	})
 
 	context("when the node version is not in the package.json file", func() {
@@ -98,13 +103,13 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 				},
 			}))
 
-			Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "package.json")))
+			Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
 		})
 	})
 
 	context("when there is no yarn.lock file", func() {
 		it.Before(func() {
-			Expect(os.Remove(filepath.Join(workingDir, "yarn.lock"))).To(Succeed())
+			Expect(os.Remove(filepath.Join(workingDir, "custom", "yarn.lock"))).To(Succeed())
 		})
 
 		it("fails detection", func() {

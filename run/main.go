@@ -22,9 +22,13 @@ func main() {
 	installProcess := yarninstall.NewYarnInstallProcess(executable, summer, logger)
 	dependencyService := postal.NewService(transport)
 	cacheHandler := yarninstall.NewCacheHandler()
+	projectPathParser := yarninstall.NewProjectPathParser()
 
 	packit.Run(
-		yarninstall.Detect(packageJSONParser),
+		yarninstall.Detect(
+			projectPathParser,
+			packageJSONParser,
+		),
 		yarninstall.Build(
 			dependencyService,
 			cacheHandler,
