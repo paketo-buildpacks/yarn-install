@@ -64,16 +64,13 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	}
 
 	nodeEnv := os.Getenv("NODE_ENV")
-	_, err = buffer.WriteString(nodeEnv)
-	if err != nil {
-		return true, "", fmt.Errorf("failed to add NODE_ENV to buffer: %w", err)
-	}
+	buffer.WriteString(nodeEnv)
 
 	file, err := ioutil.TempFile("", "config-file")
 	if err != nil {
 		return true, "", fmt.Errorf("failed to create temp file for %s: %w", file.Name(), err)
 	}
-	
+
 	_, err = file.Write(buffer.Bytes())
 	if err != nil {
 		return true, "", fmt.Errorf("failed to write temp file for %s: %w", file.Name(), err)
