@@ -28,7 +28,14 @@ type InstallProcess interface {
 	Execute(workingDir, modulesLayerPath string) error
 }
 
-func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, installProcess InstallProcess, clock chronos.Clock, logger scribe.Logger) packit.BuildFunc {
+func Build(
+	pathParser PathParser,
+	dependencyService DependencyService,
+	cacheMatcher CacheMatcher,
+	installProcess InstallProcess,
+	clock chronos.Clock,
+	logger scribe.Logger) packit.BuildFunc {
+
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
@@ -41,7 +48,12 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 
 		modulesLayer = setLayerFlags(modulesLayer, context.Plan.Entries)
 
-		run, sha, err := installProcess.ShouldRun(context.WorkingDir, modulesLayer.Metadata)
+		projectPath, err := pathParser.Get(context.WorkingDir)
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
+
+		run, sha, err := installProcess.ShouldRun(projectPath, modulesLayer.Metadata)
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
@@ -60,11 +72,12 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 			modulesLayer = setLayerFlags(modulesLayer, context.Plan.Entries)
 
 			duration, err := clock.Measure(func() error {
-				return installProcess.Execute(context.WorkingDir, modulesLayer.Path)
+				return installProcess.Execute(projectPath, modulesLayer.Path)
 			})
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
+
 			logger.Action("Completed in %s", duration.Round(time.Millisecond))
 			logger.Break()
 
@@ -81,11 +94,11 @@ func Build(dependencyService DependencyService, cacheMatcher CacheMatcher, insta
 		} else {
 			logger.Process("Reusing cached layer %s", modulesLayer.Path)
 
-			err := os.RemoveAll(filepath.Join(context.WorkingDir, "node_modules"))
+			err := os.RemoveAll(filepath.Join(projectPath, "node_modules"))
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
-			err = os.Symlink(filepath.Join(modulesLayer.Path, "node_modules"), filepath.Join(context.WorkingDir, "node_modules"))
+			err = os.Symlink(filepath.Join(modulesLayer.Path, "node_modules"), filepath.Join(projectPath, "node_modules"))
 			if err != nil {
 				// not tested
 				return packit.BuildResult{}, err

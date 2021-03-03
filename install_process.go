@@ -58,6 +58,7 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 		Args:   []string{"config", "list", "--silent"},
 		Stdout: buffer,
 		Stderr: buffer,
+		Dir:    workingDir,
 	})
 	if err != nil {
 		return true, "", fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
@@ -124,6 +125,7 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 		Stdout: buffer,
 		Stderr: buffer,
 		Env:    variables,
+		Dir:    workingDir,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
@@ -159,6 +161,7 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 		Env:    variables,
 		Stdout: buffer,
 		Stderr: buffer,
+		Dir:    workingDir,
 	})
 	if err != nil {
 		ip.logger.Action("%s", buffer)

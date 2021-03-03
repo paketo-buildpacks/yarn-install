@@ -29,12 +29,13 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		cnbDir     string
 		timestamp  string
 
-		installProcess    *fakes.InstallProcess
-		dependencyService *fakes.DependencyService
+		buffer            *bytes.Buffer
 		cacheMatcher      *fakes.CacheMatcher
 		clock             chronos.Clock
+		dependencyService *fakes.DependencyService
+		installProcess    *fakes.InstallProcess
 		now               time.Time
-		buffer            *bytes.Buffer
+		pathParser        *fakes.PathParser
 
 		build packit.BuildFunc
 	)
@@ -46,6 +47,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		workingDir, err = ioutil.TempDir("", "working-dir")
 		Expect(err).NotTo(HaveOccurred())
+
+		Expect(os.Mkdir(filepath.Join(workingDir, "some-project-dir"), os.ModePerm)).To(Succeed())
 
 		cnbDir, err = ioutil.TempDir("", "cnb")
 		Expect(err).NotTo(HaveOccurred())
@@ -78,7 +81,10 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		buffer = bytes.NewBuffer(nil)
 
-		build = yarninstall.Build(dependencyService, cacheMatcher, installProcess, clock, scribe.NewLogger(buffer))
+		pathParser = &fakes.PathParser{}
+		pathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "some-project-dir")
+
+		build = yarninstall.Build(pathParser, dependencyService, cacheMatcher, installProcess, clock, scribe.NewLogger(buffer))
 	})
 
 	it.After(func() {
@@ -137,7 +143,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				},
 			}))
 
-			Expect(installProcess.ExecuteCall.Receives.WorkingDir).To(Equal(workingDir))
+			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
+			Expect(installProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+			Expect(installProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 			Expect(installProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "modules")))
 		})
 	})
@@ -190,8 +198,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					},
 				},
 			}))
-
-			dest, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
+			dest, err := os.Readlink(filepath.Join(workingDir, "some-project-dir", "node_modules"))
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(dest).To(Equal(filepath.Join(layersDir, "modules", "node_modules")))
@@ -308,6 +315,26 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Layers: packit.Layers{Path: layersDir},
 				})
 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
+			})
+		})
+
+		context("when the path parser returns an error", func() {
+			it.Before(func() {
+				pathParser.GetCall.Returns.Err = errors.New("path-parser-error")
+			})
+
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "node_modules"},
+						},
+					},
+				})
+				Expect(err).To(MatchError("path-parser-error"))
 			})
 		})
 	})

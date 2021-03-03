@@ -30,6 +30,7 @@ func main() {
 			packageJSONParser,
 		),
 		yarninstall.Build(
+			projectPathParser,
 			dependencyService,
 			cacheHandler,
 			installProcess,

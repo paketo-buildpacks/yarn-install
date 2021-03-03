@@ -25,8 +25,3 @@ Locally URL `http://localhost:3000/check` should return valid JSON:
     }
 }
 ```
-
-**Push to CF**
-```
-cf push sample-monorepo-app -b https://github.com/cloudfoundry/nodejs-buildpack
-```

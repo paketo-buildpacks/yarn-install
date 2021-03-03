@@ -164,5 +164,18 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 				Expect(err).To(MatchError("failed to read package.json"))
 			})
 		})
+
+		context("when the project path cannot be found", func() {
+			it.Before(func() {
+				projectPathParser.GetCall.Returns.Err = errors.New("couldn't find directory")
+			})
+
+			it("returns an error", func() {
+				_, err := detect(packit.DetectContext{
+					WorkingDir: workingDir,
+				})
+				Expect(err).To(MatchError("couldn't find directory"))
+			})
+		})
 	})
 }

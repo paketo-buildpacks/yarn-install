@@ -85,6 +85,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 						"list",
 						"--silent",
 					}))
+					Expect(execution.Dir).To(Equal(workingDir))
 				})
 
 				it("succeeds when sha is missing", func() {
@@ -208,6 +209,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				"yarn-offline-mirror",
 			}))
 			Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
+			Expect(executions[0].Dir).To(Equal(workingDir))
 
 			Expect(executions[1].Args).To(Equal([]string{
 				"install",
@@ -217,6 +219,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				filepath.Join(modulesLayerPath, "node_modules"),
 			}))
 			Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
+			Expect(executions[1].Dir).To(Equal(workingDir))
 
 			Expect(filepath.Join(modulesLayerPath, "node_modules")).To(BeADirectory())
 
@@ -253,6 +256,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"yarn-offline-mirror",
 				}))
 				Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
+				Expect(executions[0].Dir).To(Equal(workingDir))
 
 				Expect(executions[1].Args).To(Equal([]string{
 					"install",
@@ -263,6 +267,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					filepath.Join(modulesLayerPath, "node_modules"),
 				}))
 				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
+				Expect(executions[1].Dir).To(Equal(workingDir))
 
 				Expect(filepath.Join(modulesLayerPath, "node_modules")).To(BeADirectory())
 
