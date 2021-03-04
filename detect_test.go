@@ -70,6 +70,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			},
 		}))
 
+		Expect(projectPathParser.GetCall.Receives.Path).To(Equal(filepath.Join(workingDir)))
 		Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
 	})
 
@@ -103,6 +104,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 				},
 			}))
 
+			Expect(projectPathParser.GetCall.Receives.Path).To(Equal(filepath.Join(workingDir)))
 			Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
 		})
 	})
