@@ -93,10 +93,11 @@ func TestIntegration(t *testing.T) {
 	suite("Caching", testCaching)
 	suite("Logging", testLogging)
 	suite("ModuleBinaries", testModuleBinaries)
+	suite("NoHoist", testNoHoist)
 	suite("PreGyp", testPreGyp)
+	suite("ProjectPathApp", testProjectPathApp)
 	suite("SimpleApp", testSimpleApp)
 	suite("Vendored", testVendored)
 	suite("Workspaces", testWorkspaces)
-	suite("NoHoist", testNoHoist)
 	suite.Run(t)
 }
