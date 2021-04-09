@@ -7,20 +7,8 @@ import (
 
 	"github.com/paketo-buildpacks/packit"
 	"github.com/paketo-buildpacks/packit/chronos"
-	"github.com/paketo-buildpacks/packit/postal"
 	"github.com/paketo-buildpacks/packit/scribe"
 )
-
-//go:generate faux --interface CacheMatcher --output fakes/cache_matcher.go
-type CacheMatcher interface {
-	Match(metadata map[string]interface{}, key, sha string) bool
-}
-
-//go:generate faux --interface DependencyService --output fakes/dependency_service.go
-type DependencyService interface {
-	Resolve(path, name, version, stack string) (postal.Dependency, error)
-	Install(dependency postal.Dependency, cnbPath, layerPath string) error
-}
 
 //go:generate faux --interface InstallProcess --output fakes/install_process.go
 type InstallProcess interface {
@@ -28,13 +16,7 @@ type InstallProcess interface {
 	Execute(workingDir, modulesLayerPath string) error
 }
 
-func Build(
-	pathParser PathParser,
-	dependencyService DependencyService,
-	cacheMatcher CacheMatcher,
-	installProcess InstallProcess,
-	clock chronos.Clock,
-	logger scribe.Logger) packit.BuildFunc {
+func Build(pathParser PathParser, installProcess InstallProcess, clock chronos.Clock, logger scribe.Logger) packit.BuildFunc {
 
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)

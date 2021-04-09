@@ -11,7 +11,6 @@ import (
 
 	"github.com/paketo-buildpacks/packit"
 	"github.com/paketo-buildpacks/packit/chronos"
-	"github.com/paketo-buildpacks/packit/postal"
 	"github.com/paketo-buildpacks/packit/scribe"
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 	"github.com/paketo-buildpacks/yarn-install/fakes"
@@ -29,13 +28,11 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		cnbDir     string
 		timestamp  string
 
-		buffer            *bytes.Buffer
-		cacheMatcher      *fakes.CacheMatcher
-		clock             chronos.Clock
-		dependencyService *fakes.DependencyService
-		installProcess    *fakes.InstallProcess
-		now               time.Time
-		pathParser        *fakes.PathParser
+		buffer         *bytes.Buffer
+		clock          chronos.Clock
+		installProcess *fakes.InstallProcess
+		now            time.Time
+		pathParser     *fakes.PathParser
 
 		build packit.BuildFunc
 	)
@@ -65,26 +62,12 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			return true, "some-awesome-shasum", nil
 		}
 
-		dependencyService = &fakes.DependencyService{}
-		dependencyService.ResolveCall.Returns.Dependency = postal.Dependency{
-			ID:           "yarn",
-			Name:         "Yarn",
-			SHA256:       "some-sha",
-			Source:       "some-source",
-			SourceSHA256: "some-source-sha",
-			Stacks:       []string{"some-stack"},
-			URI:          "some-uri",
-			Version:      "some-version",
-		}
-
-		cacheMatcher = &fakes.CacheMatcher{}
-
 		buffer = bytes.NewBuffer(nil)
 
 		pathParser = &fakes.PathParser{}
 		pathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "some-project-dir")
 
-		build = yarninstall.Build(pathParser, dependencyService, cacheMatcher, installProcess, clock, scribe.NewLogger(buffer))
+		build = yarninstall.Build(pathParser, installProcess, clock, scribe.NewLogger(buffer))
 	})
 
 	it.After(func() {
