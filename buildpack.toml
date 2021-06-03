@@ -1,9 +1,9 @@
 api = "0.4"
 
 [buildpack]
+  homepage = "https://github.com/paketo-buildpacks/yarn-install"
   id = "paketo-buildpacks/yarn-install"
   name = "Paketo Yarn Install Buildpack"
-  homepage = "https://github.com/paketo-buildpacks/yarn-install"
 
 [metadata]
   include-files = ["bin/build", "bin/detect", "bin/run", "buildpack.toml"]
