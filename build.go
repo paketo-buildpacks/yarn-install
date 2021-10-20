@@ -17,7 +17,6 @@ type InstallProcess interface {
 }
 
 func Build(pathParser PathParser, installProcess InstallProcess, clock chronos.Clock, logger scribe.Logger) packit.BuildFunc {
-
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
@@ -90,16 +89,12 @@ func Build(pathParser PathParser, installProcess InstallProcess, clock chronos.C
 		logger.Break()
 
 		return packit.BuildResult{
-			Plan: context.Plan,
-			Layers: []packit.Layer{
-				modulesLayer,
-			},
+			Layers: []packit.Layer{modulesLayer},
 		}, nil
 	}
 }
 
 func setLayerFlags(layer packit.Layer, entries []packit.BuildpackPlanEntry) packit.Layer {
-
 	for _, entry := range entries {
 		launch, ok := entry.Metadata["launch"].(bool)
 		if ok && launch {
