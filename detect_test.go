@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/paketo-buildpacks/packit"
+	"github.com/paketo-buildpacks/packit/v2"
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
