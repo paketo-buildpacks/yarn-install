@@ -84,7 +84,7 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 
 			// check that all expected SBOM files are present
 			container2, err = docker.Container.Run.
-				WithCommand(fmt.Sprintf("ls -alR /layers/sbom/launch/%s/modules/",
+				WithCommand(fmt.Sprintf("ls -al /layers/sbom/launch/%s/modules/",
 					strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 				Execute(image.ID)
 			Expect(err).NotTo(HaveOccurred())
