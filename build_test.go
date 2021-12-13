@@ -336,13 +336,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					BuildpackInfo: packit.BuildpackInfo{
 						SBOMFormats: []string{"random-format"},
 					},
-					WorkingDir: workingDir,
-					CNBPath:    cnbDir,
-					Layers:     packit.Layers{Path: layersDir},
-					Plan: packit.BuildpackPlan{
-						Entries: []packit.BuildpackPlanEntry{{Name: "node_modules"}},
-					},
-					Stack: "some-stack",
 				})
 				Expect(err).To(MatchError("\"random-format\" is not a supported SBOM format"))
 			})
