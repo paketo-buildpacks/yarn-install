@@ -9,6 +9,3 @@ require (
 	github.com/paketo-buildpacks/packit/v2 v2.0.1
 	github.com/sclevine/spec v1.4.0
 )
-
-// TODO: Remove this when v0.32.0 comes out with CycloneDX JSON support
-replace github.com/anchore/syft => github.com/anchore/syft v0.31.1-0.20211204010623-5374a1dc6ff6
