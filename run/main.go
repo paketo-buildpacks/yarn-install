@@ -8,6 +8,7 @@ import (
 	"github.com/paketo-buildpacks/packit/fs"
 	"github.com/paketo-buildpacks/packit/pexec"
 	"github.com/paketo-buildpacks/packit/scribe"
+	"github.com/paketo-buildpacks/packit/servicebindings"
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 )
 
@@ -18,12 +19,19 @@ func main() {
 	summer := fs.NewChecksumCalculator()
 	installProcess := yarninstall.NewYarnInstallProcess(executable, summer, logger)
 	projectPathParser := yarninstall.NewProjectPathParser()
+	bindingResolver := servicebindings.NewResolver()
+	symlinker := yarninstall.NewSymlinker()
 
 	packit.Run(
 		yarninstall.Detect(
 			projectPathParser,
 			packageJSONParser,
 		),
-		yarninstall.Build(projectPathParser, installProcess, chronos.DefaultClock, logger),
+		yarninstall.Build(projectPathParser,
+			bindingResolver,
+			symlinker,
+			installProcess,
+			chronos.DefaultClock,
+			logger),
 	)
 }

@@ -15,5 +15,6 @@ func TestUnitYarn(t *testing.T) {
 	suite("InstallProcess", testInstallProcess)
 	suite("PackageJSONParser", testPackageJSONParser)
 	suite("ProjectPathParser", testProjectPathParser)
+	suite("Symlinker", testSymlinker)
 	suite.Run(t)
 }

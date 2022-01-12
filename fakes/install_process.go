@@ -4,7 +4,7 @@ import "sync"
 
 type InstallProcess struct {
 	ExecuteCall struct {
-		sync.Mutex
+		mutex     sync.Mutex
 		CallCount int
 		Receives  struct {
 			WorkingDir       string
@@ -16,7 +16,7 @@ type InstallProcess struct {
 		Stub func(string, string) error
 	}
 	ShouldRunCall struct {
-		sync.Mutex
+		mutex     sync.Mutex
 		CallCount int
 		Receives  struct {
 			WorkingDir string
@@ -34,8 +34,8 @@ type InstallProcess struct {
 }
 
 func (f *InstallProcess) Execute(param1 string, param2 string) error {
-	f.ExecuteCall.Lock()
-	defer f.ExecuteCall.Unlock()
+	f.ExecuteCall.mutex.Lock()
+	defer f.ExecuteCall.mutex.Unlock()
 	f.ExecuteCall.CallCount++
 	f.ExecuteCall.Receives.WorkingDir = param1
 	f.ExecuteCall.Receives.ModulesLayerPath = param2
@@ -46,8 +46,8 @@ func (f *InstallProcess) Execute(param1 string, param2 string) error {
 }
 func (f *InstallProcess) ShouldRun(param1 string, param2 map[string]interface {
 }) (bool, string, error) {
-	f.ShouldRunCall.Lock()
-	defer f.ShouldRunCall.Unlock()
+	f.ShouldRunCall.mutex.Lock()
+	defer f.ShouldRunCall.mutex.Unlock()
 	f.ShouldRunCall.CallCount++
 	f.ShouldRunCall.Receives.WorkingDir = param1
 	f.ShouldRunCall.Receives.Metadata = param2
