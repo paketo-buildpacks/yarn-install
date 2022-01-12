@@ -145,7 +145,7 @@ leftpad@~0.0.1:
 				server.Close()
 			})
 
-			it.Focus("fails due to invalid yarn package, but registry auth succeeds", func() {
+			it("successfully uses the npmrc to authenticate and fails due to invalid yarn package", func() {
 				var err error
 				image, _, err = build.Execute(name, source)
 
@@ -156,11 +156,11 @@ leftpad@~0.0.1:
 
 		context("when binding has type yarnrc", func() {
 			it.Before(func() {
-				Expect(os.WriteFile(filepath.Join(binding, "type"), []byte("yarnrc"), 0600)).To(Succeed())
-				Expect(os.WriteFile(filepath.Join(binding, ".yarnrc"), []byte(`--install.ignore-scripts true`), 0600)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(binding, "type"), []byte("yarnrc"), os.ModePerm)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(binding, ".yarnrc"), []byte(`--install.ignore-scripts true`), os.ModePerm)).To(Succeed())
 			})
 
-			it("installs dependencies according to yarnrc config", func() {
+			it("uses the yarnrc and does not run the postinstall script", func() {
 				var err error
 				source, err = occam.Source(filepath.Join("testdata", "service_bindings_app"))
 				Expect(err).NotTo(HaveOccurred())

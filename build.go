@@ -1,7 +1,7 @@
 package yarninstall
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -52,40 +52,29 @@ func Build(pathParser PathParser,
 			return packit.BuildResult{}, err
 		}
 
-		var globalNpmrcPath string
-		bindings, err := bindingResolver.Resolve("npmrc", "", context.Platform.Path)
-		if err != nil {
-			return packit.BuildResult{}, err
-		}
-
-		if len(bindings) > 1 {
-			return packit.BuildResult{}, errors.New("binding resolver found more than one binding of type 'npmrc'")
-		}
-
-		if len(bindings) == 1 {
-			logger.Process("Loading npmrc service binding")
-
-			npmrcExists := false
-			for key := range bindings[0].Entries {
-				if key == ".npmrc" {
-					npmrcExists = true
-					break
-				}
-			}
-			if !npmrcExists {
-				return packit.BuildResult{}, errors.New("binding of type 'npmrc' does not contain required entry '.npmrc'")
-			}
-			globalNpmrcPath = filepath.Join(bindings[0].Path, ".npmrc")
-		}
-
 		home, err := os.UserHomeDir()
 		if err != nil {
 			// not tested
 			return packit.BuildResult{}, err
 		}
 
+		globalNpmrcPath, err := getBinding("npmrc", "", context.Platform.Path, ".npmrc", bindingResolver, logger)
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 		if globalNpmrcPath != "" {
 			err = symlinker.Link(globalNpmrcPath, filepath.Join(home, ".npmrc"))
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+		}
+
+		globalYarnrcPath, err := getBinding("yarnrc", "", context.Platform.Path, ".yarnrc", bindingResolver, logger)
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
+		if globalYarnrcPath != "" {
+			err = symlinker.Link(globalYarnrcPath, filepath.Join(home, ".yarnrc"))
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
@@ -130,10 +119,6 @@ func Build(pathParser PathParser,
 			modulesLayer.SharedEnv.Append("PATH", path, string(os.PathListSeparator))
 			logger.Subprocess("%s", scribe.NewFormattedMapFromEnvironment(modulesLayer.SharedEnv))
 
-			if globalNpmrcPath != "" {
-				modulesLayer.BuildEnv.Default("NPM_CONFIG_GLOBALCONFIG", globalNpmrcPath)
-				logger.Subprocess("%s", scribe.NewFormattedMapFromEnvironment(modulesLayer.BuildEnv))
-			}
 		} else {
 			logger.Process("Reusing cached layer %s", modulesLayer.Path)
 
@@ -151,6 +136,11 @@ func Build(pathParser PathParser,
 		logger.Break()
 
 		err = symlinker.Unlink(filepath.Join(home, ".npmrc"))
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
+
+		err = symlinker.Unlink(filepath.Join(home, ".yarnrc"))
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
@@ -179,4 +169,32 @@ func setLayerFlags(layer packit.Layer, entries []packit.BuildpackPlanEntry) pack
 	}
 
 	return layer
+}
+
+func getBinding(typ, provider, bindingsRoot, entry string, bindingResolver BindingResolver, logger scribe.Logger) (configPath string, err error) {
+	bindings, err := bindingResolver.Resolve(typ, provider, bindingsRoot)
+	if err != nil {
+		return "", err
+	}
+
+	if len(bindings) > 1 {
+		return "", fmt.Errorf("binding resolver found more than one binding of type '%s'", typ)
+	}
+
+	if len(bindings) == 1 {
+		logger.Process("Loading service binding of type '%s'", typ)
+
+		fileExists := false
+		for key := range bindings[0].Entries {
+			if key == entry {
+				fileExists = true
+				break
+			}
+		}
+		if !fileExists {
+			return "", fmt.Errorf("binding of type '%s' does not contain required entry '%s'", typ, entry)
+		}
+		return filepath.Join(bindings[0].Path, entry), nil
+	}
+	return "", nil
 }

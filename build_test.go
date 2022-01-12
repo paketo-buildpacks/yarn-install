@@ -49,6 +49,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		bindingResolver     *fakes.BindingResolver
 		bindingResolveCalls []resolveCallParams
 		symlinker           *fakes.SymlinkManager
+		linkCalls           []linkCallParams
+		unlinkPaths         []string
 
 		build packit.BuildFunc
 	)
@@ -94,6 +96,17 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			return nil, nil
 		}
 		symlinker = &fakes.SymlinkManager{}
+		symlinker.LinkCall.Stub = func(o, n string) error {
+			linkCalls = append(linkCalls, linkCallParams{
+				Oldname: o,
+				Newname: n,
+			})
+			return nil
+		}
+		symlinker.UnlinkCall.Stub = func(p string) error {
+			unlinkPaths = append(unlinkPaths, p)
+			return nil
+		}
 
 		build = yarninstall.Build(
 			pathParser,
@@ -156,11 +169,14 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			}))
 
 			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
-			Expect(bindingResolver.ResolveCall.CallCount).To(Equal(1))
+			Expect(bindingResolver.ResolveCall.CallCount).To(Equal(2))
 
 			Expect(bindingResolveCalls[0].Typ).To(Equal("npmrc"))
 			Expect(bindingResolveCalls[0].Provider).To(Equal(""))
 			Expect(bindingResolveCalls[0].PlatformDir).To(Equal("some-platform-path"))
+			Expect(bindingResolveCalls[1].Typ).To(Equal("yarnrc"))
+			Expect(bindingResolveCalls[1].Provider).To(Equal(""))
+			Expect(bindingResolveCalls[1].PlatformDir).To(Equal("some-platform-path"))
 
 			Expect(symlinker.LinkCall.CallCount).To(BeZero())
 			Expect(installProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
@@ -233,8 +249,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			}
 		})
 
-		it("passes the path to the .npmrc to the install process, and configures it in the build env", func() {
-			result, err := build(packit.BuildContext{
+		it("symlinks the provided .npmrc to $HOME/.npmrc in the build container", func() {
+			_, err := build(packit.BuildContext{
 				WorkingDir: workingDir,
 				CNBPath:    cnbDir,
 				Layers:     packit.Layers{Path: layersDir},
@@ -253,16 +269,60 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
-			Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join("some-binding-path", ".npmrc")))
+			Expect(linkCalls[0].Oldname).To(Equal(filepath.Join("some-binding-path", ".npmrc")))
 			home, err := os.UserHomeDir()
 			Expect(err).NotTo(HaveOccurred())
-			Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(home, ".npmrc")))
-			Expect(symlinker.UnlinkCall.Receives.Path).To(Equal(filepath.Join(home, ".npmrc")))
+			Expect(linkCalls[0].Newname).To(Equal(filepath.Join(home, ".npmrc")))
+			Expect(symlinker.UnlinkCall.CallCount).To(Equal(2))
+			Expect(unlinkPaths[0]).To(Equal(filepath.Join(home, ".npmrc")))
+		})
+	})
 
-			Expect(result.Layers[0].Name).To(Equal("modules"))
-			Expect(result.Layers[0].BuildEnv).To(Equal(packit.Environment{
-				"NPM_CONFIG_GLOBALCONFIG.default": filepath.Join("some-binding-path", ".npmrc"),
-			}))
+	context("when an yarnrc service binding is provided", func() {
+		it.Before(func() {
+			bindingResolver.ResolveCall.Stub = func(typ, provider, platform string) ([]servicebindings.Binding, error) {
+				if typ == "yarnrc" {
+					return []servicebindings.Binding{
+						servicebindings.Binding{
+							Name: "first",
+							Type: "yarnrc",
+							Path: "some-binding-path",
+							Entries: map[string]*servicebindings.Entry{
+								".yarnrc": servicebindings.NewEntry("some-path"),
+							},
+						},
+					}, nil
+				}
+				return nil, nil
+			}
+		})
+
+		it("symlinks the provided .yarnrc to $HOME/.yarnrc in the build container", func() {
+			_, err := build(packit.BuildContext{
+				WorkingDir: workingDir,
+				CNBPath:    cnbDir,
+				Layers:     packit.Layers{Path: layersDir},
+				Stack:      "some-stack",
+				Plan: packit.BuildpackPlan{
+					Entries: []packit.BuildpackPlanEntry{
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+					},
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
+			Expect(linkCalls[0].Oldname).To(Equal(filepath.Join("some-binding-path", ".yarnrc")))
+			home, err := os.UserHomeDir()
+			Expect(err).NotTo(HaveOccurred())
+			Expect(linkCalls[0].Newname).To(Equal(filepath.Join(home, ".yarnrc")))
+			Expect(symlinker.UnlinkCall.CallCount).To(Equal(2))
+			Expect(unlinkPaths[1]).To(Equal(filepath.Join(home, ".yarnrc")))
 		})
 	})
 
@@ -312,6 +372,29 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Expect(err).To(MatchError("npmrc binding error"))
 			})
 		})
+		context("when yarnrc service binding resolution fails", func() {
+			it.Before(func() {
+				bindingResolver.ResolveCall.Stub = func(typ, provider, platform string) ([]servicebindings.Binding, error) {
+					if typ == "yarnrc" {
+						return nil, errors.New("yarnrc binding error")
+					}
+					return nil, nil
+				}
+			})
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "node_modules"},
+						},
+					},
+				})
+				Expect(err).To(MatchError("yarnrc binding error"))
+			})
+		})
 
 		context("when npmrc service binding resolution returns more than 1 binding", func() {
 			it.Before(func() {
@@ -345,7 +428,38 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Expect(err).To(MatchError("binding resolver found more than one binding of type 'npmrc'"))
 			})
 		})
-
+		context("when yarnrc service binding resolution returns more than 1 binding", func() {
+			it.Before(func() {
+				bindingResolver.ResolveCall.Stub = func(typ, provider, platform string) ([]servicebindings.Binding, error) {
+					if typ == "yarnrc" {
+						return []servicebindings.Binding{
+							servicebindings.Binding{
+								Name: "first",
+								Type: "yarnrc",
+							},
+							servicebindings.Binding{
+								Name: "second",
+								Type: "yarnrc",
+							},
+						}, nil
+					}
+					return nil, nil
+				}
+			})
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "node_modules"},
+						},
+					},
+				})
+				Expect(err).To(MatchError("binding resolver found more than one binding of type 'yarnrc'"))
+			})
+		})
 		context("when the 'npmrc' service binding does not contain an .npmrc entry", func() {
 			it.Before(func() {
 				bindingResolver.ResolveCall.Stub = func(typ, provider, platform string) ([]servicebindings.Binding, error) {
@@ -372,6 +486,34 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					},
 				})
 				Expect(err).To(MatchError("binding of type 'npmrc' does not contain required entry '.npmrc'"))
+			})
+		})
+		context("when the 'yarnrc' service binding does not contain an .yarnrc entry", func() {
+			it.Before(func() {
+				bindingResolver.ResolveCall.Stub = func(typ, provider, platform string) ([]servicebindings.Binding, error) {
+					if typ == "yarnrc" {
+						return []servicebindings.Binding{
+							servicebindings.Binding{
+								Name: "first",
+								Type: "yarnrc",
+							},
+						}, nil
+					}
+					return nil, nil
+				}
+			})
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "node_modules"},
+						},
+					},
+				})
+				Expect(err).To(MatchError("binding of type 'yarnrc' does not contain required entry '.yarnrc'"))
 			})
 		})
 
@@ -446,6 +588,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			it.Before(func() {
 				installProcess.ShouldRunCall.Stub = nil
 				installProcess.ShouldRunCall.Returns.Run = false
+				symlinker.LinkCall.Stub = nil
 				symlinker.LinkCall.Returns.Error = errors.New("some symlinking error")
 			})
 
@@ -460,6 +603,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						},
 					},
 				})
+				Expect(symlinker.LinkCall.CallCount).To(Equal(1))
 				Expect(err).To(MatchError(ContainSubstring("some symlinking error")))
 			})
 		})
@@ -501,6 +645,45 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					},
 				})
 				Expect(err).To(MatchError(ContainSubstring("symlinking .npmrc error")))
+			})
+		})
+		context("when .yarnrc service binding symlink cannot be created", func() {
+			it.Before(func() {
+				bindingResolver.ResolveCall.Stub = func(typ, provider, platform string) ([]servicebindings.Binding, error) {
+					if typ == "yarnrc" {
+						return []servicebindings.Binding{
+							servicebindings.Binding{
+								Name: "first",
+								Type: "yarnrc",
+								Path: "some-binding-path",
+								Entries: map[string]*servicebindings.Entry{
+									".yarnrc": servicebindings.NewEntry("some-path"),
+								},
+							},
+						}, nil
+					}
+					return nil, nil
+				}
+				symlinker.LinkCall.Stub = func(o string, n string) error {
+					if strings.Contains(o, ".yarnrc") {
+						return errors.New("symlinking .yarnrc error")
+					}
+					return nil
+				}
+			})
+
+			it("errors", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "node_modules"},
+						},
+					},
+				})
+				Expect(err).To(MatchError(ContainSubstring("symlinking .yarnrc error")))
 			})
 		})
 
@@ -567,6 +750,29 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					},
 				})
 				Expect(err).To(MatchError("unlinking .npmrc error"))
+			})
+		})
+		context("when .yarnrc binding symlink can't be cleaned up", func() {
+			it.Before(func() {
+				symlinker.UnlinkCall.Stub = func(p string) error {
+					if strings.Contains(p, ".yarnrc") {
+						return errors.New("unlinking .yarnrc error")
+					}
+					return nil
+				}
+			})
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{Name: "node_modules"},
+						},
+					},
+				})
+				Expect(err).To(MatchError("unlinking .yarnrc error"))
 			})
 		})
 	})
