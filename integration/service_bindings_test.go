@@ -21,13 +21,11 @@ import (
 func testServiceBindings(t *testing.T, context spec.G, it spec.S) {
 	var (
 		Expect = NewWithT(t).Expect
-		// Eventually   = NewWithT(t).Eventually
 		Consistently = NewWithT(t).Consistently
 
 		pack   occam.Pack
 		docker occam.Docker
 	)
-	format.MaxLength = 0
 
 	it.Before(func() {
 		pack = occam.NewPack().WithVerbose()
@@ -123,10 +121,10 @@ leftpad@~0.0.1:
 
 				Expect(os.WriteFile(filepath.Join(binding, "type"), []byte("npmrc"), os.ModePerm)).To(Succeed())
 				Expect(os.WriteFile(filepath.Join(binding, ".npmrc"), []byte(fmt.Sprintf(`always-auth=true
-				 registry=%s/
+				 registry=%[1]s/
 
-				 %s/:_authToken=whatever
-				`, serverURI, serverURI)), os.ModePerm)).To(Succeed())
+				 %[1]s/:_authToken=whatever
+				`, serverURI)), os.ModePerm)).To(Succeed())
 
 				build = pack.Build.
 					WithBuildpacks(nodeURI, yarnURI, buildpackURI, buildPlanURI).
@@ -136,7 +134,7 @@ leftpad@~0.0.1:
 					}).
 					WithVolumes(fmt.Sprintf("%s:/bindings/npmrc", binding))
 
-				if os := runtime.GOOS; os == "linux" {
+				if runtime.GOOS == "linux" {
 					build = build.WithNetwork("host") // this allows the container to reach 127.0.0.1 on the host
 				}
 			})
