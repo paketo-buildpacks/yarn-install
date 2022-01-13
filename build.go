@@ -31,6 +31,7 @@ type BindingResolver interface {
 
 func Build(pathParser PathParser,
 	bindingResolver BindingResolver,
+	homeDir string,
 	symlinker SymlinkManager,
 	installProcess InstallProcess,
 	clock chronos.Clock,
@@ -52,18 +53,12 @@ func Build(pathParser PathParser,
 			return packit.BuildResult{}, err
 		}
 
-		home, err := os.UserHomeDir()
-		if err != nil {
-			// not tested
-			return packit.BuildResult{}, err
-		}
-
 		globalNpmrcPath, err := getBinding("npmrc", "", context.Platform.Path, ".npmrc", bindingResolver, logger)
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
 		if globalNpmrcPath != "" {
-			err = symlinker.Link(globalNpmrcPath, filepath.Join(home, ".npmrc"))
+			err = symlinker.Link(globalNpmrcPath, filepath.Join(homeDir, ".npmrc"))
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
@@ -74,7 +69,7 @@ func Build(pathParser PathParser,
 			return packit.BuildResult{}, err
 		}
 		if globalYarnrcPath != "" {
-			err = symlinker.Link(globalYarnrcPath, filepath.Join(home, ".yarnrc"))
+			err = symlinker.Link(globalYarnrcPath, filepath.Join(homeDir, ".yarnrc"))
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
@@ -135,12 +130,12 @@ func Build(pathParser PathParser,
 
 		logger.Break()
 
-		err = symlinker.Unlink(filepath.Join(home, ".npmrc"))
+		err = symlinker.Unlink(filepath.Join(homeDir, ".npmrc"))
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
 
-		err = symlinker.Unlink(filepath.Join(home, ".yarnrc"))
+		err = symlinker.Unlink(filepath.Join(homeDir, ".yarnrc"))
 		if err != nil {
 			return packit.BuildResult{}, err
 		}

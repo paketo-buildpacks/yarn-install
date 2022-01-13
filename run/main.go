@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/paketo-buildpacks/packit"
@@ -21,6 +22,11 @@ func main() {
 	projectPathParser := yarninstall.NewProjectPathParser()
 	bindingResolver := servicebindings.NewResolver()
 	symlinker := yarninstall.NewSymlinker()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		// not tested
+		log.Fatal(err)
+	}
 
 	packit.Run(
 		yarninstall.Detect(
@@ -29,6 +35,7 @@ func main() {
 		),
 		yarninstall.Build(projectPathParser,
 			bindingResolver,
+			home,
 			symlinker,
 			installProcess,
 			chronos.DefaultClock,

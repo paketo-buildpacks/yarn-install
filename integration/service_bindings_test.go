@@ -15,12 +15,11 @@ import (
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/format"
 )
 
 func testServiceBindings(t *testing.T, context spec.G, it spec.S) {
 	var (
-		Expect = NewWithT(t).Expect
+		Expect       = NewWithT(t).Expect
 		Consistently = NewWithT(t).Consistently
 
 		pack   occam.Pack

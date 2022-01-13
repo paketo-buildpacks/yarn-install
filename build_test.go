@@ -38,6 +38,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		layersDir  string
 		workingDir string
+		homeDir    string
 		cnbDir     string
 		timestamp  string
 
@@ -60,7 +61,10 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		layersDir, err = ioutil.TempDir("", "layers")
 		Expect(err).NotTo(HaveOccurred())
 
-		workingDir, err = ioutil.TempDir("", "working-dir")
+		workingDir, err = os.MkdirTemp("", "working-dir")
+		Expect(err).NotTo(HaveOccurred())
+
+		homeDir, err = os.MkdirTemp("", "home-dir")
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(os.Mkdir(filepath.Join(workingDir, "some-project-dir"), os.ModePerm)).To(Succeed())
@@ -111,6 +115,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		build = yarninstall.Build(
 			pathParser,
 			bindingResolver,
+			homeDir,
 			symlinker,
 			installProcess,
 			clock,
@@ -270,11 +275,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
 			Expect(linkCalls[0].Oldname).To(Equal(filepath.Join("some-binding-path", ".npmrc")))
-			home, err := os.UserHomeDir()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(linkCalls[0].Newname).To(Equal(filepath.Join(home, ".npmrc")))
+			Expect(linkCalls[0].Newname).To(Equal(filepath.Join(homeDir, ".npmrc")))
 			Expect(symlinker.UnlinkCall.CallCount).To(Equal(2))
-			Expect(unlinkPaths[0]).To(Equal(filepath.Join(home, ".npmrc")))
+			Expect(unlinkPaths[0]).To(Equal(filepath.Join(homeDir, ".npmrc")))
 		})
 	})
 
@@ -318,11 +321,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
 			Expect(linkCalls[0].Oldname).To(Equal(filepath.Join("some-binding-path", ".yarnrc")))
-			home, err := os.UserHomeDir()
-			Expect(err).NotTo(HaveOccurred())
-			Expect(linkCalls[0].Newname).To(Equal(filepath.Join(home, ".yarnrc")))
+			Expect(linkCalls[0].Newname).To(Equal(filepath.Join(homeDir, ".yarnrc")))
 			Expect(symlinker.UnlinkCall.CallCount).To(Equal(2))
-			Expect(unlinkPaths[1]).To(Equal(filepath.Join(home, ".yarnrc")))
+			Expect(unlinkPaths[1]).To(Equal(filepath.Join(homeDir, ".yarnrc")))
 		})
 	})
 
