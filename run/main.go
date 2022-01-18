@@ -4,12 +4,13 @@ import (
 	"log"
 	"os"
 
-	"github.com/paketo-buildpacks/packit"
-	"github.com/paketo-buildpacks/packit/chronos"
-	"github.com/paketo-buildpacks/packit/fs"
-	"github.com/paketo-buildpacks/packit/pexec"
-	"github.com/paketo-buildpacks/packit/scribe"
-	"github.com/paketo-buildpacks/packit/servicebindings"
+	"github.com/paketo-buildpacks/packit/v2"
+	"github.com/paketo-buildpacks/packit/v2/chronos"
+	"github.com/paketo-buildpacks/packit/v2/fs"
+	"github.com/paketo-buildpacks/packit/v2/pexec"
+	"github.com/paketo-buildpacks/packit/v2/scribe"
+  	"github.com/paketo-buildpacks/packit/v2/servicebindings"
+
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 )
 
