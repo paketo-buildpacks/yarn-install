@@ -96,6 +96,7 @@ func TestIntegration(t *testing.T) {
 	suite("NoHoist", testNoHoist)
 	suite("PreGyp", testPreGyp)
 	suite("ProjectPathApp", testProjectPathApp)
+	suite("ServiceBindings", testServiceBindings)
 	suite("SimpleApp", testSimpleApp)
 	suite("Vendored", testVendored)
 	suite("Workspaces", testWorkspaces)

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,6 +53,7 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	ip.logger.Break()
 
 	buffer := bytes.NewBuffer(nil)
+
 	err = ip.executable.Execute(pexec.Execution{
 		Args:   []string{"config", "list", "--silent"},
 		Stdout: buffer,
@@ -67,10 +67,11 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	nodeEnv := os.Getenv("NODE_ENV")
 	buffer.WriteString(nodeEnv)
 
-	file, err := ioutil.TempFile("", "config-file")
+	file, err := os.CreateTemp("", "config-file")
 	if err != nil {
 		return true, "", fmt.Errorf("failed to create temp file for %s: %w", file.Name(), err)
 	}
+	defer file.Close()
 
 	_, err = file.Write(buffer.Bytes())
 	if err != nil {
@@ -110,13 +111,12 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 		return fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
 	}
 
-	var variables []string
+	var environment []string
 	for _, env := range os.Environ() {
 		if strings.HasPrefix(env, "PATH=") {
 			env = fmt.Sprintf("%s%c%s", env, os.PathListSeparator, filepath.Join("node_modules", ".bin"))
 		}
-
-		variables = append(variables, env)
+		environment = append(environment, env)
 	}
 
 	buffer := bytes.NewBuffer(nil)
@@ -124,7 +124,7 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 		Args:   []string{"config", "get", "yarn-offline-mirror"},
 		Stdout: buffer,
 		Stderr: buffer,
-		Env:    variables,
+		Env:    environment,
 		Dir:    workingDir,
 	})
 	if err != nil {
@@ -136,14 +136,14 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 	// Parse yarn config get yarn-offline-mirror output
 	// in case there are any warning lines in the output like:
 	// warning You don't appear to have an internet connection.
-	var offline_mirror_dir string
+	var offlineMirrorDir string
 	for _, line := range strings.Split(buffer.String(), "\n") {
 		if strings.HasPrefix(strings.TrimSpace(line), "/") {
-			offline_mirror_dir = strings.TrimSpace(line)
+			offlineMirrorDir = strings.TrimSpace(line)
 			break
 		}
 	}
-	info, err := os.Stat(offline_mirror_dir)
+	info, err := os.Stat(offlineMirrorDir)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("failed to confirm existence of offline mirror directory: %w", err)
 	}
@@ -158,7 +158,7 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 	buffer = bytes.NewBuffer(nil)
 	err = ip.executable.Execute(pexec.Execution{
 		Args:   installArgs,
-		Env:    variables,
+		Env:    environment,
 		Stdout: buffer,
 		Stderr: buffer,
 		Dir:    workingDir,

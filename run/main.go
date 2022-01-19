@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 
 	"github.com/paketo-buildpacks/packit/v2"
@@ -8,6 +9,8 @@ import (
 	"github.com/paketo-buildpacks/packit/v2/fs"
 	"github.com/paketo-buildpacks/packit/v2/pexec"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
+  	"github.com/paketo-buildpacks/packit/v2/servicebindings"
+
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 )
 
@@ -18,12 +21,25 @@ func main() {
 	summer := fs.NewChecksumCalculator()
 	installProcess := yarninstall.NewYarnInstallProcess(executable, summer, logger)
 	projectPathParser := yarninstall.NewProjectPathParser()
+	bindingResolver := servicebindings.NewResolver()
+	symlinker := yarninstall.NewSymlinker()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		// not tested
+		log.Fatal(err)
+	}
 
 	packit.Run(
 		yarninstall.Detect(
 			projectPathParser,
 			packageJSONParser,
 		),
-		yarninstall.Build(projectPathParser, installProcess, chronos.DefaultClock, logger),
+		yarninstall.Build(projectPathParser,
+			bindingResolver,
+			home,
+			symlinker,
+			installProcess,
+			chronos.DefaultClock,
+			logger),
 	)
 }
