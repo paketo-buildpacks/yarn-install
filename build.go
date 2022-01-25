@@ -9,7 +9,7 @@ import (
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
-  "github.com/paketo-buildpacks/packit/v2/servicebindings"
+	"github.com/paketo-buildpacks/packit/v2/servicebindings"
 )
 
 //go:generate faux --interface SymlinkManager --output fakes/symlink_manager.go
@@ -179,17 +179,12 @@ func getBinding(typ, provider, bindingsRoot, entry string, bindingResolver Bindi
 	if len(bindings) == 1 {
 		logger.Process("Loading service binding of type '%s'", typ)
 
-		fileExists := false
-		for key := range bindings[0].Entries {
-			if key == entry {
-				fileExists = true
-				break
-			}
-		}
-		if !fileExists {
+		if _, ok := bindings[0].Entries[entry]; !ok {
 			return "", fmt.Errorf("binding of type '%s' does not contain required entry '%s'", typ, entry)
 		}
+
 		return filepath.Join(bindings[0].Path, entry), nil
 	}
+
 	return "", nil
 }
