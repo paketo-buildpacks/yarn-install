@@ -5,6 +5,10 @@ api = "0.6"
   id = "paketo-buildpacks/yarn-install"
   name = "Paketo Yarn Install Buildpack"
 
+  [[buildpack.licenses]]
+    type = "Apache-2.0"
+    uri = "https://github.com/paketo-buildpacks/yarn-install/blob/main/LICENSE"
+
 [metadata]
   include-files = ["bin/build", "bin/detect", "bin/run", "buildpack.toml"]
   pre-package = "./scripts/build.sh"
