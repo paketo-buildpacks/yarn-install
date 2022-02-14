@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
+	"github.com/onsi/gomega/format"
 	"github.com/paketo-buildpacks/occam"
 	"github.com/sclevine/spec"
 	"github.com/sclevine/spec/report"
@@ -33,6 +34,7 @@ var (
 
 func TestIntegration(t *testing.T) {
 	var Expect = NewWithT(t).Expect
+	format.MaxLength = 0
 
 	var config struct {
 		BuildPlan  string `json:"build-plan"`
@@ -51,7 +53,7 @@ func TestIntegration(t *testing.T) {
 	file, err = os.Open("../buildpack.toml")
 	Expect(err).NotTo(HaveOccurred())
 
-	_, err = toml.DecodeReader(file, &buildpackInfo)
+	_, err = toml.NewDecoder(file).Decode(&buildpackInfo)
 	Expect(err).NotTo(HaveOccurred())
 
 	buildpackStore := occam.NewBuildpackStore()
@@ -96,6 +98,7 @@ func TestIntegration(t *testing.T) {
 	suite("NoHoist", testNoHoist)
 	suite("PreGyp", testPreGyp)
 	suite("ProjectPathApp", testProjectPathApp)
+	suite("ServiceBindings", testServiceBindings)
 	suite("SimpleApp", testSimpleApp)
 	suite("Vendored", testVendored)
 	suite("Workspaces", testWorkspaces)
