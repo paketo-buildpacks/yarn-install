@@ -8,6 +8,7 @@ import (
 
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
+	"github.com/paketo-buildpacks/packit/v2/sbom"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
 	"github.com/paketo-buildpacks/packit/v2/servicebindings"
 )
@@ -24,6 +25,11 @@ type InstallProcess interface {
 	Execute(workingDir, modulesLayerPath string) error
 }
 
+//go:generate faux --interface SBOMGenerator --output fakes/sbom_generator.go
+type SBOMGenerator interface {
+	Generate(dir string) (sbom.SBOM, error)
+}
+
 //go:generate faux --interface BindingResolver --output fakes/binding_resolver.go
 type BindingResolver interface {
 	Resolve(typ, provider, platformDir string) ([]servicebindings.Binding, error)
@@ -34,6 +40,7 @@ func Build(pathParser PathParser,
 	homeDir string,
 	symlinker SymlinkManager,
 	installProcess InstallProcess,
+	sbomGenerator SBOMGenerator,
 	clock chronos.Clock,
 	logger scribe.Logger) packit.BuildFunc {
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
@@ -113,7 +120,24 @@ func Build(pathParser PathParser,
 			path := filepath.Join(modulesLayer.Path, "node_modules", ".bin")
 			modulesLayer.SharedEnv.Append("PATH", path, string(os.PathListSeparator))
 			logger.Subprocess("%s", scribe.NewFormattedMapFromEnvironment(modulesLayer.SharedEnv))
+			logger.Break()
 
+			logger.Process("Generating SBOM")
+
+			var sbomContent sbom.SBOM
+			duration, err = clock.Measure(func() error {
+				sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
+				return err
+			})
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+			logger.Action("Completed in %s", duration.Round(time.Millisecond))
+
+			modulesLayer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 		} else {
 			logger.Process("Reusing cached layer %s", modulesLayer.Path)
 

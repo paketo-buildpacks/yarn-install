@@ -12,8 +12,9 @@ import (
 
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
+	"github.com/paketo-buildpacks/packit/v2/sbom"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
-  "github.com/paketo-buildpacks/packit/v2/servicebindings"
+	"github.com/paketo-buildpacks/packit/v2/servicebindings"
 
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 	"github.com/paketo-buildpacks/yarn-install/fakes"
@@ -48,6 +49,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		installProcess      *fakes.InstallProcess
 		now                 time.Time
 		pathParser          *fakes.PathParser
+		sbomGenerator       *fakes.SBOMGenerator
 		bindingResolver     *fakes.BindingResolver
 		bindingResolveCalls []resolveCallParams
 		symlinker           *fakes.SymlinkManager
@@ -90,6 +92,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		pathParser = &fakes.PathParser{}
 		pathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "some-project-dir")
 
+		sbomGenerator = &fakes.SBOMGenerator{}
+		sbomGenerator.GenerateCall.Returns.SBOM = sbom.SBOM{}
+
 		bindingResolver = &fakes.BindingResolver{}
 
 		bindingResolver.ResolveCall.Stub = func(typ, provider, platform string) ([]servicebindings.Binding, error) {
@@ -119,6 +124,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			homeDir,
 			symlinker,
 			installProcess,
+			sbomGenerator,
 			clock,
 			scribe.NewLogger(buffer),
 		)
@@ -133,6 +139,11 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 	context("when adding modules layer to image", func() {
 		it("resolves and calls the build process", func() {
 			result, err := build(packit.BuildContext{
+				BuildpackInfo: packit.BuildpackInfo{
+					Name:        "Some Buildpack",
+					Version:     "1.2.3",
+					SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+				},
 				WorkingDir: workingDir,
 				CNBPath:    cnbDir,
 				Layers:     packit.Layers{Path: layersDir},
@@ -152,28 +163,34 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal(packit.BuildResult{
-				Layers: []packit.Layer{
-					{
-						Name: "modules",
-						Path: filepath.Join(layersDir, "modules"),
-						SharedEnv: packit.Environment{
-							"PATH.append": filepath.Join(layersDir, "modules", "node_modules", ".bin"),
-							"PATH.delim":  ":",
-						},
-						BuildEnv:         packit.Environment{},
-						LaunchEnv:        packit.Environment{},
-						ProcessLaunchEnv: map[string]packit.Environment{},
-						Build:            true,
-						Cache:            true,
-						Metadata: map[string]interface{}{
-							"built_at":  timestamp,
-							"cache_sha": "some-awesome-shasum",
-						},
-					},
+
+			Expect(result.Layers[0].Name).To(Equal("modules"))
+			Expect(result.Layers[0].Path).To(Equal(filepath.Join(layersDir, "modules")))
+			Expect(result.Layers[0].SharedEnv).To(Equal(packit.Environment{
+				"PATH.append": filepath.Join(layersDir, "modules", "node_modules", ".bin"),
+				"PATH.delim":  ":",
+			}))
+			Expect(result.Layers[0].Build).To(BeTrue())
+			Expect(result.Layers[0].Cache).To(BeTrue())
+			Expect(result.Layers[0].Metadata).To(Equal(
+				map[string]interface{}{
+					"built_at":  timestamp,
+					"cache_sha": "some-awesome-shasum",
+				}))
+			Expect(result.Layers[0].SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+				{
+					Extension: "cdx.json",
+					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+				},
+				{
+					Extension: "spdx.json",
+					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+				},
+				{
+					Extension: "syft.json",
+					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
 				},
 			}))
-
 			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 			Expect(bindingResolver.ResolveCall.CallCount).To(Equal(2))
 
@@ -188,6 +205,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(installProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 			Expect(installProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 			Expect(installProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "modules")))
+			Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
 		})
 	})
 
@@ -216,20 +234,11 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				},
 			})
 			Expect(err).NotTo(HaveOccurred())
-			Expect(result).To(Equal(packit.BuildResult{
-				Layers: []packit.Layer{
-					{
-						Name:             "modules",
-						Path:             filepath.Join(layersDir, "modules"),
-						SharedEnv:        packit.Environment{},
-						BuildEnv:         packit.Environment{},
-						LaunchEnv:        packit.Environment{},
-						ProcessLaunchEnv: map[string]packit.Environment{},
-						Build:            true,
-						Cache:            true,
-					},
-				},
-			}))
+			Expect(result.Layers[0].Name).To(Equal("modules"))
+			Expect(result.Layers[0].Path).To(Equal(filepath.Join(layersDir, "modules")))
+			Expect(result.Layers[0].Build).To(BeTrue())
+			Expect(result.Layers[0].Cache).To(BeTrue())
+
 			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
 			Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join(layersDir, "modules", "node_modules")))
 			Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(workingDir, "some-project-dir", "node_modules")))
@@ -731,6 +740,39 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Expect(err).To(MatchError("path-parser-error"))
 			})
 		})
+
+		context("when the BOM cannot be generated", func() {
+			it.Before(func() {
+				sbomGenerator.GenerateCall.Returns.Error = errors.New("failed to generate SBOM")
+			})
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+					},
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{{Name: "node_modules"}},
+					},
+					Stack: "some-stack",
+				})
+				Expect(err).To(MatchError("failed to generate SBOM"))
+			})
+		})
+
+		context("when the BOM cannot be formatted", func() {
+			it("returns an error", func() {
+				_, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						SBOMFormats: []string{"random-format"},
+					},
+				})
+				Expect(err).To(MatchError("\"random-format\" is not a supported SBOM format"))
+			})
+		})
+
 		context("when .npmrc binding symlink can't be cleaned up", func() {
 			it.Before(func() {
 				symlinker.UnlinkCall.Stub = func(p string) error {
@@ -754,6 +796,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				Expect(err).To(MatchError("unlinking .npmrc error"))
 			})
 		})
+
 		context("when .yarnrc binding symlink can't be cleaned up", func() {
 			it.Before(func() {
 				symlinker.UnlinkCall.Stub = func(p string) error {
