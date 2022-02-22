@@ -126,7 +126,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			installProcess,
 			sbomGenerator,
 			clock,
-			scribe.NewLogger(buffer),
+			scribe.NewEmitter(buffer),
 		)
 	})
 
