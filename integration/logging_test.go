@@ -60,6 +60,7 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 					buildpackURI,
 					buildPlanURI,
 				).
+				WithEnv(map[string]string{"BP_LOG_LEVEL": "DEBUG"}).
 				WithPullPolicy("never").
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
@@ -76,11 +77,19 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
 				"",
-				"  Configuring environment",
+				"  Configuring build environment",
 				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				"",
-				"  Generating SBOM",
+				"  Configuring launch environment",
+				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				"",
+				fmt.Sprintf(`  Generating SBOM for directory /layers/%s/modules`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
+				"",
+				"  Writing SBOM in the following format(s):",
+				"    application/vnd.cyclonedx+json",
+				"    application/spdx+json",
+				"    application/vnd.syft+json",
 				"",
 			))
 		})
@@ -136,10 +145,13 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
 				"",
-				"  Configuring environment",
+				"  Configuring build environment",
 				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				"",
-				"  Generating SBOM",
+				"  Configuring launch environment",
+				fmt.Sprintf(`    PATH -> "$PATH:/layers/%s/modules/node_modules/.bin"`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				"",
+				fmt.Sprintf(`  Generating SBOM for directory /layers/%s/modules`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
 				"",
 			))

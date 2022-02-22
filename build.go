@@ -42,7 +42,7 @@ func Build(pathParser PathParser,
 	installProcess InstallProcess,
 	sbomGenerator SBOMGenerator,
 	clock chronos.Clock,
-	logger scribe.Logger) packit.BuildFunc {
+	logger scribe.Emitter) packit.BuildFunc {
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
@@ -115,15 +115,12 @@ func Build(pathParser PathParser,
 				"cache_sha": sha,
 			}
 
-			logger.Process("Configuring environment")
-
 			path := filepath.Join(modulesLayer.Path, "node_modules", ".bin")
 			modulesLayer.SharedEnv.Append("PATH", path, string(os.PathListSeparator))
-			logger.Subprocess("%s", scribe.NewFormattedMapFromEnvironment(modulesLayer.SharedEnv))
-			logger.Break()
 
-			logger.Process("Generating SBOM")
+			logger.EnvironmentVariables(modulesLayer)
 
+			logger.GeneratingSBOM(modulesLayer.Path)
 			var sbomContent sbom.SBOM
 			duration, err = clock.Measure(func() error {
 				sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
@@ -133,7 +130,9 @@ func Build(pathParser PathParser,
 				return packit.BuildResult{}, err
 			}
 			logger.Action("Completed in %s", duration.Round(time.Millisecond))
+			logger.Break()
 
+			logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
 			modulesLayer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
 			if err != nil {
 				return packit.BuildResult{}, err
@@ -151,8 +150,6 @@ func Build(pathParser PathParser,
 				return packit.BuildResult{}, err
 			}
 		}
-
-		logger.Break()
 
 		err = symlinker.Unlink(filepath.Join(homeDir, ".npmrc"))
 		if err != nil {
@@ -190,7 +187,7 @@ func setLayerFlags(layer packit.Layer, entries []packit.BuildpackPlanEntry) pack
 	return layer
 }
 
-func getBinding(typ, provider, bindingsRoot, entry string, bindingResolver BindingResolver, logger scribe.Logger) (configPath string, err error) {
+func getBinding(typ, provider, bindingsRoot, entry string, bindingResolver BindingResolver, logger scribe.Emitter) (configPath string, err error) {
 	bindings, err := bindingResolver.Resolve(typ, provider, bindingsRoot)
 	if err != nil {
 		return "", err
