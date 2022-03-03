@@ -73,10 +73,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(firstImage.Buildpacks).To(HaveLen(4))
 			Expect(firstImage.Buildpacks[2].Key).To(Equal(buildpackInfo.Buildpack.ID))
-			Expect(firstImage.Buildpacks[2].Layers).To(HaveKey("modules"))
+			Expect(firstImage.Buildpacks[2].Layers).To(HaveKey("launch-modules"))
 
 			container, err = docker.Container.Run.
-				WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
+				WithCommand(fmt.Sprintf("ls -alR /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 				Execute(firstImage.ID)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -97,10 +97,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(secondImage.Buildpacks).To(HaveLen(4))
 			Expect(secondImage.Buildpacks[2].Key).To(Equal(buildpackInfo.Buildpack.ID))
-			Expect(secondImage.Buildpacks[2].Layers).To(HaveKey("modules"))
+			Expect(secondImage.Buildpacks[2].Layers).To(HaveKey("launch-modules"))
 
 			container, err = docker.Container.Run.
-				WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
+				WithCommand(fmt.Sprintf("ls -alR /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 				Execute(secondImage.ID)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -112,8 +112,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				return cLogs.String()
 			}).ShouldNot(ContainSubstring("leftpad"))
 
-			Expect(secondImage.Buildpacks[2].Layers["modules"].Metadata["built_at"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["modules"].Metadata["built_at"]))
-			Expect(secondImage.Buildpacks[2].Layers["modules"].Metadata["cache_sha"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["modules"].Metadata["cache_sha"]))
+			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]))
+			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]))
 
 			Expect(secondLogs.String()).ToNot(ContainSubstring(
 				fmt.Sprintf("Reusing cached layer /layers/%s/modules",
@@ -140,10 +140,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(firstImage.Buildpacks).To(HaveLen(4))
 			Expect(firstImage.Buildpacks[2].Key).To(Equal(buildpackInfo.Buildpack.ID))
-			Expect(firstImage.Buildpacks[2].Layers).To(HaveKey("modules"))
+			Expect(firstImage.Buildpacks[2].Layers).To(HaveKey("launch-modules"))
 
 			container, err = docker.Container.Run.
-				WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
+				WithCommand(fmt.Sprintf("ls -alR /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 				Execute(firstImage.ID)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -164,10 +164,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(secondImage.Buildpacks).To(HaveLen(4))
 			Expect(secondImage.Buildpacks[2].Key).To(Equal(buildpackInfo.Buildpack.ID))
-			Expect(secondImage.Buildpacks[2].Layers).To(HaveKey("modules"))
+			Expect(secondImage.Buildpacks[2].Layers).To(HaveKey("launch-modules"))
 
 			container, err = docker.Container.Run.
-				WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
+				WithCommand(fmt.Sprintf("ls -alR /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 				Execute(secondImage.ID)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -179,8 +179,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				return cLogs.String()
 			}).Should(ContainSubstring("leftpad"))
 
-			Expect(secondImage.Buildpacks[2].Layers["modules"].Metadata["built_at"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["modules"].Metadata["built_at"]))
-			Expect(secondImage.Buildpacks[2].Layers["modules"].Metadata["cache_sha"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["modules"].Metadata["cache_sha"]))
+			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]))
+			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]))
 
 			Expect(secondLogs.String()).ToNot(ContainSubstring(
 				fmt.Sprintf("Reusing cached layer /layers/%s/modules",
@@ -206,10 +206,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 				Expect(firstImage.Buildpacks).To(HaveLen(4))
 				Expect(firstImage.Buildpacks[2].Key).To(Equal(buildpackInfo.Buildpack.ID))
-				Expect(firstImage.Buildpacks[2].Layers).To(HaveKey("modules"))
+				Expect(firstImage.Buildpacks[2].Layers).To(HaveKey("launch-modules"))
 
 				container, err = docker.Container.Run.
-					WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
+					WithCommand(fmt.Sprintf("ls -alR /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 					Execute(firstImage.ID)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -228,10 +228,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 				Expect(secondImage.Buildpacks).To(HaveLen(4))
 				Expect(secondImage.Buildpacks[2].Key).To(Equal(buildpackInfo.Buildpack.ID))
-				Expect(secondImage.Buildpacks[2].Layers).To(HaveKey("modules"))
+				Expect(secondImage.Buildpacks[2].Layers).To(HaveKey("launch-modules"))
 
 				container, err = docker.Container.Run.
-					WithCommand(fmt.Sprintf("ls -alR /layers/%s/modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
+					WithCommand(fmt.Sprintf("ls -alR /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"))).
 					Execute(secondImage.ID)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -243,8 +243,8 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					return cLogs.String()
 				}).Should(ContainSubstring("leftpad"))
 
-				Expect(secondImage.Buildpacks[2].Layers["modules"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[2].Layers["modules"].Metadata["built_at"]))
-				Expect(secondImage.Buildpacks[2].Layers["modules"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[2].Layers["modules"].Metadata["cache_sha"]))
+				Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]))
+				Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]))
 
 				Expect(secondImage.ID).To(Equal(firstImage.ID), fmt.Sprintf("%s\n\n%s", firstLogs, secondLogs))
 
@@ -254,9 +254,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					"    Process inputs:",
 					"      yarn.lock -> Found",
 					"",
-					"    Selected default build process: 'yarn install'",
-					"",
-					fmt.Sprintf("  Reusing cached layer /layers/%s/modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+					fmt.Sprintf("  Reusing cached layer /layers/%s/launch-modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				))
 			})
 		})

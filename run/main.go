@@ -6,6 +6,7 @@ import (
 
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
+	"github.com/paketo-buildpacks/packit/v2/draft"
 	"github.com/paketo-buildpacks/packit/v2/fs"
 	"github.com/paketo-buildpacks/packit/v2/pexec"
 	"github.com/paketo-buildpacks/packit/v2/sbom"
@@ -24,13 +25,12 @@ func (s SBOMGenerator) Generate(path string) (sbom.SBOM, error) {
 func main() {
 	packageJSONParser := yarninstall.NewPackageJSONParser()
 	emitter := scribe.NewEmitter(os.Stdout).WithLevel(os.Getenv("BP_LOG_LEVEL"))
-	executable := pexec.NewExecutable("yarn")
-	summer := fs.NewChecksumCalculator()
-	installProcess := yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(os.Stdout))
+	installProcess := yarninstall.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), scribe.NewLogger(os.Stdout))
 	projectPathParser := yarninstall.NewProjectPathParser()
 	sbomGenerator := SBOMGenerator{}
-	bindingResolver := servicebindings.NewResolver()
 	symlinker := yarninstall.NewSymlinker()
+	packageManagerConfigurationManager := yarninstall.NewPackageManagerConfigurationManager(servicebindings.NewResolver(), emitter)
+	entryResolver := draft.NewPlanner()
 	home, err := os.UserHomeDir()
 	if err != nil {
 		// not tested
@@ -43,7 +43,8 @@ func main() {
 			packageJSONParser,
 		),
 		yarninstall.Build(projectPathParser,
-			bindingResolver,
+			entryResolver,
+			packageManagerConfigurationManager,
 			home,
 			symlinker,
 			installProcess,
