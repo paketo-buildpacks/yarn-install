@@ -91,36 +91,41 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	return false, "", nil
 }
 
+func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath string) (string, error) {
+	if currentModulesLayerPath != "" {
+		err := fs.Copy(filepath.Join(currentModulesLayerPath, "node_modules"), filepath.Join(nextModulesLayerPath, "node_modules"))
+		if err != nil {
+			return "", fmt.Errorf("failed to copy node_modules directory: %w", err)
+		}
+	} else {
+		err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
+		if err != nil {
+			return "", fmt.Errorf("failed to create node_modules directory: %w", err)
+		}
+
+		err = fs.Move(filepath.Join(workingDir, "node_modules"), filepath.Join(nextModulesLayerPath, "node_modules"))
+		if err != nil {
+			return "", fmt.Errorf("failed to move node_modules directory to layer: %w", err)
+		}
+
+		err = os.Symlink(filepath.Join(nextModulesLayerPath, "node_modules"), filepath.Join(workingDir, "node_modules"))
+		if err != nil {
+			return "", fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
+		}
+	}
+
+	return nextModulesLayerPath, nil
+}
+
 // The build process here relies on yarn install ... --frozen-lockfile note that
 // even if we provide a node_modules directory we must run a 'yarn install' as
 // this is the ONLY way to rebuild native extensions.
-
-func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error {
-	err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
-	if err != nil {
-		return fmt.Errorf("failed to create node_modules directory: %w", err)
-	}
-
-	err = fs.Move(filepath.Join(workingDir, "node_modules"), filepath.Join(modulesLayerPath, "node_modules"))
-	if err != nil {
-		return fmt.Errorf("failed to move node_modules directory to layer: %w", err)
-	}
-
-	err = os.Symlink(filepath.Join(modulesLayerPath, "node_modules"), filepath.Join(workingDir, "node_modules"))
-	if err != nil {
-		return fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
-	}
-
-	var environment []string
-	for _, env := range os.Environ() {
-		if strings.HasPrefix(env, "PATH=") {
-			env = fmt.Sprintf("%s%c%s", env, os.PathListSeparator, filepath.Join("node_modules", ".bin"))
-		}
-		environment = append(environment, env)
-	}
+func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string, launch bool) error {
+	environment := os.Environ()
+	environment = append(environment, fmt.Sprintf("PATH=%s%c%s", os.Getenv("PATH"), os.PathListSeparator, filepath.Join("node_modules", ".bin")))
 
 	buffer := bytes.NewBuffer(nil)
-	err = ip.executable.Execute(pexec.Execution{
+	err := ip.executable.Execute(pexec.Execution{
 		Args:   []string{"config", "get", "yarn-offline-mirror"},
 		Stdout: buffer,
 		Stderr: buffer,
@@ -132,6 +137,10 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string) error 
 	}
 
 	installArgs := []string{"install", "--ignore-engines", "--frozen-lockfile"}
+
+	if !launch {
+		installArgs = append(installArgs, "--production", "false")
+	}
 
 	// Parse yarn config get yarn-offline-mirror output
 	// in case there are any warning lines in the output like:

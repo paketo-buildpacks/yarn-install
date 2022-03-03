@@ -1,0 +1,6 @@
+[[requires]]
+  name = "node_modules"
+
+  [requires.metadata]
+    launch = true
+    build = true

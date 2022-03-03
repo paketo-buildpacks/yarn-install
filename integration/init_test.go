@@ -24,6 +24,7 @@ var (
 	yarnURI             string
 	yarnOfflineURI      string
 	buildPlanURI        string
+	yarnList            string
 	buildpackInfo       struct {
 		Buildpack struct {
 			ID   string
@@ -89,10 +90,13 @@ func TestIntegration(t *testing.T) {
 		Execute(config.BuildPlan)
 	Expect(err).NotTo(HaveOccurred())
 
+	yarnList = filepath.Join(root, "integration", "testdata", "yarn-list-buildpack")
+
 	SetDefaultEventuallyTimeout(10 * time.Second)
 
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
 	suite("Caching", testCaching)
+	suite("DevDependenciesDuringBuild", testDevDependenciesDuringBuild)
 	suite("Logging", testLogging)
 	suite("ModuleBinaries", testModuleBinaries)
 	suite("NoHoist", testNoHoist)

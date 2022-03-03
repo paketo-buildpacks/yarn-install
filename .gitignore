@@ -2,7 +2,6 @@
 .DS_Store
 .idea
 /.bin
-bin
-yarn-cnb_*
+/bin/
 
 !offline-mirror/

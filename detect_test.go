@@ -2,7 +2,6 @@ package yarninstall_test
 
 import (
 	"errors"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -27,11 +26,11 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 	it.Before(func() {
 		var err error
-		workingDir, err = ioutil.TempDir("", "working-dir")
+		workingDir, err = os.MkdirTemp("", "working-dir")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(os.Mkdir(filepath.Join(workingDir, "custom"), os.ModePerm)).To(Succeed())
 
-		err = ioutil.WriteFile(filepath.Join(workingDir, "custom", "yarn.lock"), []byte{}, 0644)
+		err = os.WriteFile(filepath.Join(workingDir, "custom", "yarn.lock"), []byte{}, 0644)
 		Expect(err).NotTo(HaveOccurred())
 
 		versionParser = &fakes.VersionParser{}

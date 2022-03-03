@@ -13,7 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
+func testDevDependenciesDuringBuild(t *testing.T, context spec.G, it spec.S) {
 	var (
 		Expect     = NewWithT(t).Expect
 		Eventually = NewWithT(t).Eventually
@@ -27,7 +27,7 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 		docker = occam.NewDocker()
 	})
 
-	context("when the node_modules are NOT vendored", func() {
+	context("when the node_modules are needed during build", func() {
 		var (
 			image     occam.Image
 			container occam.Container
@@ -55,22 +55,26 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 			Expect(os.RemoveAll(sbomDir)).To(Succeed())
 		})
 
-		it("should build a working OCI image for a simple app", func() {
+		it("should build a working OCI image for a app that requires devDependencies during build", func() {
 			var err error
-			source, err = occam.Source(filepath.Join("testdata", "simple_app"))
+			var logs fmt.Stringer
+			source, err = occam.Source(filepath.Join("testdata", "dev_dependencies_during_build"))
 			Expect(err).NotTo(HaveOccurred())
 
-			image, _, err = pack.Build.
+			image, logs, err = pack.Build.
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
+					yarnList,
 				).
 				WithPullPolicy("never").
 				WithSBOMOutputDir(sbomDir).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
+
+			Expect(logs.String()).To(ContainSubstring("chalk"))
 
 			// check the contents of the node modules
 			container, err = docker.Container.Run.
@@ -90,11 +94,21 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 			Expect(filepath.Join(sbomDir, "sbom", "launch", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"), "launch-modules", "sbom.spdx.json")).To(BeARegularFile())
 			Expect(filepath.Join(sbomDir, "sbom", "launch", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"), "launch-modules", "sbom.syft.json")).To(BeARegularFile())
 
+			Expect(filepath.Join(sbomDir, "sbom", "build", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"), "build-modules", "sbom.cdx.json")).To(BeARegularFile())
+			Expect(filepath.Join(sbomDir, "sbom", "build", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"), "build-modules", "sbom.spdx.json")).To(BeARegularFile())
+			Expect(filepath.Join(sbomDir, "sbom", "build", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"), "build-modules", "sbom.syft.json")).To(BeARegularFile())
+
 			// check an SBOM file to make sure it has an entry for an app node module
 			contents, err := os.ReadFile(filepath.Join(sbomDir, "sbom", "launch", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"), "launch-modules", "sbom.cdx.json"))
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(string(contents)).To(ContainSubstring(`"name": "leftpad"`))
+
+			// check the build SBOM file to make sure it has an entry for an app node module
+			contents, err = os.ReadFile(filepath.Join(sbomDir, "sbom", "build", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_"), "build-modules", "sbom.cdx.json"))
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(string(contents)).To(ContainSubstring(`"name": "chalk"`))
 		})
 	})
 }
