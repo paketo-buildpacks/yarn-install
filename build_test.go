@@ -73,9 +73,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		cnbDir, err = os.MkdirTemp("", "cnb")
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(os.MkdirAll(filepath.Join(cnbDir, "bin"), os.ModePerm)).To(Succeed())
-		Expect(os.WriteFile(filepath.Join(cnbDir, "bin", "setup-symlinks"), []byte(""), os.ModePerm)).To(Succeed())
-
 		now = time.Now()
 		clock = chronos.NewClock(func() time.Time {
 			return now
@@ -203,6 +200,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
 				},
 			}))
+			Expect(len(layer.ExecD)).To(Equal(0))
 
 			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
@@ -292,6 +290,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
 				},
 			}))
+			Expect(layer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
 
 			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
@@ -318,8 +317,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(installProcess.ExecuteCall.Receives.Launch).To(BeTrue())
 
 			Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
-
-			Expect(filepath.Join(layer.Path, "exec.d", "0-setup-symlinks")).To(BeAnExistingFile())
 		})
 	})
 
@@ -984,28 +981,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 						Layers: packit.Layers{Path: layersDir},
 					})
 					Expect(err).To(MatchError("unsupported SBOM format: 'random-format'"))
-				})
-			})
-
-			context("when exec.d setup fails", func() {
-				it.Before(func() {
-					installProcess.ShouldRunCall.Stub = nil
-					installProcess.ShouldRunCall.Returns.Run = true
-					Expect(os.RemoveAll(filepath.Join(cnbDir, "bin"))).To(Succeed())
-				})
-
-				it("returns an error", func() {
-					_, err := build(packit.BuildContext{
-						WorkingDir: workingDir,
-						CNBPath:    cnbDir,
-						Layers:     packit.Layers{Path: layersDir},
-						Plan: packit.BuildpackPlan{
-							Entries: []packit.BuildpackPlanEntry{
-								{Name: "node_modules"},
-							},
-						},
-					})
-					Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
 				})
 			})
 

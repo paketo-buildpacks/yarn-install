@@ -7,7 +7,6 @@ import (
 
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
-	"github.com/paketo-buildpacks/packit/v2/fs"
 	"github.com/paketo-buildpacks/packit/v2/sbom"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
 )
@@ -237,16 +236,7 @@ func Build(pathParser PathParser,
 					return packit.BuildResult{}, err
 				}
 
-				execdDir := filepath.Join(layer.Path, "exec.d")
-				err = os.MkdirAll(execdDir, os.ModePerm)
-				if err != nil {
-					return packit.BuildResult{}, err
-				}
-
-				err = fs.Copy(filepath.Join(context.CNBPath, "bin", "setup-symlinks"), filepath.Join(execdDir, "0-setup-symlinks"))
-				if err != nil {
-					return packit.BuildResult{}, err
-				}
+				layer.ExecD = []string{filepath.Join(context.CNBPath, "bin", "setup-symlinks")}
 			} else {
 				logger.Process("Reusing cached layer %s", layer.Path)
 				if !build {
