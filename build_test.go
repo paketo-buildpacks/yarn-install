@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
@@ -40,16 +39,13 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		workingDir string
 		homeDir    string
 		cnbDir     string
-		timestamp  string
 
 		determinePathCalls   []determinePathCallParams
 		configurationManager *fakes.ConfigurationManager
 		buffer               *bytes.Buffer
-		clock                chronos.Clock
 		entryResolver        *fakes.EntryResolver
 		installProcess       *fakes.InstallProcess
 		linkCalls            []linkCallParams
-		now                  time.Time
 		pathParser           *fakes.PathParser
 		sbomGenerator        *fakes.SBOMGenerator
 		symlinker            *fakes.SymlinkManager
@@ -72,13 +68,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		cnbDir, err = os.MkdirTemp("", "cnb")
 		Expect(err).NotTo(HaveOccurred())
-
-		now = time.Now()
-		clock = chronos.NewClock(func() time.Time {
-			return now
-		})
-
-		timestamp = now.Format(time.RFC3339Nano)
 
 		installProcess = &fakes.InstallProcess{}
 		installProcess.ShouldRunCall.Stub = func(string, map[string]interface{}) (bool, string, error) {
@@ -126,7 +115,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			symlinker,
 			installProcess,
 			sbomGenerator,
-			clock,
+			chronos.DefaultClock,
 			scribe.NewEmitter(buffer),
 		)
 	})
@@ -183,7 +172,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(layer.Cache).To(BeTrue())
 			Expect(layer.Metadata).To(Equal(
 				map[string]interface{}{
-					"built_at":  timestamp,
 					"cache_sha": "some-awesome-shasum",
 				}))
 			Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
@@ -273,7 +261,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(layer.Launch).To(BeTrue())
 			Expect(layer.Metadata).To(Equal(
 				map[string]interface{}{
-					"built_at":  timestamp,
 					"cache_sha": "some-awesome-shasum",
 				}))
 			Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{

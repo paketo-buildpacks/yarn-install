@@ -112,7 +112,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				return cLogs.String()
 			}).ShouldNot(ContainSubstring("leftpad"))
 
-			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]))
+			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].SHA).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].SHA))
 			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]))
 
 			Expect(secondLogs.String()).ToNot(ContainSubstring(
@@ -179,7 +179,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				return cLogs.String()
 			}).Should(ContainSubstring("leftpad"))
 
-			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]))
+			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].SHA).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].SHA))
 			Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]).ToNot(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]))
 
 			Expect(secondLogs.String()).ToNot(ContainSubstring(
@@ -243,7 +243,7 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 					return cLogs.String()
 				}).Should(ContainSubstring("leftpad"))
 
-				Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]).To(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["built_at"]))
+				Expect(secondImage.Buildpacks[2].Layers["launch-modules"].SHA).To(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].SHA))
 				Expect(secondImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]).To(Equal(firstImage.Buildpacks[2].Layers["launch-modules"].Metadata["cache_sha"]))
 
 				Expect(secondImage.ID).To(Equal(firstImage.ID), fmt.Sprintf("%s\n\n%s", firstLogs, secondLogs))
