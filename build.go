@@ -123,7 +123,6 @@ func Build(pathParser PathParser,
 				logger.Break()
 
 				layer.Metadata = map[string]interface{}{
-					"built_at":  clock.Now().Format(time.RFC3339Nano),
 					"cache_sha": sha,
 				}
 
@@ -209,7 +208,6 @@ func Build(pathParser PathParser,
 				logger.Break()
 
 				layer.Metadata = map[string]interface{}{
-					"built_at":  clock.Now().Format(time.RFC3339Nano),
 					"cache_sha": sha,
 				}
 
