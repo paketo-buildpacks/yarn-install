@@ -1,8 +1,10 @@
 package yarninstall
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/paketo-buildpacks/packit/v2"
@@ -82,6 +84,11 @@ func Build(pathParser PathParser,
 
 		launch, build := entryResolver.MergeLayerTypes(PlanDependencyNodeModules, context.Plan.Entries)
 
+		sbomDisabled, err := checkSbomDisabled()
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
+
 		var layers []packit.Layer
 		var currentModLayer string
 		if build {
@@ -132,22 +139,28 @@ func Build(pathParser PathParser,
 
 				logger.EnvironmentVariables(layer)
 
-				logger.GeneratingSBOM(layer.Path)
-				var sbomContent sbom.SBOM
-				duration, err = clock.Measure(func() error {
-					sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
-					return err
-				})
-				if err != nil {
-					return packit.BuildResult{}, err
-				}
-				logger.Action("Completed in %s", duration.Round(time.Millisecond))
-				logger.Break()
+				if sbomDisabled {
+					logger.Subprocess("Skipping SBOM generation for Yarn Install")
+					logger.Break()
 
-				logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
-				layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
-				if err != nil {
-					return packit.BuildResult{}, err
+				} else {
+					logger.GeneratingSBOM(layer.Path)
+					var sbomContent sbom.SBOM
+					duration, err = clock.Measure(func() error {
+						sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
+						return err
+					})
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+					logger.Action("Completed in %s", duration.Round(time.Millisecond))
+					logger.Break()
+
+					logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
+					layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
 				}
 			} else {
 				logger.Process("Reusing cached layer %s", layer.Path)
@@ -216,22 +229,28 @@ func Build(pathParser PathParser,
 
 				logger.EnvironmentVariables(layer)
 
-				logger.GeneratingSBOM(layer.Path)
-				var sbomContent sbom.SBOM
-				duration, err = clock.Measure(func() error {
-					sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
-					return err
-				})
-				if err != nil {
-					return packit.BuildResult{}, err
-				}
-				logger.Action("Completed in %s", duration.Round(time.Millisecond))
-				logger.Break()
+				if sbomDisabled {
+					logger.Subprocess("Skipping SBOM generation for Yarn Install")
+					logger.Break()
 
-				logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
-				layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
-				if err != nil {
-					return packit.BuildResult{}, err
+				} else {
+					logger.GeneratingSBOM(layer.Path)
+					var sbomContent sbom.SBOM
+					duration, err = clock.Measure(func() error {
+						sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
+						return err
+					})
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+					logger.Action("Completed in %s", duration.Round(time.Millisecond))
+					logger.Break()
+
+					logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
+					layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
 				}
 
 				layer.ExecD = []string{filepath.Join(context.CNBPath, "bin", "setup-symlinks")}
@@ -269,4 +288,15 @@ func Build(pathParser PathParser,
 			Layers: layers,
 		}, nil
 	}
+}
+
+func checkSbomDisabled() (bool, error) {
+	if disableStr, ok := os.LookupEnv("BP_DISABLE_SBOM"); ok {
+		disable, err := strconv.ParseBool(disableStr)
+		if err != nil {
+			return false, fmt.Errorf("failed to parse BP_DISABLE_SBOM value %s: %w", disableStr, err)
+		}
+		return disable, nil
+	}
+	return false, nil
 }
