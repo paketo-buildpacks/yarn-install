@@ -3,6 +3,8 @@
 The Yarn Install CNB generates and provides application dependencies for node
 applications that use the [yarn](https://yarnpkg.com) package manager.
 
+**NOTE:** Support for `yarn` is limited to version 1 (Classic).
+
 ## Integration
 
 The Yarn Install CNB provides `node_modules` as a dependency. Downstream
