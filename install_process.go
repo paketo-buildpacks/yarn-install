@@ -91,12 +91,28 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	return false, "", nil
 }
 
-func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath string) (string, error) {
+func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir string) (string, error) {
 	if currentModulesLayerPath != "" {
 		err := fs.Copy(filepath.Join(currentModulesLayerPath, "node_modules"), filepath.Join(nextModulesLayerPath, "node_modules"))
 		if err != nil {
 			return "", fmt.Errorf("failed to copy node_modules directory: %w", err)
 		}
+
+		err = os.RemoveAll(filepath.Join(workingDir, "node_modules"))
+		if err != nil {
+			return "", fmt.Errorf("failed to remove node_modules directory: %w", err)
+		}
+
+		err = os.Symlink(filepath.Join(currentModulesLayerPath, "node_modules"), filepath.Join(tempDir, "node_modules"))
+		if err != nil {
+			return "", fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
+		}
+
+		err = os.Symlink(filepath.Join(tempDir, "node_modules"), filepath.Join(workingDir, "node_modules"))
+		if err != nil {
+			return "", fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
+		}
+
 	} else {
 		err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
 		if err != nil {

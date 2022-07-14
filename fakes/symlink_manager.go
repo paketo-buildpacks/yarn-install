@@ -1,12 +1,10 @@
 package fakes
 
-import (
-	"sync"
-)
+import "sync"
 
 type SymlinkManager struct {
 	LinkCall struct {
-		mutex     sync.Mutex
+		sync.Mutex
 		CallCount int
 		Receives  struct {
 			Oldname string
@@ -18,7 +16,7 @@ type SymlinkManager struct {
 		Stub func(string, string) error
 	}
 	UnlinkCall struct {
-		mutex     sync.Mutex
+		sync.Mutex
 		CallCount int
 		Receives  struct {
 			Path string
@@ -31,8 +29,8 @@ type SymlinkManager struct {
 }
 
 func (f *SymlinkManager) Link(param1 string, param2 string) error {
-	f.LinkCall.mutex.Lock()
-	defer f.LinkCall.mutex.Unlock()
+	f.LinkCall.Lock()
+	defer f.LinkCall.Unlock()
 	f.LinkCall.CallCount++
 	f.LinkCall.Receives.Oldname = param1
 	f.LinkCall.Receives.Newname = param2
@@ -42,8 +40,8 @@ func (f *SymlinkManager) Link(param1 string, param2 string) error {
 	return f.LinkCall.Returns.Error
 }
 func (f *SymlinkManager) Unlink(param1 string) error {
-	f.UnlinkCall.mutex.Lock()
-	defer f.UnlinkCall.mutex.Unlock()
+	f.UnlinkCall.Lock()
+	defer f.UnlinkCall.Unlock()
 	f.UnlinkCall.CallCount++
 	f.UnlinkCall.Receives.Path = param1
 	if f.UnlinkCall.Stub != nil {

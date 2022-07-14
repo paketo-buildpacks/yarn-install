@@ -23,6 +23,7 @@ func testRun(t *testing.T, context spec.G, it spec.S) {
 		Expect = NewWithT(t).Expect
 
 		layerDir       string
+		tempDir        string
 		executablePath string
 		appDir         string
 	)
@@ -30,6 +31,9 @@ func testRun(t *testing.T, context spec.G, it spec.S) {
 	it.Before(func() {
 		var err error
 		layerDir, err = os.MkdirTemp("", "layerDir")
+		Expect(err).NotTo(HaveOccurred())
+
+		tempDir, err = os.MkdirTemp("", "temp")
 		Expect(err).NotTo(HaveOccurred())
 
 		appDir, err = os.MkdirTemp("", "appDir")
@@ -43,34 +47,33 @@ func testRun(t *testing.T, context spec.G, it spec.S) {
 		err = os.WriteFile(executablePath, []byte(""), 0600)
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(os.Symlink("build-modules", filepath.Join(appDir, "node_modules"))).To(Succeed())
-
 	})
 
 	it.After(func() {
 		Expect(os.RemoveAll(layerDir)).To(Succeed())
+		Expect(os.RemoveAll(tempDir)).To(Succeed())
 		Expect(os.RemoveAll(appDir)).To(Succeed())
 	})
 
 	it("creates a symlink to the node_modules dir in the layer", func() {
-		err := internal.Run(executablePath, appDir)
+		err := internal.Run(executablePath, appDir, tempDir)
 		Expect(err).NotTo(HaveOccurred())
 
-		link, err := os.Readlink(filepath.Join(appDir, "node_modules"))
+		link, err := os.Readlink(filepath.Join(tempDir, "node_modules"))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(link).To(Equal(filepath.Join(layerDir, "node_modules")))
 	})
 
 	context("failure cases", func() {
-		context("when the app dir node_modules cannot be removed", func() {
+		context("when the tmp dir node_modules cannot be symlinked", func() {
 			it.Before(func() {
-				Expect(os.Chmod(appDir, 0444)).To(Succeed())
+				Expect(os.Chmod(tempDir, 0444)).To(Succeed())
 			})
 			it.After(func() {
-				Expect(os.Chmod(appDir, os.ModePerm)).To(Succeed())
+				Expect(os.Chmod(tempDir, os.ModePerm)).To(Succeed())
 			})
 			it("returns an error", func() {
-				err := internal.Run(executablePath, appDir)
+				err := internal.Run(executablePath, appDir, tempDir)
 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
 			})
 		})

@@ -1,12 +1,10 @@
 package fakes
 
-import (
-	"sync"
-)
+import "sync"
 
 type ConfigurationManager struct {
 	DeterminePathCall struct {
-		mutex     sync.Mutex
+		sync.Mutex
 		CallCount int
 		Receives  struct {
 			Typ         string
@@ -22,8 +20,8 @@ type ConfigurationManager struct {
 }
 
 func (f *ConfigurationManager) DeterminePath(param1 string, param2 string, param3 string) (string, error) {
-	f.DeterminePathCall.mutex.Lock()
-	defer f.DeterminePathCall.mutex.Unlock()
+	f.DeterminePathCall.Lock()
+	defer f.DeterminePathCall.Unlock()
 	f.DeterminePathCall.CallCount++
 	f.DeterminePathCall.Receives.Typ = param1
 	f.DeterminePathCall.Receives.PlatformDir = param2
