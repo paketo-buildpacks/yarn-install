@@ -50,6 +50,7 @@ func main() {
 			installProcess,
 			sbomGenerator,
 			chronos.DefaultClock,
-			emitter),
+			emitter,
+		),
 	)
 }

@@ -277,7 +277,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
 				},
 			}))
-			Expect(layer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
 
 			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
@@ -343,6 +342,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			WorkingDir              string
 			CurrentModulesLayerPath string
 			NextModulesLayerPath    string
+			TempDir                 string
 		}
 
 		var setupModulesCalls []setupModulesParams
@@ -351,11 +351,12 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			entryResolver.MergeLayerTypesCall.Returns.Launch = true
 			entryResolver.MergeLayerTypesCall.Returns.Build = true
 
-			installProcess.SetupModulesCall.Stub = func(w string, c string, n string) (string, error) {
+			installProcess.SetupModulesCall.Stub = func(w string, c string, n string, t string) (string, error) {
 				setupModulesCalls = append(setupModulesCalls, setupModulesParams{
 					WorkingDir:              w,
 					CurrentModulesLayerPath: c,
 					NextModulesLayerPath:    n,
+					TempDir:                 t,
 				})
 				return n, nil
 			}
@@ -387,6 +388,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			})
 			Expect(err).NotTo(HaveOccurred())
 
+			launchLayer := result.Layers[1]
+			Expect(launchLayer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
 			Expect(len(result.Layers)).To(Equal(2))
 
 			Expect(installProcess.SetupModulesCall.CallCount).To(Equal(2))

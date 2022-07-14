@@ -8,7 +8,7 @@ import (
 
 type EntryResolver struct {
 	MergeLayerTypesCall struct {
-		mutex     sync.Mutex
+		sync.Mutex
 		CallCount int
 		Receives  struct {
 			String                  string
@@ -23,8 +23,8 @@ type EntryResolver struct {
 }
 
 func (f *EntryResolver) MergeLayerTypes(param1 string, param2 []packit.BuildpackPlanEntry) (bool, bool) {
-	f.MergeLayerTypesCall.mutex.Lock()
-	defer f.MergeLayerTypesCall.mutex.Unlock()
+	f.MergeLayerTypesCall.Lock()
+	defer f.MergeLayerTypesCall.Unlock()
 	f.MergeLayerTypesCall.CallCount++
 	f.MergeLayerTypesCall.Receives.String = param1
 	f.MergeLayerTypesCall.Receives.BuildpackPlanEntrySlice = param2
