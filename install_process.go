@@ -26,10 +26,10 @@ type Executable interface {
 type YarnInstallProcess struct {
 	executable Executable
 	summer     Summer
-	logger     scribe.Logger
+	logger     scribe.Emitter
 }
 
-func NewYarnInstallProcess(executable Executable, summer Summer, logger scribe.Logger) YarnInstallProcess {
+func NewYarnInstallProcess(executable Executable, summer Summer, logger scribe.Emitter) YarnInstallProcess {
 	return YarnInstallProcess{
 		executable: executable,
 		summer:     summer,
