@@ -46,7 +46,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				fmt.Fprintln(exec.Stdout, "undefined")
 				return nil
 			}
-			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
+			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(bytes.NewBuffer(nil)))
 		})
 
 		context("we should run yarn install when", func() {
@@ -135,7 +135,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 						executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 							return errors.New("very bad error")
 						}
-						installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(bytes.NewBuffer(nil)))
+						installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(bytes.NewBuffer(nil)))
 					})
 
 					it("fails", func() {
@@ -180,7 +180,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			executable = &fakes.Executable{}
 
-			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(buffer))
+			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(buffer))
 		})
 
 		it.After(func() {
@@ -356,7 +356,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				return nil
 			}
 
-			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewLogger(buffer))
+			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(buffer))
 		})
 
 		it.After(func() {
