@@ -3,7 +3,7 @@ api = "0.7"
 [buildpack]
   homepage = "https://github.com/paketo-buildpacks/yarn-install"
   id = "paketo-buildpacks/yarn-install"
-  name = "Paketo Yarn Install Buildpack"
+  name = "Paketo Buildpack for Yarn Install"
   sbom-formats = ["application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"]
 
   [[buildpack.licenses]]
