@@ -1,4 +1,4 @@
-# Yarn Install Cloud Native Buildpack
+# Paketo Buildpack for Yarn Install
 
 The Yarn Install CNB generates and provides application dependencies for node
 applications that use the [yarn](https://yarnpkg.com) package manager.
