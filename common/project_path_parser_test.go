@@ -1,4 +1,4 @@
-package yarninstall_test
+package common_test
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/common"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -18,7 +18,7 @@ func testProjectPathParser(t *testing.T, context spec.G, it spec.S) {
 
 		workingDir        string
 		projectDir        string
-		projectPathParser yarninstall.ProjectPathParser
+		projectPathParser common.ProjectPathParser
 	)
 
 	it.Before(func() {
@@ -29,7 +29,7 @@ func testProjectPathParser(t *testing.T, context spec.G, it spec.S) {
 		err = os.MkdirAll(projectDir, os.ModePerm)
 		Expect(err).NotTo(HaveOccurred())
 
-		projectPathParser = yarninstall.NewProjectPathParser()
+		projectPathParser = common.NewProjectPathParser()
 		os.Setenv("BP_NODE_PROJECT_PATH", "custom/path")
 	})
 

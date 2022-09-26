@@ -1,7 +1,6 @@
 package yarninstall_test
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -20,6 +19,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 		versionParser     *fakes.VersionParser
 		projectPathParser *fakes.PathParser
+		yarnrcYmlParser   *fakes.YarnrcYmlParser
 		workingDir        string
 		detect            packit.DetectFunc
 	)
@@ -30,16 +30,22 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		Expect(err).NotTo(HaveOccurred())
 		Expect(os.Mkdir(filepath.Join(workingDir, "custom"), os.ModePerm)).To(Succeed())
 
+		err = os.WriteFile(filepath.Join(workingDir, "custom", ".yarnrc.yml"), []byte{}, 0644)
+		Expect(err).NotTo(HaveOccurred())
+
 		err = os.WriteFile(filepath.Join(workingDir, "custom", "yarn.lock"), []byte{}, 0644)
 		Expect(err).NotTo(HaveOccurred())
 
 		versionParser = &fakes.VersionParser{}
 		versionParser.ParseVersionCall.Returns.Version = "some-version"
 
+		yarnrcYmlParser = &fakes.YarnrcYmlParser{}
+		yarnrcYmlParser.ParseLinkerCall.Returns.NodeLinker = "node-modules"
+
 		projectPathParser = &fakes.PathParser{}
 		projectPathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "custom")
 
-		detect = yarninstall.Detect(projectPathParser, versionParser)
+		detect = yarninstall.Detect(projectPathParser, versionParser, yarnrcYmlParser)
 	})
 
 	it("returns a plan that provides node_modules and requires node and yarn", func() {
@@ -71,112 +77,6 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 		Expect(projectPathParser.GetCall.Receives.Path).To(Equal(filepath.Join(workingDir)))
 		Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
-	})
-
-	context("when the node version is not in the package.json file", func() {
-		it.Before(func() {
-			versionParser.ParseVersionCall.Returns.Version = ""
-		})
-
-		it("returns a plan that provides node_modules", func() {
-			result, err := detect(packit.DetectContext{
-				WorkingDir: workingDir,
-			})
-			Expect(err).NotTo(HaveOccurred())
-			Expect(result.Plan).To(Equal(packit.BuildPlan{
-				Provides: []packit.BuildPlanProvision{
-					{Name: "node_modules"},
-				},
-				Requires: []packit.BuildPlanRequirement{
-					{
-						Name: "node",
-						Metadata: yarninstall.BuildPlanMetadata{
-							Build: true,
-						},
-					},
-					{
-						Name: "yarn",
-						Metadata: yarninstall.BuildPlanMetadata{
-							Build: true,
-						},
-					},
-				},
-			}))
-
-			Expect(projectPathParser.GetCall.Receives.Path).To(Equal(filepath.Join(workingDir)))
-			Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
-		})
-	})
-
-	context("when there is no yarn.lock file", func() {
-		it.Before(func() {
-			Expect(os.Remove(filepath.Join(workingDir, "custom", "yarn.lock"))).To(Succeed())
-		})
-
-		it("fails detection", func() {
-			_, err := detect(packit.DetectContext{
-				WorkingDir: workingDir,
-			})
-			Expect(err).To(MatchError(packit.Fail))
-		})
-	})
-
-	context("when there is no package.json file", func() {
-		it.Before(func() {
-			_, err := os.Stat("/no/such/package.json")
-			versionParser.ParseVersionCall.Returns.Err = err
-		})
-
-		it("fails detection", func() {
-			_, err := detect(packit.DetectContext{
-				WorkingDir: workingDir,
-			})
-			Expect(err).To(MatchError(packit.Fail))
-		})
-	})
-
-	context("failure cases", func() {
-		context("when the yarn.lock cannot be read", func() {
-			it.Before(func() {
-				Expect(os.Chmod(workingDir, 0000)).To(Succeed())
-			})
-
-			it.After(func() {
-				Expect(os.Chmod(workingDir, os.ModePerm)).To(Succeed())
-			})
-
-			it("returns an error", func() {
-				_, err := detect(packit.DetectContext{
-					WorkingDir: workingDir,
-				})
-				Expect(err).To(MatchError(ContainSubstring("permission denied")))
-			})
-		})
-
-		context("when the package.json cannot be read", func() {
-			it.Before(func() {
-				versionParser.ParseVersionCall.Returns.Err = errors.New("failed to read package.json")
-			})
-
-			it("returns an error", func() {
-				_, err := detect(packit.DetectContext{
-					WorkingDir: workingDir,
-				})
-				Expect(err).To(MatchError("failed to read package.json"))
-			})
-		})
-
-		context("when the project path cannot be found", func() {
-			it.Before(func() {
-				projectPathParser.GetCall.Returns.Err = errors.New("couldn't find directory")
-			})
-
-			it("returns an error", func() {
-				_, err := detect(packit.DetectContext{
-					WorkingDir: workingDir,
-				})
-				Expect(err).To(MatchError("couldn't find directory"))
-			})
-		})
+		Expect(yarnrcYmlParser.ParseLinkerCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", ".yarnrc.yml")))
 	})
 }

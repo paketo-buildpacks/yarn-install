@@ -7,15 +7,9 @@ import (
 	"github.com/sclevine/spec/report"
 )
 
-func TestUnitYarn(t *testing.T) {
-	suite := spec.New("yarn", spec.Report(report.Terminal{}))
-	suite("Build", testBuild)
-	suite("CacheHandler", testCacheHandler)
+func TestUnitYarnInstall(t *testing.T) {
+	suite := spec.New("yarn-install", spec.Report(report.Terminal{}))
+	// suite("Build", testBuild)
 	suite("Detect", testDetect)
-	suite("InstallProcess", testInstallProcess)
-	suite("PackageJSONParser", testPackageJSONParser)
-	suite("PackageManagerConfigurationManager", testPackageManagerConfigurationManager)
-	suite("ProjectPathParser", testProjectPathParser)
-	suite("Symlinker", testSymlinker)
 	suite.Run(t)
 }

@@ -1,4 +1,4 @@
-package yarninstall_test
+package berry_test
 
 import (
 	"bytes"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/paketo-buildpacks/packit/v2/pexec"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
-	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	berry "github.com/paketo-buildpacks/yarn-install/berry"
 	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
 
@@ -25,7 +25,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		var (
 			workingDir     string
 			executable     *fakes.Executable
-			installProcess yarninstall.YarnInstallProcess
+			installProcess berry.BerryInstallProcess
 			summer         *fakes.Summer
 			execution      pexec.Execution
 		)
@@ -46,7 +46,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				fmt.Fprintln(exec.Stdout, "undefined")
 				return nil
 			}
-			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(bytes.NewBuffer(nil)))
+			installProcess = berry.NewBerryInstallProcess(executable, summer, scribe.NewEmitter(bytes.NewBuffer(nil)))
 		})
 
 		context("we should run yarn install when", func() {
@@ -135,7 +135,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 						executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 							return errors.New("very bad error")
 						}
-						installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(bytes.NewBuffer(nil)))
+						installProcess = berry.NewBerryInstallProcess(executable, summer, scribe.NewEmitter(bytes.NewBuffer(nil)))
 					})
 
 					it("fails", func() {
@@ -157,7 +157,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable              *fakes.Executable
 			summer                  *fakes.Summer
 
-			installProcess yarninstall.YarnInstallProcess
+			installProcess berry.BerryInstallProcess
 		)
 
 		it.Before(func() {
@@ -176,7 +176,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			executable = &fakes.Executable{}
 
-			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(buffer))
+			installProcess = berry.NewBerryInstallProcess(executable, summer, scribe.NewEmitter(buffer))
 		})
 
 		it.After(func() {
@@ -299,7 +299,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable       *fakes.Executable
 			summer           *fakes.Summer
 
-			installProcess yarninstall.YarnInstallProcess
+			installProcess berry.BerryInstallProcess
 		)
 
 		it.Before(func() {
@@ -325,7 +325,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				return nil
 			}
 
-			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(buffer))
+			installProcess = berry.NewBerryInstallProcess(executable, summer, scribe.NewEmitter(buffer))
 		})
 
 		it.After(func() {

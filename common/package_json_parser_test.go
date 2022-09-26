@@ -1,10 +1,10 @@
-package yarninstall_test
+package common_test
 
 import (
 	"os"
 	"testing"
 
-	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/common"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -16,7 +16,7 @@ func testPackageJSONParser(t *testing.T, context spec.G, it spec.S) {
 	context("ParseVersion", func() {
 		var (
 			path   string
-			parser yarninstall.PackageJSONParser
+			parser common.PackageJSONParser
 		)
 
 		it.Before(func() {
@@ -33,7 +33,7 @@ func testPackageJSONParser(t *testing.T, context spec.G, it spec.S) {
 
 			path = file.Name()
 
-			parser = yarninstall.NewPackageJSONParser()
+			parser = common.NewPackageJSONParser()
 		})
 
 		it.After(func() {

@@ -1,4 +1,4 @@
-package yarninstall_test
+package classic_test
 
 import (
 	"bytes"
@@ -8,7 +8,7 @@ import (
 
 	"github.com/paketo-buildpacks/packit/v2/scribe"
 	"github.com/paketo-buildpacks/packit/v2/servicebindings"
-	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/classic"
 	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
 
@@ -22,7 +22,7 @@ func testPackageManagerConfigurationManager(t *testing.T, context spec.G, it spe
 		buffer          *bytes.Buffer
 		bindingResolver *fakes.BindingResolver
 
-		packageManagerConfigurationManager yarninstall.PackageManagerConfigurationManager
+		packageManagerConfigurationManager classic.PackageManagerConfigurationManager
 	)
 
 	it.Before(func() {
@@ -30,7 +30,7 @@ func testPackageManagerConfigurationManager(t *testing.T, context spec.G, it spe
 
 		buffer = bytes.NewBuffer(nil)
 
-		packageManagerConfigurationManager = yarninstall.NewPackageManagerConfigurationManager(bindingResolver, scribe.NewEmitter(buffer))
+		packageManagerConfigurationManager = classic.NewPackageManagerConfigurationManager(bindingResolver, scribe.NewEmitter(buffer))
 	})
 
 	context("DeterminePath", func() {

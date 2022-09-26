@@ -1,4 +1,4 @@
-package yarninstall
+package common
 
 import (
 	"encoding/json"

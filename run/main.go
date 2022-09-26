@@ -12,6 +12,9 @@ import (
 	"github.com/paketo-buildpacks/packit/v2/sbom"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
 	"github.com/paketo-buildpacks/packit/v2/servicebindings"
+	"github.com/paketo-buildpacks/yarn-install/berry"
+	"github.com/paketo-buildpacks/yarn-install/classic"
+	"github.com/paketo-buildpacks/yarn-install/common"
 
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 )
@@ -23,13 +26,15 @@ func (s SBOMGenerator) Generate(path string) (sbom.SBOM, error) {
 }
 
 func main() {
-	packageJSONParser := yarninstall.NewPackageJSONParser()
+	packageJSONParser := common.NewPackageJSONParser()
+	yarnrcYmlParser := common.NewYarnrcYmlParser()
 	logger := scribe.NewEmitter(os.Stdout).WithLevel(os.Getenv("BP_LOG_LEVEL"))
-	installProcess := yarninstall.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
-	projectPathParser := yarninstall.NewProjectPathParser()
+	berryInstallProcess := berry.NewBerryInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
+	classicInstallProcess := classic.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
+	projectPathParser := common.NewProjectPathParser()
 	sbomGenerator := SBOMGenerator{}
-	symlinker := yarninstall.NewSymlinker()
-	packageManagerConfigurationManager := yarninstall.NewPackageManagerConfigurationManager(servicebindings.NewResolver(), logger)
+	symlinker := common.NewSymlinker()
+	packageManagerConfigurationManager := classic.NewPackageManagerConfigurationManager(servicebindings.NewResolver(), logger)
 	entryResolver := draft.NewPlanner()
 	home, err := os.UserHomeDir()
 	tmpDir := os.TempDir()
@@ -42,13 +47,15 @@ func main() {
 		yarninstall.Detect(
 			projectPathParser,
 			packageJSONParser,
+			yarnrcYmlParser,
 		),
 		yarninstall.Build(projectPathParser,
 			entryResolver,
 			packageManagerConfigurationManager,
 			home,
 			symlinker,
-			installProcess,
+			berryInstallProcess,
+			classicInstallProcess,
 			sbomGenerator,
 			chronos.DefaultClock,
 			logger,

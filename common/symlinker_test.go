@@ -1,4 +1,4 @@
-package yarninstall_test
+package common_test
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	. "github.com/onsi/gomega"
-	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/common"
 	"github.com/sclevine/spec"
 )
 
@@ -17,7 +17,7 @@ func testSymlinker(t *testing.T, context spec.G, it spec.S) {
 		Expect = NewWithT(t).Expect
 
 		workingDir string
-		symlinker  yarninstall.Symlinker
+		symlinker  common.Symlinker
 	)
 
 	it.Before(func() {
@@ -25,7 +25,7 @@ func testSymlinker(t *testing.T, context spec.G, it spec.S) {
 		workingDir, err = os.MkdirTemp("", "working-dir")
 		Expect(err).NotTo(HaveOccurred())
 
-		symlinker = yarninstall.NewSymlinker()
+		symlinker = common.NewSymlinker()
 	})
 
 	it.After(func() {

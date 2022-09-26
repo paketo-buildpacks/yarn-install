@@ -1,4 +1,4 @@
-package yarninstall
+package classic
 
 import (
 	"bytes"
