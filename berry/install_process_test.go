@@ -18,7 +18,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
+func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 	var Expect = NewWithT(t).Expect
 
 	context("ShouldRun", func() {

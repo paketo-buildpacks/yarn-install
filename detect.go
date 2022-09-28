@@ -41,16 +41,20 @@ func Detect(projectPathParser PathParser, versionParser VersionParser, yarnrcYml
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				hasYarnrcYml = false
+			} else {
+				return packit.DetectResult{}, err
 			}
-			return packit.DetectResult{}, err
 		}
 
 		_, err = os.Stat(filepath.Join(projectPath, "yarn.lock"))
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) && !hasYarnrcYml {
-				return packit.DetectResult{}, packit.Fail
+			if errors.Is(err, os.ErrNotExist) {
+				if !hasYarnrcYml {
+					return packit.DetectResult{}, packit.Fail
+				}
+			} else {
+				return packit.DetectResult{}, err
 			}
-			return packit.DetectResult{}, err
 		}
 
 		nodeVersion, err := versionParser.ParseVersion(filepath.Join(projectPath, "package.json"))
@@ -58,7 +62,6 @@ func Detect(projectPathParser PathParser, versionParser VersionParser, yarnrcYml
 			if errors.Is(err, os.ErrNotExist) {
 				return packit.DetectResult{}, packit.Fail
 			}
-
 			return packit.DetectResult{}, err
 		}
 
