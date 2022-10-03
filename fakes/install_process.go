@@ -4,7 +4,7 @@ import "sync"
 
 type InstallProcess struct {
 	ExecuteCall struct {
-		sync.Mutex
+		mutex     sync.Mutex
 		CallCount int
 		Receives  struct {
 			WorkingDir       string
@@ -17,22 +17,21 @@ type InstallProcess struct {
 		Stub func(string, string, bool) error
 	}
 	SetupModulesCall struct {
-		sync.Mutex
+		mutex     sync.Mutex
 		CallCount int
 		Receives  struct {
 			WorkingDir              string
 			CurrentModulesLayerPath string
 			NextModulesLayerPath    string
-			TempDir                 string
 		}
 		Returns struct {
 			String string
 			Error  error
 		}
-		Stub func(string, string, string, string) (string, error)
+		Stub func(string, string, string) (string, error)
 	}
 	ShouldRunCall struct {
-		sync.Mutex
+		mutex     sync.Mutex
 		CallCount int
 		Receives  struct {
 			WorkingDir string
@@ -50,8 +49,8 @@ type InstallProcess struct {
 }
 
 func (f *InstallProcess) Execute(param1 string, param2 string, param3 bool) error {
-	f.ExecuteCall.Lock()
-	defer f.ExecuteCall.Unlock()
+	f.ExecuteCall.mutex.Lock()
+	defer f.ExecuteCall.mutex.Unlock()
 	f.ExecuteCall.CallCount++
 	f.ExecuteCall.Receives.WorkingDir = param1
 	f.ExecuteCall.Receives.ModulesLayerPath = param2
@@ -61,23 +60,22 @@ func (f *InstallProcess) Execute(param1 string, param2 string, param3 bool) erro
 	}
 	return f.ExecuteCall.Returns.Error
 }
-func (f *InstallProcess) SetupModules(param1 string, param2 string, param3 string, param4 string) (string, error) {
-	f.SetupModulesCall.Lock()
-	defer f.SetupModulesCall.Unlock()
+func (f *InstallProcess) SetupModules(param1 string, param2 string, param3 string) (string, error) {
+	f.SetupModulesCall.mutex.Lock()
+	defer f.SetupModulesCall.mutex.Unlock()
 	f.SetupModulesCall.CallCount++
 	f.SetupModulesCall.Receives.WorkingDir = param1
 	f.SetupModulesCall.Receives.CurrentModulesLayerPath = param2
 	f.SetupModulesCall.Receives.NextModulesLayerPath = param3
-	f.SetupModulesCall.Receives.TempDir = param4
 	if f.SetupModulesCall.Stub != nil {
-		return f.SetupModulesCall.Stub(param1, param2, param3, param4)
+		return f.SetupModulesCall.Stub(param1, param2, param3)
 	}
 	return f.SetupModulesCall.Returns.String, f.SetupModulesCall.Returns.Error
 }
 func (f *InstallProcess) ShouldRun(param1 string, param2 map[string]interface {
 }) (bool, string, error) {
-	f.ShouldRunCall.Lock()
-	defer f.ShouldRunCall.Unlock()
+	f.ShouldRunCall.mutex.Lock()
+	defer f.ShouldRunCall.mutex.Unlock()
 	f.ShouldRunCall.CallCount++
 	f.ShouldRunCall.Receives.WorkingDir = param1
 	f.ShouldRunCall.Receives.Metadata = param2

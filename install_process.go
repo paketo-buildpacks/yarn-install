@@ -91,7 +91,7 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	return false, "", nil
 }
 
-func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir string) (string, error) {
+func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath string) (string, error) {
 	if currentModulesLayerPath != "" {
 		err := fs.Copy(filepath.Join(currentModulesLayerPath, "node_modules"), filepath.Join(nextModulesLayerPath, "node_modules"))
 		if err != nil {

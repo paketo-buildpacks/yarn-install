@@ -151,7 +151,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 	context("SetupModules", func() {
 		var (
 			workingDir              string
-			tempDir                 string
 			currentModulesLayerPath string
 			nextModulesLayerPath    string
 			buffer                  *bytes.Buffer
@@ -164,9 +163,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		it.Before(func() {
 			var err error
 			workingDir, err = os.MkdirTemp("", "working-dir")
-			Expect(err).NotTo(HaveOccurred())
-
-			tempDir, err = os.MkdirTemp("", "temp")
 			Expect(err).NotTo(HaveOccurred())
 
 			currentModulesLayerPath, err = os.MkdirTemp("", "current-modules-dir")
@@ -185,7 +181,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 		it.After(func() {
 			Expect(os.RemoveAll(workingDir)).To(Succeed())
-			Expect(os.RemoveAll(tempDir)).To(Succeed())
 			Expect(os.RemoveAll(currentModulesLayerPath)).To(Succeed())
 			Expect(os.RemoveAll(nextModulesLayerPath)).To(Succeed())
 		})
@@ -193,7 +188,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		context("when the current node directory is not set", func() {
 			context("when there is not a node_modules directory in the working", func() {
 				it("makes a node_modules directory in the working dir and one in the next modules dir and symlinks them", func() {
-					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
+					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(nextPath).To(Equal(nextModulesLayerPath))
 
@@ -212,7 +207,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(os.WriteFile(filepath.Join(workingDir, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
 				})
 				it("moves the contents of the node_modules directory in the working dir and into the next modules dir and symlinks them", func() {
-					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
+					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(nextPath).To(Equal(nextModulesLayerPath))
 
@@ -233,7 +228,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
 			})
 			it("copies the contents of the node_modules directory in the current dir into the next modules dir", func() {
-				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
+				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nextPath).To(Equal(nextModulesLayerPath))
 
@@ -255,7 +250,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(os.Chmod(currentModulesLayerPath, os.ModePerm)).To(Succeed())
 				})
 				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
+					_, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to copy node_modules directory")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
@@ -271,7 +266,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
+					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to create node_modules directory:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
@@ -287,7 +282,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
+					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to move node_modules directory to layer:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
