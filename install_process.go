@@ -98,21 +98,6 @@ func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, n
 			return "", fmt.Errorf("failed to copy node_modules directory: %w", err)
 		}
 
-		err = os.RemoveAll(filepath.Join(workingDir, "node_modules"))
-		if err != nil {
-			return "", fmt.Errorf("failed to remove node_modules directory: %w", err)
-		}
-
-		err = os.Symlink(filepath.Join(currentModulesLayerPath, "node_modules"), filepath.Join(tempDir, "node_modules"))
-		if err != nil {
-			return "", fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
-		}
-
-		err = os.Symlink(filepath.Join(tempDir, "node_modules"), filepath.Join(workingDir, "node_modules"))
-		if err != nil {
-			return "", fmt.Errorf("failed to symlink node_modules into working directory: %w", err)
-		}
-
 	} else {
 		err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
 		if err != nil {
