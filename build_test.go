@@ -1,495 +1,750 @@
 package yarninstall_test
 
 import (
+	"bytes"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/paketo-buildpacks/packit/v2"
+	"github.com/paketo-buildpacks/packit/v2/chronos"
+	"github.com/paketo-buildpacks/packit/v2/sbom"
+	"github.com/paketo-buildpacks/packit/v2/scribe"
+	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
-	// . "github.com/onsi/gomega"
+
+	. "github.com/onsi/gomega"
 )
 
 func testBuild(t *testing.T, context spec.G, it spec.S) {
-	// type determinePathCallParams struct {
-	// 	Typ         string
-	// 	PlatformDir string
-	// 	Entry       string
-	// }
+	type determinePathCallParams struct {
+		Typ         string
+		PlatformDir string
+		Entry       string
+	}
 
-	// type linkCallParams struct {
-	// 	Oldname string
-	// 	Newname string
-	// }
+	type linkCallParams struct {
+		Oldname string
+		Newname string
+	}
 
-	// var (
-	// 	Expect = NewWithT(t).Expect
+	var (
+		Expect = NewWithT(t).Expect
 
-	// 	layersDir  string
-	// 	workingDir string
-	// 	homeDir    string
-	// 	cnbDir     string
+		layersDir  string
+		workingDir string
+		homeDir    string
+		cnbDir     string
 
-	// 	determinePathCalls   []determinePathCallParams
-	// 	configurationManager *fakes.ConfigurationManager
-	// 	buffer               *bytes.Buffer
-	// 	entryResolver        *fakes.EntryResolver
-	// 	installProcess       *fakes.InstallProcess
-	// 	linkCalls            []linkCallParams
-	// 	pathParser           *fakes.PathParser
-	// 	sbomGenerator        *fakes.SBOMGenerator
-	// 	symlinker            *fakes.SymlinkManager
-	// 	unlinkPaths          []string
-	// 	build                packit.BuildFunc
-	// )
+		determinePathCalls    []determinePathCallParams
+		configurationManager  *fakes.ConfigurationManager
+		buffer                *bytes.Buffer
+		entryResolver         *fakes.EntryResolver
+		yarnrcYmlParser       *fakes.YarnrcYmlParser
+		classicInstallProcess *fakes.InstallProcess
+		berryInstallProcess   *fakes.InstallProcess
+		linkCalls             []linkCallParams
+		pathParser            *fakes.PathParser
+		sbomGenerator         *fakes.SBOMGenerator
+		symlinker             *fakes.SymlinkManager
+		unlinkPaths           []string
+		build                 packit.BuildFunc
+	)
 
-	// it.Before(func() {
-	// 	var err error
-	// 	layersDir, err = os.MkdirTemp("", "layers")
-	// 	Expect(err).NotTo(HaveOccurred())
+	it.Before(func() {
+		var err error
+		layersDir, err = os.MkdirTemp("", "layers")
+		Expect(err).NotTo(HaveOccurred())
 
-	// 	workingDir, err = os.MkdirTemp("", "working-dir")
-	// 	Expect(err).NotTo(HaveOccurred())
+		workingDir, err = os.MkdirTemp("", "working-dir")
+		Expect(err).NotTo(HaveOccurred())
 
-	// 	homeDir, err = os.MkdirTemp("", "home-dir")
-	// 	Expect(err).NotTo(HaveOccurred())
+		homeDir, err = os.MkdirTemp("", "home-dir")
+		Expect(err).NotTo(HaveOccurred())
 
-	// 	Expect(os.Mkdir(filepath.Join(workingDir, "some-project-dir"), os.ModePerm)).To(Succeed())
+		Expect(os.Mkdir(filepath.Join(workingDir, "some-project-dir"), os.ModePerm)).To(Succeed())
 
-	// 	cnbDir, err = os.MkdirTemp("", "cnb")
-	// 	Expect(err).NotTo(HaveOccurred())
+		cnbDir, err = os.MkdirTemp("", "cnb")
+		Expect(err).NotTo(HaveOccurred())
 
-	// 	installProcess = &fakes.InstallProcess{}
-	// 	installProcess.ShouldRunCall.Stub = func(string, map[string]interface{}) (bool, string, error) {
-	// 		return true, "some-awesome-shasum", nil
-	// 	}
+		classicInstallProcess = &fakes.InstallProcess{}
+		classicInstallProcess.ShouldRunCall.Stub = func(string, map[string]interface{}) (bool, string, error) {
+			return true, "some-awesome-shasum", nil
+		}
 
-	// 	entryResolver = &fakes.EntryResolver{}
+		berryInstallProcess = &fakes.InstallProcess{}
+		berryInstallProcess.ShouldRunCall.Stub = func(string, map[string]interface{}) (bool, string, error) {
+			return true, "some-awesome-shasum", nil
+		}
 
-	// 	buffer = bytes.NewBuffer(nil)
+		entryResolver = &fakes.EntryResolver{}
 
-	// 	pathParser = &fakes.PathParser{}
-	// 	pathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "some-project-dir")
+		buffer = bytes.NewBuffer(nil)
 
-	// 	sbomGenerator = &fakes.SBOMGenerator{}
-	// 	sbomGenerator.GenerateCall.Returns.SBOM = sbom.SBOM{}
+		pathParser = &fakes.PathParser{}
+		pathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "some-project-dir")
 
-	// 	configurationManager = &fakes.ConfigurationManager{}
+		yarnrcYmlParser = &fakes.YarnrcYmlParser{}
+		yarnrcYmlParser.ParseLinkerCall.Returns.Err = os.ErrNotExist
 
-	// 	configurationManager.DeterminePathCall.Stub = func(typ, platform, entry string) (string, error) {
-	// 		determinePathCalls = append(determinePathCalls, determinePathCallParams{
-	// 			Typ:         typ,
-	// 			Entry:       entry,
-	// 			PlatformDir: platform,
-	// 		})
-	// 		return "", nil
-	// 	}
-	// 	symlinker = &fakes.SymlinkManager{}
-	// 	symlinker.LinkCall.Stub = func(o, n string) error {
-	// 		linkCalls = append(linkCalls, linkCallParams{
-	// 			Oldname: o,
-	// 			Newname: n,
-	// 		})
-	// 		return nil
-	// 	}
-	// 	symlinker.UnlinkCall.Stub = func(p string) error {
-	// 		unlinkPaths = append(unlinkPaths, p)
-	// 		return nil
-	// 	}
+		sbomGenerator = &fakes.SBOMGenerator{}
+		sbomGenerator.GenerateCall.Returns.SBOM = sbom.SBOM{}
 
-	// 	build = yarninstall.Build(
-	// 		pathParser,
-	// 		entryResolver,
-	// 		configurationManager,
-	// 		homeDir,
-	// 		symlinker,
-	// 		installProcess,
-	// 		installProcess,
-	// 		sbomGenerator,
-	// 		chronos.DefaultClock,
-	// 		scribe.NewEmitter(buffer),
-	// 	)
-	// })
+		configurationManager = &fakes.ConfigurationManager{}
 
-	// it.After(func() {
-	// 	Expect(os.RemoveAll(layersDir)).To(Succeed())
-	// 	Expect(os.RemoveAll(workingDir)).To(Succeed())
-	// 	Expect(os.RemoveAll(cnbDir)).To(Succeed())
-	// })
+		configurationManager.DeterminePathCall.Stub = func(typ, platform, entry string) (string, error) {
+			determinePathCalls = append(determinePathCalls, determinePathCallParams{
+				Typ:         typ,
+				Entry:       entry,
+				PlatformDir: platform,
+			})
+			return "", nil
+		}
+		symlinker = &fakes.SymlinkManager{}
+		symlinker.LinkCall.Stub = func(o, n string) error {
+			linkCalls = append(linkCalls, linkCallParams{
+				Oldname: o,
+				Newname: n,
+			})
+			return nil
+		}
+		symlinker.UnlinkCall.Stub = func(p string) error {
+			unlinkPaths = append(unlinkPaths, p)
+			return nil
+		}
 
-	// context("when required during build", func() {
-	// 	it.Before(func() {
-	// 		entryResolver.MergeLayerTypesCall.Returns.Build = true
-	// 	})
+		build = yarninstall.Build(
+			pathParser,
+			entryResolver,
+			configurationManager,
+			homeDir,
+			symlinker,
+			classicInstallProcess,
+			berryInstallProcess,
+			sbomGenerator,
+			chronos.DefaultClock,
+			scribe.NewEmitter(buffer),
+		)
+	})
 
-	// 	it("returns a result that installs build modules", func() {
-	// 		result, err := build(packit.BuildContext{
-	// 			BuildpackInfo: packit.BuildpackInfo{
-	// 				Name:        "Some Buildpack",
-	// 				Version:     "1.2.3",
-	// 				SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
-	// 			},
-	// 			WorkingDir: workingDir,
-	// 			CNBPath:    cnbDir,
-	// 			Layers:     packit.Layers{Path: layersDir},
-	// 			Plan: packit.BuildpackPlan{
-	// 				Entries: []packit.BuildpackPlanEntry{
-	// 					{
-	// 						Name: "node_modules",
-	// 						Metadata: map[string]interface{}{
-	// 							"build": true,
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 			Stack: "some-stack",
-	// 			Platform: packit.Platform{
-	// 				Path: "some-platform-path",
-	// 			},
-	// 		})
-	// 		Expect(err).NotTo(HaveOccurred())
+	it.After(func() {
+		Expect(os.RemoveAll(layersDir)).To(Succeed())
+		Expect(os.RemoveAll(workingDir)).To(Succeed())
+		Expect(os.RemoveAll(cnbDir)).To(Succeed())
+	})
 
-	// 		Expect(len(result.Layers)).To(Equal(1))
+	context("when node_modules is required during build", func() {
+		it.Before(func() {
+			entryResolver.MergeLayerTypesCall.Returns.Build = true
+		})
 
-	// 		layer := result.Layers[0]
-	// 		Expect(layer.Name).To(Equal("build-modules"))
-	// 		Expect(layer.Path).To(Equal(filepath.Join(layersDir, "build-modules")))
-	// 		Expect(layer.BuildEnv).To(Equal(packit.Environment{
-	// 			"PATH.append":       filepath.Join(layersDir, "build-modules", "node_modules", ".bin"),
-	// 			"PATH.delim":        ":",
-	// 			"NODE_ENV.override": "development",
-	// 		}))
-	// 		Expect(layer.Build).To(BeTrue())
-	// 		Expect(layer.Cache).To(BeTrue())
-	// 		Expect(layer.Metadata).To(Equal(
-	// 			map[string]interface{}{
-	// 				"cache_sha": "some-awesome-shasum",
-	// 			}))
-	// 		Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
-	// 			{
-	// 				Extension: "cdx.json",
-	// 				Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
-	// 			},
-	// 			{
-	// 				Extension: "spdx.json",
-	// 				Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
-	// 			},
-	// 			{
-	// 				Extension: "syft.json",
-	// 				Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
-	// 			},
-	// 		}))
-	// 		Expect(len(layer.ExecD)).To(Equal(0))
+		context("Classic", func() {
+			it("returns a result that installs build modules", func() {
+				result, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:        "Some Buildpack",
+						Version:     "1.2.3",
+						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+					},
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{
+								Name: "node_modules",
+								Metadata: map[string]interface{}{
+									"build": true,
+								},
+							},
+						},
+					},
+					Stack: "some-stack",
+					Platform: packit.Platform{
+						Path: "some-platform-path",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
 
-	// 		Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
+				Expect(len(result.Layers)).To(Equal(1))
 
-	// 		Expect(configurationManager.DeterminePathCall.CallCount).To(Equal(2))
+				layer := result.Layers[0]
+				Expect(layer.Name).To(Equal("build-modules"))
+				Expect(layer.Path).To(Equal(filepath.Join(layersDir, "build-modules")))
+				Expect(layer.BuildEnv).To(Equal(packit.Environment{
+					"PATH.append":       filepath.Join(layersDir, "build-modules", "node_modules", ".bin"),
+					"PATH.delim":        ":",
+					"NODE_ENV.override": "development",
+				}))
+				Expect(layer.Build).To(BeTrue())
+				Expect(layer.Cache).To(BeTrue())
+				Expect(layer.Metadata).To(Equal(
+					map[string]interface{}{
+						"cache_sha": "some-awesome-shasum",
+					}))
+				Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+					{
+						Extension: "cdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+					},
+					{
+						Extension: "spdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+					},
+					{
+						Extension: "syft.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+					},
+				}))
+				Expect(len(layer.ExecD)).To(Equal(0))
 
-	// 		Expect(determinePathCalls[0].Typ).To(Equal("npmrc"))
-	// 		Expect(determinePathCalls[0].PlatformDir).To(Equal("some-platform-path"))
-	// 		Expect(determinePathCalls[0].Entry).To(Equal(".npmrc"))
+				Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
-	// 		Expect(determinePathCalls[1].Typ).To(Equal("yarnrc"))
-	// 		Expect(determinePathCalls[1].PlatformDir).To(Equal("some-platform-path"))
-	// 		Expect(determinePathCalls[1].Entry).To(Equal(".yarnrc"))
+				Expect(configurationManager.DeterminePathCall.CallCount).To(Equal(2))
 
-	// 		Expect(symlinker.LinkCall.CallCount).To(BeZero())
+				Expect(determinePathCalls[0].Typ).To(Equal("npmrc"))
+				Expect(determinePathCalls[0].PlatformDir).To(Equal("some-platform-path"))
+				Expect(determinePathCalls[0].Entry).To(Equal(".npmrc"))
 
-	// 		Expect(installProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(determinePathCalls[1].Typ).To(Equal("yarnrc"))
+				Expect(determinePathCalls[1].PlatformDir).To(Equal("some-platform-path"))
+				Expect(determinePathCalls[1].Entry).To(Equal(".yarnrc"))
 
-	// 		Expect(installProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
-	// 		Expect(installProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
-	// 		Expect(installProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
+				Expect(symlinker.LinkCall.CallCount).To(BeZero())
 
-	// 		Expect(installProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
-	// 		Expect(installProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "build-modules")))
-	// 		Expect(installProcess.ExecuteCall.Receives.Launch).To(BeFalse())
+				Expect(classicInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 
-	// 		Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
-	// 	})
-	// })
+				Expect(classicInstallProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
+				Expect(classicInstallProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
+				Expect(classicInstallProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
 
-	// context("when required during launch", func() {
-	// 	it.Before(func() {
-	// 		entryResolver.MergeLayerTypesCall.Returns.Launch = true
-	// 	})
+				Expect(classicInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(classicInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "build-modules")))
+				Expect(classicInstallProcess.ExecuteCall.Receives.Launch).To(BeFalse())
 
-	// 	it("returns a result that installs launch modules", func() {
-	// 		result, err := build(packit.BuildContext{
-	// 			BuildpackInfo: packit.BuildpackInfo{
-	// 				Name:        "Some Buildpack",
-	// 				Version:     "1.2.3",
-	// 				SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
-	// 			},
-	// 			WorkingDir: workingDir,
-	// 			CNBPath:    cnbDir,
-	// 			Layers:     packit.Layers{Path: layersDir},
-	// 			Plan: packit.BuildpackPlan{
-	// 				Entries: []packit.BuildpackPlanEntry{
-	// 					{
-	// 						Name: "node_modules",
-	// 						Metadata: map[string]interface{}{
-	// 							"build": true,
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 			Stack: "some-stack",
-	// 			Platform: packit.Platform{
-	// 				Path: "some-platform-path",
-	// 			},
-	// 		})
-	// 		Expect(err).NotTo(HaveOccurred())
+				Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
+			})
+		})
+		context("Berry", func() {
+			it.Before(func() {
+				yarnrcYmlParser.ParseLinkerCall.Returns.Err = nil
+				entryResolver.MergeLayerTypesCall.Returns.Build = true
+			})
 
-	// 		Expect(len(result.Layers)).To(Equal(1))
-	// 		layer := result.Layers[0]
-	// 		Expect(layer.Name).To(Equal("launch-modules"))
-	// 		Expect(layer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
-	// 		Expect(layer.LaunchEnv).To(Equal(packit.Environment{
-	// 			"PATH.append": filepath.Join(layersDir, "launch-modules", "node_modules", ".bin"),
-	// 			"PATH.delim":  ":",
-	// 		}))
-	// 		Expect(layer.Launch).To(BeTrue())
-	// 		Expect(layer.Metadata).To(Equal(
-	// 			map[string]interface{}{
-	// 				"cache_sha": "some-awesome-shasum",
-	// 			}))
-	// 		Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
-	// 			{
-	// 				Extension: "cdx.json",
-	// 				Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
-	// 			},
-	// 			{
-	// 				Extension: "spdx.json",
-	// 				Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
-	// 			},
-	// 			{
-	// 				Extension: "syft.json",
-	// 				Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
-	// 			},
-	// 		}))
+			it.Focus("returns a result that installs build modules", func() {
+				result, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:        "Some Buildpack",
+						Version:     "1.2.3",
+						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+					},
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{
+								Name: "node_modules",
+								Metadata: map[string]interface{}{
+									"build": true,
+								},
+							},
+						},
+					},
+					Stack: "some-stack",
+					Platform: packit.Platform{
+						Path: "some-platform-path",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
 
-	// 		Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
+				Expect(len(result.Layers)).To(Equal(1))
 
-	// 		Expect(configurationManager.DeterminePathCall.CallCount).To(Equal(2))
+				layer := result.Layers[0]
+				Expect(layer.Name).To(Equal("build-modules"))
+				Expect(layer.Path).To(Equal(filepath.Join(layersDir, "build-modules")))
+				Expect(layer.BuildEnv).To(Equal(packit.Environment{
+					"PATH.append":       filepath.Join(layersDir, "build-modules", "node_modules", ".bin"),
+					"PATH.delim":        ":",
+					"NODE_ENV.override": "development",
+				}))
+				Expect(layer.Build).To(BeTrue())
+				Expect(layer.Cache).To(BeTrue())
+				Expect(layer.Metadata).To(Equal(
+					map[string]interface{}{
+						"cache_sha": "some-awesome-shasum",
+					}))
+				Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+					{
+						Extension: "cdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+					},
+					{
+						Extension: "spdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+					},
+					{
+						Extension: "syft.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+					},
+				}))
+				Expect(len(layer.ExecD)).To(Equal(0))
 
-	// 		Expect(determinePathCalls[0].Typ).To(Equal("npmrc"))
-	// 		Expect(determinePathCalls[0].PlatformDir).To(Equal("some-platform-path"))
-	// 		Expect(determinePathCalls[0].Entry).To(Equal(".npmrc"))
+				Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
-	// 		Expect(determinePathCalls[1].Typ).To(Equal("yarnrc"))
-	// 		Expect(determinePathCalls[1].PlatformDir).To(Equal("some-platform-path"))
-	// 		Expect(determinePathCalls[1].Entry).To(Equal(".yarnrc"))
+				Expect(symlinker.LinkCall.CallCount).To(BeZero())
 
-	// 		Expect(symlinker.LinkCall.CallCount).To(BeZero())
+				Expect(berryInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 
-	// 		Expect(installProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
 
-	// 		Expect(installProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
-	// 		Expect(installProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
-	// 		Expect(installProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
+				Expect(berryInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "build-modules")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.Launch).To(BeFalse())
+			})
+		})
+	})
 
-	// 		Expect(installProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
-	// 		Expect(installProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "launch-modules")))
-	// 		Expect(installProcess.ExecuteCall.Receives.Launch).To(BeTrue())
+	context("when node_modules is required during launch", func() {
+		it.Before(func() {
+			entryResolver.MergeLayerTypesCall.Returns.Launch = true
+		})
 
-	// 		Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
-	// 	})
-	// })
+		context("Classic", func() {
+			it("returns a result that installs launch modules", func() {
+				result, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:        "Some Buildpack",
+						Version:     "1.2.3",
+						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+					},
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{
+								Name: "node_modules",
+								Metadata: map[string]interface{}{
+									"build": true,
+								},
+							},
+						},
+					},
+					Stack: "some-stack",
+					Platform: packit.Platform{
+						Path: "some-platform-path",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
 
-	// context("when not required during either build or launch", func() {
-	// 	it("returns a result that has no layers", func() {
-	// 		result, err := build(packit.BuildContext{
-	// 			BuildpackInfo: packit.BuildpackInfo{
-	// 				Name:        "Some Buildpack",
-	// 				Version:     "1.2.3",
-	// 				SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
-	// 			},
-	// 			WorkingDir: workingDir,
-	// 			CNBPath:    cnbDir,
-	// 			Layers:     packit.Layers{Path: layersDir},
-	// 			Plan: packit.BuildpackPlan{
-	// 				Entries: []packit.BuildpackPlanEntry{
-	// 					{
-	// 						Name: "node_modules",
-	// 						Metadata: map[string]interface{}{
-	// 							"build": true,
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 			Stack: "some-stack",
-	// 			Platform: packit.Platform{
-	// 				Path: "some-platform-path",
-	// 			},
-	// 		})
-	// 		Expect(err).NotTo(HaveOccurred())
-	// 		Expect(result).To(Equal(packit.BuildResult{}))
-	// 	})
-	// })
+				Expect(len(result.Layers)).To(Equal(1))
+				layer := result.Layers[0]
+				Expect(layer.Name).To(Equal("launch-modules"))
+				Expect(layer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(layer.LaunchEnv).To(Equal(packit.Environment{
+					"PATH.append": filepath.Join(layersDir, "launch-modules", "node_modules", ".bin"),
+					"PATH.delim":  ":",
+				}))
+				Expect(layer.Launch).To(BeTrue())
+				Expect(layer.Metadata).To(Equal(
+					map[string]interface{}{
+						"cache_sha": "some-awesome-shasum",
+					}))
+				Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+					{
+						Extension: "cdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+					},
+					{
+						Extension: "spdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+					},
+					{
+						Extension: "syft.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+					},
+				}))
 
-	// context("when required during both build or launch", func() {
-	// 	type setupModulesParams struct {
-	// 		WorkingDir              string
-	// 		CurrentModulesLayerPath string
-	// 		NextModulesLayerPath    string
-	// 		TempDir                 string
-	// 	}
+				Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
-	// 	var setupModulesCalls []setupModulesParams
+				Expect(configurationManager.DeterminePathCall.CallCount).To(Equal(2))
 
-	// 	it.Before(func() {
-	// 		entryResolver.MergeLayerTypesCall.Returns.Launch = true
-	// 		entryResolver.MergeLayerTypesCall.Returns.Build = true
+				Expect(determinePathCalls[0].Typ).To(Equal("npmrc"))
+				Expect(determinePathCalls[0].PlatformDir).To(Equal("some-platform-path"))
+				Expect(determinePathCalls[0].Entry).To(Equal(".npmrc"))
 
-	// 		installProcess.SetupModulesCall.Stub = func(w string, c string, n string, t string) (string, error) {
-	// 			setupModulesCalls = append(setupModulesCalls, setupModulesParams{
-	// 				WorkingDir:              w,
-	// 				CurrentModulesLayerPath: c,
-	// 				NextModulesLayerPath:    n,
-	// 				TempDir:                 t,
-	// 			})
-	// 			return n, nil
-	// 		}
-	// 	})
-	// 	it("returns a result that has both layers and the module setup updates accordingly", func() {
-	// 		result, err := build(packit.BuildContext{
-	// 			BuildpackInfo: packit.BuildpackInfo{
-	// 				Name:        "Some Buildpack",
-	// 				Version:     "1.2.3",
-	// 				SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
-	// 			},
-	// 			WorkingDir: workingDir,
-	// 			CNBPath:    cnbDir,
-	// 			Layers:     packit.Layers{Path: layersDir},
-	// 			Plan: packit.BuildpackPlan{
-	// 				Entries: []packit.BuildpackPlanEntry{
-	// 					{
-	// 						Name: "node_modules",
-	// 						Metadata: map[string]interface{}{
-	// 							"build": true,
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 			Stack: "some-stack",
-	// 			Platform: packit.Platform{
-	// 				Path: "some-platform-path",
-	// 			},
-	// 		})
-	// 		Expect(err).NotTo(HaveOccurred())
+				Expect(determinePathCalls[1].Typ).To(Equal("yarnrc"))
+				Expect(determinePathCalls[1].PlatformDir).To(Equal("some-platform-path"))
+				Expect(determinePathCalls[1].Entry).To(Equal(".yarnrc"))
 
-	// 		launchLayer := result.Layers[1]
-	// 		Expect(launchLayer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
-	// 		Expect(len(result.Layers)).To(Equal(2))
+				Expect(symlinker.LinkCall.CallCount).To(BeZero())
 
-	// 		Expect(installProcess.SetupModulesCall.CallCount).To(Equal(2))
+				Expect(classicInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 
-	// 		Expect(setupModulesCalls[0].WorkingDir).To(Equal(workingDir))
-	// 		Expect(setupModulesCalls[0].CurrentModulesLayerPath).To(Equal(""))
-	// 		Expect(setupModulesCalls[0].NextModulesLayerPath).To(Equal(result.Layers[0].Path))
+				Expect(classicInstallProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
+				Expect(classicInstallProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
+				Expect(classicInstallProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
 
-	// 		Expect(setupModulesCalls[1].WorkingDir).To(Equal(workingDir))
-	// 		Expect(setupModulesCalls[1].CurrentModulesLayerPath).To(Equal(result.Layers[0].Path))
-	// 		Expect(setupModulesCalls[1].NextModulesLayerPath).To(Equal(result.Layers[1].Path))
-	// 	})
-	// })
+				Expect(classicInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(classicInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(classicInstallProcess.ExecuteCall.Receives.Launch).To(BeTrue())
 
-	// context("when re-using previous modules layer", func() {
-	// 	it.Before(func() {
-	// 		installProcess.ShouldRunCall.Stub = nil
-	// 		installProcess.ShouldRunCall.Returns.Run = false
-	// 		entryResolver.MergeLayerTypesCall.Returns.Launch = true
-	// 		entryResolver.MergeLayerTypesCall.Returns.Build = true
-	// 	})
+				Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
+			})
+		})
 
-	// 	it("does not redo the build process", func() {
-	// 		result, err := build(packit.BuildContext{
-	// 			BuildpackInfo: packit.BuildpackInfo{
-	// 				Name:        "Some Buildpack",
-	// 				Version:     "1.2.3",
-	// 				SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
-	// 			},
-	// 			WorkingDir: workingDir,
-	// 			CNBPath:    cnbDir,
-	// 			Layers:     packit.Layers{Path: layersDir},
-	// 			Plan: packit.BuildpackPlan{
-	// 				Entries: []packit.BuildpackPlanEntry{
-	// 					{
-	// 						Name: "node_modules",
-	// 						Metadata: map[string]interface{}{
-	// 							"build": true,
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 			Stack: "some-stack",
-	// 			Platform: packit.Platform{
-	// 				Path: "some-platform-path",
-	// 			},
-	// 		})
-	// 		Expect(err).NotTo(HaveOccurred())
+		context("Berry", func() {
+			it.Before(func() {
+				yarnrcYmlParser.ParseLinkerCall.Returns.Err = nil
+			})
 
-	// 		Expect(len(result.Layers)).To(Equal(2))
-	// 		buildLayer := result.Layers[0]
-	// 		Expect(buildLayer.Name).To(Equal("build-modules"))
-	// 		Expect(buildLayer.Path).To(Equal(filepath.Join(layersDir, "build-modules")))
-	// 		Expect(buildLayer.Build).To(BeTrue())
-	// 		Expect(buildLayer.Cache).To(BeTrue())
+			it("returns a result that installs launch modules", func() {
+				result, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:        "Some Buildpack",
+						Version:     "1.2.3",
+						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+					},
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{
+								Name: "node_modules",
+								Metadata: map[string]interface{}{
+									"build": true,
+								},
+							},
+						},
+					},
+					Stack: "some-stack",
+					Platform: packit.Platform{
+						Path: "some-platform-path",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
 
-	// 		launchLayer := result.Layers[1]
-	// 		Expect(launchLayer.Name).To(Equal("launch-modules"))
-	// 		Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
-	// 		Expect(launchLayer.Launch).To(BeTrue())
+				Expect(len(result.Layers)).To(Equal(1))
+				layer := result.Layers[0]
+				Expect(layer.Name).To(Equal("launch-modules"))
+				Expect(layer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(layer.LaunchEnv).To(Equal(packit.Environment{
+					"PATH.append": filepath.Join(layersDir, "launch-modules", "node_modules", ".bin"),
+					"PATH.delim":  ":",
+				}))
+				Expect(layer.Launch).To(BeTrue())
+				Expect(layer.Metadata).To(Equal(
+					map[string]interface{}{
+						"cache_sha": "some-awesome-shasum",
+					}))
+				Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+					{
+						Extension: "cdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+					},
+					{
+						Extension: "spdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+					},
+					{
+						Extension: "syft.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+					},
+				}))
 
-	// 		Expect(symlinker.LinkCall.CallCount).To(Equal(1))
-	// 		Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join(layersDir, "build-modules", "node_modules")))
-	// 		Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(workingDir, "some-project-dir", "node_modules")))
-	// 	})
-	// })
+				Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
-	// context("when re-using previous launch modules layer", func() {
-	// 	it.Before(func() {
-	// 		installProcess.ShouldRunCall.Stub = nil
-	// 		installProcess.ShouldRunCall.Returns.Run = false
-	// 		entryResolver.MergeLayerTypesCall.Returns.Launch = true
-	// 	})
+				Expect(configurationManager.DeterminePathCall.CallCount).To(Equal(2))
 
-	// 	it("does not redo the build process", func() {
-	// 		result, err := build(packit.BuildContext{
-	// 			BuildpackInfo: packit.BuildpackInfo{
-	// 				Name:        "Some Buildpack",
-	// 				Version:     "1.2.3",
-	// 				SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
-	// 			},
-	// 			WorkingDir: workingDir,
-	// 			CNBPath:    cnbDir,
-	// 			Layers:     packit.Layers{Path: layersDir},
-	// 			Plan: packit.BuildpackPlan{
-	// 				Entries: []packit.BuildpackPlanEntry{
-	// 					{
-	// 						Name: "node_modules",
-	// 						Metadata: map[string]interface{}{
-	// 							"build": true,
-	// 						},
-	// 					},
-	// 				},
-	// 			},
-	// 			Stack: "some-stack",
-	// 			Platform: packit.Platform{
-	// 				Path: "some-platform-path",
-	// 			},
-	// 		})
-	// 		Expect(err).NotTo(HaveOccurred())
+				Expect(symlinker.LinkCall.CallCount).To(BeZero())
 
-	// 		Expect(len(result.Layers)).To(Equal(1))
-	// 		launchLayer := result.Layers[0]
-	// 		Expect(launchLayer.Name).To(Equal("launch-modules"))
-	// 		Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
-	// 		Expect(launchLayer.Launch).To(BeTrue())
+				Expect(berryInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 
-	// 		Expect(symlinker.LinkCall.CallCount).To(Equal(1))
-	// 		Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join(layersDir, "launch-modules", "node_modules")))
-	// 		Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(workingDir, "some-project-dir", "node_modules")))
-	// 	})
-	// })
+				Expect(berryInstallProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
+
+				Expect(berryInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.Launch).To(BeTrue())
+
+				Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
+			})
+		})
+	})
+
+	context("when node_modules is during neither build nor launch", func() {
+		it("returns a result that has no layers", func() {
+			result, err := build(packit.BuildContext{
+				BuildpackInfo: packit.BuildpackInfo{
+					Name:        "Some Buildpack",
+					Version:     "1.2.3",
+					SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+				},
+				WorkingDir: workingDir,
+				CNBPath:    cnbDir,
+				Layers:     packit.Layers{Path: layersDir},
+				Plan: packit.BuildpackPlan{
+					Entries: []packit.BuildpackPlanEntry{
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+					},
+				},
+				Stack: "some-stack",
+				Platform: packit.Platform{
+					Path: "some-platform-path",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+			Expect(result).To(Equal(packit.BuildResult{}))
+		})
+	})
+
+	context("when node_modules is during both build or launch", func() {
+		type setupModulesParams struct {
+			WorkingDir              string
+			CurrentModulesLayerPath string
+			NextModulesLayerPath    string
+			TempDir                 string
+		}
+
+		var setupModulesCalls []setupModulesParams
+
+		it.Before(func() {
+			entryResolver.MergeLayerTypesCall.Returns.Launch = true
+			entryResolver.MergeLayerTypesCall.Returns.Build = true
+
+			classicInstallProcess.SetupModulesCall.Stub = func(w string, c string, n string, t string) (string, error) {
+				setupModulesCalls = append(setupModulesCalls, setupModulesParams{
+					WorkingDir:              w,
+					CurrentModulesLayerPath: c,
+					NextModulesLayerPath:    n,
+					TempDir:                 t,
+				})
+				return n, nil
+			}
+		})
+		context("Classic", func() {
+			it("returns a result that has both layers and the module setup updates accordingly", func() {
+				result, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:        "Some Buildpack",
+						Version:     "1.2.3",
+						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+					},
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{
+								Name: "node_modules",
+								Metadata: map[string]interface{}{
+									"build": true,
+								},
+							},
+						},
+					},
+					Stack: "some-stack",
+					Platform: packit.Platform{
+						Path: "some-platform-path",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				launchLayer := result.Layers[1]
+				Expect(launchLayer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
+				Expect(len(result.Layers)).To(Equal(2))
+
+				Expect(classicInstallProcess.SetupModulesCall.CallCount).To(Equal(2))
+
+				Expect(setupModulesCalls[0].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[0].CurrentModulesLayerPath).To(Equal(""))
+				Expect(setupModulesCalls[0].NextModulesLayerPath).To(Equal(result.Layers[0].Path))
+
+				Expect(setupModulesCalls[1].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[1].CurrentModulesLayerPath).To(Equal(result.Layers[0].Path))
+				Expect(setupModulesCalls[1].NextModulesLayerPath).To(Equal(result.Layers[1].Path))
+			})
+		})
+
+		context("Berry", func() {
+			it.Before(func() {
+				yarnrcYmlParser.ParseLinkerCall.Returns.Err = nil
+			})
+
+			it("returns a result that has both layers and the module setup updates accordingly", func() {
+				result, err := build(packit.BuildContext{
+					BuildpackInfo: packit.BuildpackInfo{
+						Name:        "Some Buildpack",
+						Version:     "1.2.3",
+						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+					},
+					WorkingDir: workingDir,
+					CNBPath:    cnbDir,
+					Layers:     packit.Layers{Path: layersDir},
+					Plan: packit.BuildpackPlan{
+						Entries: []packit.BuildpackPlanEntry{
+							{
+								Name: "node_modules",
+								Metadata: map[string]interface{}{
+									"build": true,
+								},
+							},
+						},
+					},
+					Stack: "some-stack",
+					Platform: packit.Platform{
+						Path: "some-platform-path",
+					},
+				})
+				Expect(err).NotTo(HaveOccurred())
+
+				launchLayer := result.Layers[1]
+				Expect(launchLayer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
+				Expect(len(result.Layers)).To(Equal(2))
+
+				Expect(berryInstallProcess.SetupModulesCall.CallCount).To(Equal(2))
+
+				Expect(setupModulesCalls[0].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[0].CurrentModulesLayerPath).To(Equal(""))
+				Expect(setupModulesCalls[0].NextModulesLayerPath).To(Equal(result.Layers[0].Path))
+
+				Expect(setupModulesCalls[1].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[1].CurrentModulesLayerPath).To(Equal(result.Layers[0].Path))
+				Expect(setupModulesCalls[1].NextModulesLayerPath).To(Equal(result.Layers[1].Path))
+			})
+		})
+	})
+
+	context("when re-using previous modules layer", func() {
+		it.Before(func() {
+			classicInstallProcess.ShouldRunCall.Stub = nil
+			classicInstallProcess.ShouldRunCall.Returns.Run = false
+			entryResolver.MergeLayerTypesCall.Returns.Launch = true
+			entryResolver.MergeLayerTypesCall.Returns.Build = true
+		})
+
+		it("does not redo the build process", func() {
+			result, err := build(packit.BuildContext{
+				BuildpackInfo: packit.BuildpackInfo{
+					Name:        "Some Buildpack",
+					Version:     "1.2.3",
+					SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+				},
+				WorkingDir: workingDir,
+				CNBPath:    cnbDir,
+				Layers:     packit.Layers{Path: layersDir},
+				Plan: packit.BuildpackPlan{
+					Entries: []packit.BuildpackPlanEntry{
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+					},
+				},
+				Stack: "some-stack",
+				Platform: packit.Platform{
+					Path: "some-platform-path",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(len(result.Layers)).To(Equal(2))
+			buildLayer := result.Layers[0]
+			Expect(buildLayer.Name).To(Equal("build-modules"))
+			Expect(buildLayer.Path).To(Equal(filepath.Join(layersDir, "build-modules")))
+			Expect(buildLayer.Build).To(BeTrue())
+			Expect(buildLayer.Cache).To(BeTrue())
+
+			launchLayer := result.Layers[1]
+			Expect(launchLayer.Name).To(Equal("launch-modules"))
+			Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
+			Expect(launchLayer.Launch).To(BeTrue())
+
+			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
+			Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join(layersDir, "build-modules", "node_modules")))
+			Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(workingDir, "some-project-dir", "node_modules")))
+		})
+
+		context("Berry", func() {
+		})
+	})
+
+	context("when re-using previous launch modules layer", func() {
+		it.Before(func() {
+			classicInstallProcess.ShouldRunCall.Stub = nil
+			classicInstallProcess.ShouldRunCall.Returns.Run = false
+			entryResolver.MergeLayerTypesCall.Returns.Launch = true
+		})
+
+		it("does not redo the build process", func() {
+			result, err := build(packit.BuildContext{
+				BuildpackInfo: packit.BuildpackInfo{
+					Name:        "Some Buildpack",
+					Version:     "1.2.3",
+					SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+				},
+				WorkingDir: workingDir,
+				CNBPath:    cnbDir,
+				Layers:     packit.Layers{Path: layersDir},
+				Plan: packit.BuildpackPlan{
+					Entries: []packit.BuildpackPlanEntry{
+						{
+							Name: "node_modules",
+							Metadata: map[string]interface{}{
+								"build": true,
+							},
+						},
+					},
+				},
+				Stack: "some-stack",
+				Platform: packit.Platform{
+					Path: "some-platform-path",
+				},
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			Expect(len(result.Layers)).To(Equal(1))
+			launchLayer := result.Layers[0]
+			Expect(launchLayer.Name).To(Equal("launch-modules"))
+			Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
+			Expect(launchLayer.Launch).To(BeTrue())
+
+			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
+			Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join(layersDir, "launch-modules", "node_modules")))
+			Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(workingDir, "some-project-dir", "node_modules")))
+		})
+
+		context("Berry", func() {
+		})
+	})
+
+	context("when yarn_pkgs is required", func() {
+		it.Before(func() {
+			yarnrcYmlParser.ParseLinkerCall.Returns.Err = nil
+		})
+
+		context("", func() {
+			it.Before(func() {
+				entryResolver.MergeLayerTypesCall.Returns.Build = true
+			})
+			it("", func() {
+			})
+		})
+
+	})
 
 	// context("failure cases", func() {
 
@@ -655,8 +910,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when the check for the install process fails", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ShouldRunCall.Stub = nil
-	// 				installProcess.ShouldRunCall.Returns.Err = errors.New("failed to determine if process should run")
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Err = errors.New("failed to determine if process should run")
 	// 			})
 
 	// 			it("returns an error", func() {
@@ -699,7 +954,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when modules cannot be set up", func() {
 	// 			it.Before(func() {
-	// 				installProcess.SetupModulesCall.Returns.Error = errors.New("failed to setup modules")
+	// 				classicInstallProcess.SetupModulesCall.Returns.Error = errors.New("failed to setup modules")
 	// 			})
 
 	// 			it("returns an error", func() {
@@ -718,7 +973,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when the build install process cannot be executed", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ExecuteCall.Returns.Error = errors.New("failed to execute install process")
+	// 				classicInstallProcess.ExecuteCall.Returns.Error = errors.New("failed to execute install process")
 	// 			})
 
 	// 			it("returns an error", func() {
@@ -791,8 +1046,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when install is skipped and node_modules cannot be removed", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ShouldRunCall.Stub = nil
-	// 				installProcess.ShouldRunCall.Returns.Run = false
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
 	// 				Expect(os.Chmod(filepath.Join(workingDir), 0000)).To(Succeed())
 	// 			})
 
@@ -817,8 +1072,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when install is skipped and symlinking node_modules fails", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ShouldRunCall.Stub = nil
-	// 				installProcess.ShouldRunCall.Returns.Run = false
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
 	// 				symlinker.LinkCall.Stub = nil
 	// 				symlinker.LinkCall.Returns.Error = errors.New("some symlinking error")
 	// 			})
@@ -868,8 +1123,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when the check for the install process fails", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ShouldRunCall.Stub = nil
-	// 				installProcess.ShouldRunCall.Returns.Err = errors.New("failed to determine if process should run")
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Err = errors.New("failed to determine if process should run")
 	// 			})
 
 	// 			it("returns an error", func() {
@@ -912,7 +1167,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when modules cannot be set up", func() {
 	// 			it.Before(func() {
-	// 				installProcess.SetupModulesCall.Returns.Error = errors.New("failed to setup modules")
+	// 				classicInstallProcess.SetupModulesCall.Returns.Error = errors.New("failed to setup modules")
 	// 			})
 
 	// 			it("returns an error", func() {
@@ -931,7 +1186,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when the install process cannot be executed", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ExecuteCall.Returns.Error = errors.New("failed to execute install process")
+	// 				classicInstallProcess.ExecuteCall.Returns.Error = errors.New("failed to execute install process")
 	// 			})
 
 	// 			it("returns an error", func() {
@@ -1004,8 +1259,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when install is skipped and node_modules cannot be removed", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ShouldRunCall.Stub = nil
-	// 				installProcess.ShouldRunCall.Returns.Run = false
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
 	// 				Expect(os.Chmod(filepath.Join(workingDir), 0000)).To(Succeed())
 	// 			})
 
@@ -1030,8 +1285,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	// 		context("when install is skipped and symlinking node_modules fails", func() {
 	// 			it.Before(func() {
-	// 				installProcess.ShouldRunCall.Stub = nil
-	// 				installProcess.ShouldRunCall.Returns.Run = false
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
 	// 				symlinker.LinkCall.Stub = nil
 	// 				symlinker.LinkCall.Returns.Error = errors.New("some symlinking error")
 	// 			})

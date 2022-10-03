@@ -9,7 +9,7 @@ import (
 
 func TestUnitYarnInstall(t *testing.T) {
 	suite := spec.New("yarn-install", spec.Report(report.Terminal{}))
-	// suite("Build", testBuild)
+	suite("Build", testBuild)
 	suite("Detect", testDetect)
 	suite.Run(t)
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
@@ -45,8 +46,8 @@ func Build(pathParser PathParser,
 	configurationManager ConfigurationManager,
 	homeDir string,
 	symlinker SymlinkManager,
-	berryInstallProcess InstallProcess,
 	classicInstallProcess InstallProcess,
+	berryInstallProcess InstallProcess,
 	sbomGenerator SBOMGenerator,
 	clock chronos.Clock,
 	logger scribe.Emitter,
@@ -54,242 +55,243 @@ func Build(pathParser PathParser,
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
-		// projectPath, err := pathParser.Get(context.WorkingDir)
-		// if err != nil {
-		// 	return packit.BuildResult{}, err
-		// }
+		projectPath, err := pathParser.Get(context.WorkingDir)
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 
-		// globalNpmrcPath, err := configurationManager.DeterminePath("npmrc", context.Platform.Path, ".npmrc")
-		// if err != nil {
-		// 	return packit.BuildResult{}, err
-		// }
+		globalNpmrcPath, err := configurationManager.DeterminePath("npmrc", context.Platform.Path, ".npmrc")
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 
-		// if globalNpmrcPath != "" {
-		// 	err = symlinker.Link(globalNpmrcPath, filepath.Join(homeDir, ".npmrc"))
-		// 	if err != nil {
-		// 		return packit.BuildResult{}, err
-		// 	}
-		// }
+		if globalNpmrcPath != "" {
+			err = symlinker.Link(globalNpmrcPath, filepath.Join(homeDir, ".npmrc"))
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+		}
 
-		// globalYarnrcPath, err := configurationManager.DeterminePath("yarnrc", context.Platform.Path, ".yarnrc")
-		// if err != nil {
-		// 	return packit.BuildResult{}, err
-		// }
+		globalYarnrcPath, err := configurationManager.DeterminePath("yarnrc", context.Platform.Path, ".yarnrc")
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 
-		// if globalYarnrcPath != "" {
-		// 	err = symlinker.Link(globalYarnrcPath, filepath.Join(homeDir, ".yarnrc"))
-		// 	if err != nil {
-		// 		return packit.BuildResult{}, err
-		// 	}
-		// }
+		if globalYarnrcPath != "" {
+			err = symlinker.Link(globalYarnrcPath, filepath.Join(homeDir, ".yarnrc"))
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+		}
 
-		// launch, build := entryResolver.MergeLayerTypes(PlanDependencyNodeModules, context.Plan.Entries)
+		launch, build := entryResolver.MergeLayerTypes(PlanDependencyNodeModules, context.Plan.Entries)
 
-		// sbomDisabled, err := checkSbomDisabled()
-		// if err != nil {
-		// 	return packit.BuildResult{}, err
-		// }
+		sbomDisabled, err := checkSbomDisabled()
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 
-		// var layers []packit.Layer
-		// var currentModLayer string
-		// if build {
-		// 	layer, err := context.Layers.Get("build-modules")
-		// 	if err != nil {
-		// 		return packit.BuildResult{}, err
-		// 	}
+		installProcess := classicInstallProcess
+		var layers []packit.Layer
+		var currentModLayer string
+		if build {
+			layer, err := context.Layers.Get("build-modules")
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 
-		// 	logger.Process("Resolving installation process")
+			logger.Process("Resolving installation process")
 
-		// 	run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
-		// 	if err != nil {
-		// 		return packit.BuildResult{}, err
-		// 	}
+			run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 
-		// 	if run {
-		// 		logger.Subprocess("Selected default build process: 'yarn install'")
-		// 		logger.Break()
-		// 		logger.Process("Executing build environment install process")
+			if run {
+				logger.Subprocess("Selected default build process: 'yarn install'")
+				logger.Break()
+				logger.Process("Executing build environment install process")
 
-		// 		layer, err = layer.Reset()
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
+				layer, err = layer.Reset()
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-		// 		currentModLayer, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path, "/tmp")
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
+				currentModLayer, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path, "/tmp")
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-		// 		duration, err := clock.Measure(func() error {
-		// 			return installProcess.Execute(projectPath, layer.Path, false)
-		// 		})
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
+				duration, err := clock.Measure(func() error {
+					return installProcess.Execute(projectPath, layer.Path, false)
+				})
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-		// 		logger.Action("Completed in %s", duration.Round(time.Millisecond))
-		// 		logger.Break()
+				logger.Action("Completed in %s", duration.Round(time.Millisecond))
+				logger.Break()
 
-		// 		layer.Metadata = map[string]interface{}{
-		// 			"cache_sha": sha,
-		// 		}
+				layer.Metadata = map[string]interface{}{
+					"cache_sha": sha,
+				}
 
-		// 		path := filepath.Join(layer.Path, "node_modules", ".bin")
-		// 		layer.BuildEnv.Append("PATH", path, string(os.PathListSeparator))
-		// 		layer.BuildEnv.Override("NODE_ENV", "development")
+				path := filepath.Join(layer.Path, "node_modules", ".bin")
+				layer.BuildEnv.Append("PATH", path, string(os.PathListSeparator))
+				layer.BuildEnv.Override("NODE_ENV", "development")
 
-		// 		logger.EnvironmentVariables(layer)
+				logger.EnvironmentVariables(layer)
 
-		// 		if sbomDisabled {
-		// 			logger.Subprocess("Skipping SBOM generation for Yarn Install")
-		// 			logger.Break()
+				if sbomDisabled {
+					logger.Subprocess("Skipping SBOM generation for Yarn Install")
+					logger.Break()
 
-		// 		} else {
-		// 			logger.GeneratingSBOM(layer.Path)
-		// 			var sbomContent sbom.SBOM
-		// 			duration, err = clock.Measure(func() error {
-		// 				sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
-		// 				return err
-		// 			})
-		// 			if err != nil {
-		// 				return packit.BuildResult{}, err
-		// 			}
-		// 			logger.Action("Completed in %s", duration.Round(time.Millisecond))
-		// 			logger.Break()
+				} else {
+					logger.GeneratingSBOM(layer.Path)
+					var sbomContent sbom.SBOM
+					duration, err = clock.Measure(func() error {
+						sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
+						return err
+					})
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+					logger.Action("Completed in %s", duration.Round(time.Millisecond))
+					logger.Break()
 
-		// 			logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
-		// 			layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
-		// 			if err != nil {
-		// 				return packit.BuildResult{}, err
-		// 			}
-		// 		}
-		// 	} else {
-		// 		logger.Process("Reusing cached layer %s", layer.Path)
+					logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
+					layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				}
+			} else {
+				logger.Process("Reusing cached layer %s", layer.Path)
 
-		// 		err := os.RemoveAll(filepath.Join(projectPath, "node_modules"))
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
+				err := os.RemoveAll(filepath.Join(projectPath, "node_modules"))
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-		// 		err = symlinker.Link(filepath.Join(layer.Path, "node_modules"), filepath.Join(projectPath, "node_modules"))
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
-		// 	}
+				err = symlinker.Link(filepath.Join(layer.Path, "node_modules"), filepath.Join(projectPath, "node_modules"))
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+			}
 
-		// 	layer.Build = true
-		// 	layer.Cache = true
+			layer.Build = true
+			layer.Cache = true
 
-		// 	layers = append(layers, layer)
-		// }
+			layers = append(layers, layer)
+		}
 
-		// if launch {
-		// 	layer, err := context.Layers.Get("launch-modules")
-		// 	if err != nil {
-		// 		return packit.BuildResult{}, err
-		// 	}
+		if launch {
+			layer, err := context.Layers.Get("launch-modules")
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 
-		// 	logger.Process("Resolving installation process")
+			logger.Process("Resolving installation process")
 
-		// 	run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
-		// 	if err != nil {
-		// 		return packit.BuildResult{}, err
-		// 	}
+			run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 
-		// 	if run {
-		// 		logger.Subprocess("Selected default build process: 'yarn install'")
-		// 		logger.Break()
-		// 		logger.Process("Executing launch environment install process")
+			if run {
+				logger.Subprocess("Selected default build process: 'yarn install'")
+				logger.Break()
+				logger.Process("Executing launch environment install process")
 
-		// 		layer, err = layer.Reset()
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
+				layer, err = layer.Reset()
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-		// 		_, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path, "/tmp")
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
+				_, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path, "/tmp")
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-		// 		duration, err := clock.Measure(func() error {
-		// 			return installProcess.Execute(projectPath, layer.Path, true)
-		// 		})
-		// 		if err != nil {
-		// 			return packit.BuildResult{}, err
-		// 		}
+				duration, err := clock.Measure(func() error {
+					return installProcess.Execute(projectPath, layer.Path, true)
+				})
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-		// 		logger.Action("Completed in %s", duration.Round(time.Millisecond))
-		// 		logger.Break()
+				logger.Action("Completed in %s", duration.Round(time.Millisecond))
+				logger.Break()
 
-		// 		layer.Metadata = map[string]interface{}{
-		// 			"cache_sha": sha,
-		// 		}
+				layer.Metadata = map[string]interface{}{
+					"cache_sha": sha,
+				}
 
-		// 		path := filepath.Join(layer.Path, "node_modules", ".bin")
-		// 		layer.LaunchEnv.Append("PATH", path, string(os.PathListSeparator))
+				path := filepath.Join(layer.Path, "node_modules", ".bin")
+				layer.LaunchEnv.Append("PATH", path, string(os.PathListSeparator))
 
-		// 		logger.EnvironmentVariables(layer)
+				logger.EnvironmentVariables(layer)
 
-		// 		if sbomDisabled {
-		// 			logger.Subprocess("Skipping SBOM generation for Yarn Install")
-		// 			logger.Break()
+				if sbomDisabled {
+					logger.Subprocess("Skipping SBOM generation for Yarn Install")
+					logger.Break()
 
-		// 		} else {
-		// 			logger.GeneratingSBOM(layer.Path)
-		// 			var sbomContent sbom.SBOM
-		// 			duration, err = clock.Measure(func() error {
-		// 				sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
-		// 				return err
-		// 			})
-		// 			if err != nil {
-		// 				return packit.BuildResult{}, err
-		// 			}
-		// 			logger.Action("Completed in %s", duration.Round(time.Millisecond))
-		// 			logger.Break()
+				} else {
+					logger.GeneratingSBOM(layer.Path)
+					var sbomContent sbom.SBOM
+					duration, err = clock.Measure(func() error {
+						sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
+						return err
+					})
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+					logger.Action("Completed in %s", duration.Round(time.Millisecond))
+					logger.Break()
 
-		// 			logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
-		// 			layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
-		// 			if err != nil {
-		// 				return packit.BuildResult{}, err
-		// 			}
-		// 		}
+					logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
+					layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				}
 
-		// 		if build {
-		// 			layer.ExecD = []string{filepath.Join(context.CNBPath, "bin", "setup-symlinks")}
-		// 		}
-		// 	} else {
-		// 		logger.Process("Reusing cached layer %s", layer.Path)
-		// 		if !build {
-		// 			err := os.RemoveAll(filepath.Join(projectPath, "node_modules"))
-		// 			if err != nil {
-		// 				return packit.BuildResult{}, err
-		// 			}
+				if build {
+					layer.ExecD = []string{filepath.Join(context.CNBPath, "bin", "setup-symlinks")}
+				}
+			} else {
+				logger.Process("Reusing cached layer %s", layer.Path)
+				if !build {
+					err := os.RemoveAll(filepath.Join(projectPath, "node_modules"))
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
 
-		// 			err = symlinker.Link(filepath.Join(layer.Path, "node_modules"), filepath.Join(projectPath, "node_modules"))
-		// 			if err != nil {
-		// 				return packit.BuildResult{}, err
-		// 			}
-		// 		}
-		// 	}
+					err = symlinker.Link(filepath.Join(layer.Path, "node_modules"), filepath.Join(projectPath, "node_modules"))
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				}
+			}
 
-		// 	layer.Launch = true
+			layer.Launch = true
 
-		// 	layers = append(layers, layer)
-		// }
+			layers = append(layers, layer)
+		}
 
-		// err = symlinker.Unlink(filepath.Join(homeDir, ".npmrc"))
-		// if err != nil {
-		// 	return packit.BuildResult{}, err
-		// }
+		err = symlinker.Unlink(filepath.Join(homeDir, ".npmrc"))
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 
-		// err = symlinker.Unlink(filepath.Join(homeDir, ".yarnrc"))
-		// if err != nil {
-		// 	return packit.BuildResult{}, err
-		// }
+		err = symlinker.Unlink(filepath.Join(homeDir, ".yarnrc"))
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
 
-		// return packit.BuildResult{
-		// 	Layers: layers,
-		// }, nil
+		return packit.BuildResult{
+			Layers: layers,
+		}, nil
 		return packit.BuildResult{}, nil
 	}
 }
