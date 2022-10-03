@@ -39,6 +39,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		workingDir string
 		homeDir    string
 		cnbDir     string
+		tmpDir     string
 
 		determinePathCalls   []determinePathCallParams
 		configurationManager *fakes.ConfigurationManager
@@ -62,6 +63,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		Expect(err).NotTo(HaveOccurred())
 
 		homeDir, err = os.MkdirTemp("", "home-dir")
+		Expect(err).NotTo(HaveOccurred())
+
+		tmpDir, err = os.MkdirTemp("", "tmp")
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(os.Mkdir(filepath.Join(workingDir, "some-project-dir"), os.ModePerm)).To(Succeed())
@@ -117,6 +121,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			sbomGenerator,
 			chronos.DefaultClock,
 			scribe.NewEmitter(buffer),
+			tmpDir,
 		)
 	})
 
@@ -255,8 +260,9 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(layer.Name).To(Equal("launch-modules"))
 			Expect(layer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
 			Expect(layer.LaunchEnv).To(Equal(packit.Environment{
-				"PATH.append": filepath.Join(layersDir, "launch-modules", "node_modules", ".bin"),
-				"PATH.delim":  ":",
+				"NODE_PROJECT_PATH.default": filepath.Join(workingDir, "some-project-dir"),
+				"PATH.append":               filepath.Join(layersDir, "launch-modules", "node_modules", ".bin"),
+				"PATH.delim":                ":",
 			}))
 			Expect(layer.Launch).To(BeTrue())
 			Expect(layer.Metadata).To(Equal(
@@ -451,9 +457,14 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
 			Expect(launchLayer.Launch).To(BeTrue())
 
-			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
-			Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join(layersDir, "build-modules", "node_modules")))
-			Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(workingDir, "some-project-dir", "node_modules")))
+			workspaceLink, err := os.Readlink(filepath.Join(workingDir, "some-project-dir", "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspaceLink).To(Equal(filepath.Join(tmpDir, "node_modules")))
+
+			tmpLink, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tmpLink).To(Equal(filepath.Join(layersDir, "build-modules", "node_modules")))
+
 		})
 	})
 
@@ -497,9 +508,14 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
 			Expect(launchLayer.Launch).To(BeTrue())
 
-			Expect(symlinker.LinkCall.CallCount).To(Equal(1))
-			Expect(symlinker.LinkCall.Receives.Oldname).To(Equal(filepath.Join(layersDir, "launch-modules", "node_modules")))
-			Expect(symlinker.LinkCall.Receives.Newname).To(Equal(filepath.Join(workingDir, "some-project-dir", "node_modules")))
+			workspaceLink, err := os.Readlink(filepath.Join(workingDir, "some-project-dir", "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspaceLink).To(Equal(filepath.Join(tmpDir, "node_modules")))
+
+			tmpLink, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tmpLink).To(Equal(filepath.Join(layersDir, "launch-modules", "node_modules")))
+
 		})
 	})
 
@@ -801,55 +817,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				})
 			})
 
-			context("when install is skipped and node_modules cannot be removed", func() {
-				it.Before(func() {
-					installProcess.ShouldRunCall.Stub = nil
-					installProcess.ShouldRunCall.Returns.Run = false
-					Expect(os.Chmod(filepath.Join(workingDir), 0000)).To(Succeed())
-				})
-
-				it.After(func() {
-					Expect(os.Chmod(filepath.Join(workingDir), os.ModePerm)).To(Succeed())
-				})
-
-				it("returns an error", func() {
-					_, err := build(packit.BuildContext{
-						WorkingDir: workingDir,
-						CNBPath:    cnbDir,
-						Layers:     packit.Layers{Path: layersDir},
-						Plan: packit.BuildpackPlan{
-							Entries: []packit.BuildpackPlanEntry{
-								{Name: "node_modules"},
-							},
-						},
-					})
-					Expect(err).To(MatchError(ContainSubstring("permission denied")))
-				})
-			})
-
-			context("when install is skipped and symlinking node_modules fails", func() {
-				it.Before(func() {
-					installProcess.ShouldRunCall.Stub = nil
-					installProcess.ShouldRunCall.Returns.Run = false
-					symlinker.LinkCall.Stub = nil
-					symlinker.LinkCall.Returns.Error = errors.New("some symlinking error")
-				})
-
-				it("returns an error", func() {
-					_, err := build(packit.BuildContext{
-						WorkingDir: workingDir,
-						CNBPath:    cnbDir,
-						Layers:     packit.Layers{Path: layersDir},
-						Plan: packit.BuildpackPlan{
-							Entries: []packit.BuildpackPlanEntry{
-								{Name: "node_modules"},
-							},
-						},
-					})
-					Expect(symlinker.LinkCall.CallCount).To(Equal(1))
-					Expect(err).To(MatchError(ContainSubstring("some symlinking error")))
-				})
-			})
 		})
 
 		context("during the launch installation process", func() {
@@ -1014,55 +981,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				})
 			})
 
-			context("when install is skipped and node_modules cannot be removed", func() {
-				it.Before(func() {
-					installProcess.ShouldRunCall.Stub = nil
-					installProcess.ShouldRunCall.Returns.Run = false
-					Expect(os.Chmod(filepath.Join(workingDir), 0000)).To(Succeed())
-				})
-
-				it.After(func() {
-					Expect(os.Chmod(filepath.Join(workingDir), os.ModePerm)).To(Succeed())
-				})
-
-				it("returns an error", func() {
-					_, err := build(packit.BuildContext{
-						WorkingDir: workingDir,
-						CNBPath:    cnbDir,
-						Layers:     packit.Layers{Path: layersDir},
-						Plan: packit.BuildpackPlan{
-							Entries: []packit.BuildpackPlanEntry{
-								{Name: "node_modules"},
-							},
-						},
-					})
-					Expect(err).To(MatchError(ContainSubstring("permission denied")))
-				})
-			})
-
-			context("when install is skipped and symlinking node_modules fails", func() {
-				it.Before(func() {
-					installProcess.ShouldRunCall.Stub = nil
-					installProcess.ShouldRunCall.Returns.Run = false
-					symlinker.LinkCall.Stub = nil
-					symlinker.LinkCall.Returns.Error = errors.New("some symlinking error")
-				})
-
-				it("returns an error", func() {
-					_, err := build(packit.BuildContext{
-						WorkingDir: workingDir,
-						CNBPath:    cnbDir,
-						Layers:     packit.Layers{Path: layersDir},
-						Plan: packit.BuildpackPlan{
-							Entries: []packit.BuildpackPlanEntry{
-								{Name: "node_modules"},
-							},
-						},
-					})
-					Expect(symlinker.LinkCall.CallCount).To(Equal(1))
-					Expect(err).To(MatchError(ContainSubstring("some symlinking error")))
-				})
-			})
 		})
 
 		context("when .npmrc binding symlink can't be cleaned up", func() {

@@ -232,7 +232,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 				Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
 			})
-			it("copies the contents of the node_modules directory in the current dir into the next modules dir and creates an intermediate symlink", func() {
+			it("copies the contents of the node_modules directory in the current dir into the next modules dir", func() {
 				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nextPath).To(Equal(nextModulesLayerPath))
@@ -243,13 +243,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				Expect(filepath.Join(nextModulesLayerPath, "node_modules")).To(BeADirectory())
 				Expect(filepath.Join(nextModulesLayerPath, "node_modules", "some-file")).To(BeAnExistingFile())
 
-				link, err := os.Readlink(filepath.Join(tempDir, "node_modules"))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(link).To(Equal(filepath.Join(currentModulesLayerPath, "node_modules")))
-
-				link, err = os.Readlink(filepath.Join(workingDir, "node_modules"))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(link).To(Equal(filepath.Join(tempDir, "node_modules")))
 			})
 		})
 
@@ -264,25 +257,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				it("returns an error", func() {
 					_, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
 					Expect(err).To(MatchError(ContainSubstring("failed to copy node_modules directory")))
-					Expect(err).To(MatchError(ContainSubstring("permission denied")))
-				})
-			})
-
-			context("node_modules dir cannot be removed from working directory", func() {
-				it.Before(func() {
-					Expect(os.Chmod(workingDir, 0000)).To(Succeed())
-					Expect(os.MkdirAll(filepath.Join(currentModulesLayerPath, "node_modules"), os.ModePerm)).To(Succeed())
-
-					Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
-				})
-
-				it.After(func() {
-					Expect(os.Chmod(workingDir, os.ModePerm)).To(Succeed())
-				})
-
-				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
-					Expect(err).To(MatchError(ContainSubstring("failed to remove node_modules directory:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
 			})

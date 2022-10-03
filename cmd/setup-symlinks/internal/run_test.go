@@ -23,7 +23,7 @@ func testRun(t *testing.T, context spec.G, it spec.S) {
 		Expect = NewWithT(t).Expect
 
 		layerDir       string
-		tempDir        string
+		tmpDir         string
 		executablePath string
 		appDir         string
 	)
@@ -33,11 +33,13 @@ func testRun(t *testing.T, context spec.G, it spec.S) {
 		layerDir, err = os.MkdirTemp("", "layerDir")
 		Expect(err).NotTo(HaveOccurred())
 
-		tempDir, err = os.MkdirTemp("", "temp")
+		tmpDir, err = os.MkdirTemp("", "tmp")
 		Expect(err).NotTo(HaveOccurred())
 
 		appDir, err = os.MkdirTemp("", "appDir")
 		Expect(err).NotTo(HaveOccurred())
+
+		Expect(os.Symlink(filepath.Join(tmpDir, "node_modules"), filepath.Join(appDir, "node_modules"))).To(Succeed())
 
 		Expect(os.MkdirAll(filepath.Join(layerDir, "node_modules"), os.ModePerm)).To(Succeed())
 
@@ -51,29 +53,62 @@ func testRun(t *testing.T, context spec.G, it spec.S) {
 
 	it.After(func() {
 		Expect(os.RemoveAll(layerDir)).To(Succeed())
-		Expect(os.RemoveAll(tempDir)).To(Succeed())
+		Expect(os.RemoveAll(tmpDir)).To(Succeed())
 		Expect(os.RemoveAll(appDir)).To(Succeed())
 	})
 
 	it("creates a symlink to the node_modules dir in the layer", func() {
-		err := internal.Run(executablePath, appDir, tempDir)
+		err := internal.Run(executablePath, appDir)
 		Expect(err).NotTo(HaveOccurred())
 
-		link, err := os.Readlink(filepath.Join(tempDir, "node_modules"))
+		link, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
 		Expect(err).NotTo(HaveOccurred())
 		Expect(link).To(Equal(filepath.Join(layerDir, "node_modules")))
 	})
 
+	context("when the symlink already exists", func() {
+		it.Before(func() {
+			Expect(os.Symlink("some-location", filepath.Join(tmpDir, "node_modules"))).To(Succeed())
+		})
+
+		it("replaces it", func() {
+			err := internal.Run(executablePath, appDir)
+			Expect(err).NotTo(HaveOccurred())
+
+			link, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(link).To(Equal(filepath.Join(layerDir, "node_modules")))
+		})
+	})
+
+	context("when the symlink points to non-existent directory", func() {
+		it.Before(func() {
+			Expect(os.RemoveAll(filepath.Join(appDir, "node_modules"))).To(Succeed())
+			Expect(os.Symlink(filepath.Join(tmpDir, "non-existing-tempdir", "node_modules"), filepath.Join(appDir, "node_modules"))).To(Succeed())
+		})
+
+		it("ensures the parent directory exists", func() {
+			err := internal.Run(executablePath, appDir)
+			Expect(err).NotTo(HaveOccurred())
+
+			link, err := os.Readlink(filepath.Join(tmpDir, "non-existing-tempdir", "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(link).To(Equal(filepath.Join(layerDir, "node_modules")))
+		})
+	})
+
 	context("failure cases", func() {
-		context("when the tmp dir node_modules cannot be symlinked", func() {
+		context("when the tmp dir node_modules cannot be removed", func() {
 			it.Before(func() {
-				Expect(os.Chmod(tempDir, 0444)).To(Succeed())
+				Expect(os.Chmod(tmpDir, 0444)).To(Succeed())
 			})
+
 			it.After(func() {
-				Expect(os.Chmod(tempDir, os.ModePerm)).To(Succeed())
+				Expect(os.Chmod(tmpDir, os.ModePerm)).To(Succeed())
 			})
+
 			it("returns an error", func() {
-				err := internal.Run(executablePath, appDir, tempDir)
+				err := internal.Run(executablePath, appDir)
 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
 			})
 		})
