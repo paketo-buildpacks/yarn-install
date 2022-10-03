@@ -357,12 +357,11 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			entryResolver.MergeLayerTypesCall.Returns.Launch = true
 			entryResolver.MergeLayerTypesCall.Returns.Build = true
 
-			installProcess.SetupModulesCall.Stub = func(w string, c string, n string, t string) (string, error) {
+			installProcess.SetupModulesCall.Stub = func(w string, c string, n string) (string, error) {
 				setupModulesCalls = append(setupModulesCalls, setupModulesParams{
 					WorkingDir:              w,
 					CurrentModulesLayerPath: c,
 					NextModulesLayerPath:    n,
-					TempDir:                 t,
 				})
 				return n, nil
 			}

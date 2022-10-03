@@ -22,7 +22,7 @@ type SymlinkManager interface {
 //go:generate faux --interface InstallProcess --output fakes/install_process.go
 type InstallProcess interface {
 	ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error)
-	SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir string) (string, error)
+	SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath string) (string, error)
 	Execute(workingDir, modulesLayerPath string, launch bool) error
 }
 
@@ -115,7 +115,7 @@ func Build(pathParser PathParser,
 					return packit.BuildResult{}, err
 				}
 
-				currentModLayer, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path, "/tmp")
+				currentModLayer, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
@@ -206,7 +206,7 @@ func Build(pathParser PathParser,
 					return packit.BuildResult{}, err
 				}
 
-				_, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path, "/tmp")
+				_, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
