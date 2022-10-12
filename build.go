@@ -256,10 +256,7 @@ func Build(pathParser PathParser,
 				}
 
 				layer.ExecD = []string{filepath.Join(context.CNBPath, "bin", "setup-symlinks")}
-				err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
-				if err != nil {
-					return packit.BuildResult{}, err
-				}
+
 			} else {
 				logger.Process("Reusing cached layer %s", layer.Path)
 				if !build {

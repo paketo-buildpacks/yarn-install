@@ -99,7 +99,22 @@ func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, n
 		}
 
 	} else {
-		err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
+
+		link, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
+		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				panic(err)
+			}
+		}
+
+		if link != "" {
+			err = os.RemoveAll(filepath.Join(workingDir, "node_modules"))
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		err = os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
 		if err != nil {
 			return "", fmt.Errorf("failed to create node_modules directory: %w", err)
 		}
