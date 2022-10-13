@@ -211,7 +211,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(installProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 
-			Expect(installProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
+			Expect(installProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 			Expect(installProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
 			Expect(installProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
 
@@ -265,6 +265,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				"PATH.delim":                ":",
 			}))
 			Expect(layer.Launch).To(BeTrue())
+			Expect(layer.Build).To(BeFalse())
 			Expect(layer.Metadata).To(Equal(
 				map[string]interface{}{
 					"cache_sha": "some-awesome-shasum",
@@ -300,7 +301,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 			Expect(installProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 
-			Expect(installProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(workingDir))
+			Expect(installProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 			Expect(installProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
 			Expect(installProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
 
@@ -309,6 +310,14 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(installProcess.ExecuteCall.Receives.Launch).To(BeTrue())
 
 			Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
+
+			workspaceLink, err := os.Readlink(filepath.Join(workingDir, "some-project-dir", "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspaceLink).To(Equal(filepath.Join(tmpDir, "node_modules")))
+
+			tmpLink, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tmpLink).To(Equal(filepath.Join(layersDir, "launch-modules", "node_modules")))
 		})
 	})
 
@@ -356,6 +365,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		it.Before(func() {
 			entryResolver.MergeLayerTypesCall.Returns.Launch = true
 			entryResolver.MergeLayerTypesCall.Returns.Build = true
+			pathParser.GetCall.Returns.ProjectPath = workingDir
 
 			installProcess.SetupModulesCall.Stub = func(w string, c string, n string) (string, error) {
 				setupModulesCalls = append(setupModulesCalls, setupModulesParams{
@@ -406,6 +416,14 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(setupModulesCalls[1].WorkingDir).To(Equal(workingDir))
 			Expect(setupModulesCalls[1].CurrentModulesLayerPath).To(Equal(result.Layers[0].Path))
 			Expect(setupModulesCalls[1].NextModulesLayerPath).To(Equal(result.Layers[1].Path))
+
+			workspaceLink, err := os.Readlink(filepath.Join(workingDir, "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(workspaceLink).To(Equal(filepath.Join(tmpDir, "node_modules")))
+
+			tmpLink, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(tmpLink).To(Equal(filepath.Join(layersDir, "build-modules", "node_modules")))
 		})
 	})
 
