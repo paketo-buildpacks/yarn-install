@@ -256,7 +256,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 			})
 
-			context("node_modules directory cannot be created in working directory", func() {
+			context("Lstat() cannot be run on node_modules in working directory", func() {
 				it.Before(func() {
 					Expect(os.Chmod(workingDir, 0000)).To(Succeed())
 				})
@@ -267,7 +267,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 				it("returns an error", func() {
 					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
-					Expect(err).To(MatchError(ContainSubstring("failed to create node_modules directory:")))
+					Expect(err).To(MatchError(ContainSubstring("failed to stat node_modules directory:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
 			})
