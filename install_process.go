@@ -99,8 +99,26 @@ func (ip YarnInstallProcess) SetupModules(workingDir, currentModulesLayerPath, n
 		}
 
 	} else {
-		err := os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
+
+		file, err := os.Lstat(filepath.Join(workingDir, "node_modules"))
 		if err != nil {
+			if !errors.Is(err, os.ErrNotExist) {
+				return "", fmt.Errorf("failed to stat node_modules directory: %w", err)
+			}
+
+		}
+
+		if file != nil && file.Mode()&os.ModeSymlink == os.ModeSymlink {
+			err = os.RemoveAll(filepath.Join(workingDir, "node_modules"))
+			if err != nil {
+				//not tested
+				return "", fmt.Errorf("failed to remove node_modules symlink: %w", err)
+			}
+		}
+
+		err = os.MkdirAll(filepath.Join(workingDir, "node_modules"), os.ModePerm)
+		if err != nil {
+			//not directly tested
 			return "", fmt.Errorf("failed to create node_modules directory: %w", err)
 		}
 

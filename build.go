@@ -115,7 +115,7 @@ func Build(pathParser PathParser,
 					return packit.BuildResult{}, err
 				}
 
-				currentModLayer, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path)
+				currentModLayer, err = installProcess.SetupModules(projectPath, currentModLayer, layer.Path)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
@@ -206,7 +206,7 @@ func Build(pathParser PathParser,
 					return packit.BuildResult{}, err
 				}
 
-				_, err = installProcess.SetupModules(context.WorkingDir, currentModLayer, layer.Path)
+				_, err = installProcess.SetupModules(projectPath, currentModLayer, layer.Path)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
@@ -220,6 +220,13 @@ func Build(pathParser PathParser,
 
 				logger.Action("Completed in %s", duration.Round(time.Millisecond))
 				logger.Break()
+
+				if !build {
+					err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				}
 
 				layer.Metadata = map[string]interface{}{
 					"cache_sha": sha,
@@ -256,10 +263,7 @@ func Build(pathParser PathParser,
 				}
 
 				layer.ExecD = []string{filepath.Join(context.CNBPath, "bin", "setup-symlinks")}
-				err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
-				if err != nil {
-					return packit.BuildResult{}, err
-				}
+
 			} else {
 				logger.Process("Reusing cached layer %s", layer.Path)
 				if !build {
@@ -273,6 +277,7 @@ func Build(pathParser PathParser,
 			layer.Launch = true
 
 			layers = append(layers, layer)
+
 		}
 
 		err = symlinker.Unlink(filepath.Join(homeDir, ".npmrc"))
