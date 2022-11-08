@@ -42,6 +42,10 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 			var err error
 			name, err = occam.RandomName()
 			Expect(err).NotTo(HaveOccurred())
+
+			source, err = occam.Source(filepath.Join("testdata", "with_workspaces_nohoist"))
+			Expect(err).NotTo(HaveOccurred())
+
 		})
 
 		it.After(func() {
@@ -53,9 +57,6 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 
 		it("should correctly run the app", func() {
 			var err error
-			source, err = occam.Source(filepath.Join("testdata", "with_workspaces_nohoist"))
-			Expect(err).NotTo(HaveOccurred())
-
 			image, _, err = pack.Build.
 				WithBuildpacks(
 					nodeURI,
@@ -87,9 +88,6 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 
 		it("should correctly install node modules without hoisting", func() {
 			var err error
-			source, err = occam.Source(filepath.Join("testdata", "with_workspaces_nohoist"))
-			Expect(err).NotTo(HaveOccurred())
-
 			image, _, err = pack.Build.
 				WithBuildpacks(
 					nodeURI,
