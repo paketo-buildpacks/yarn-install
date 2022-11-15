@@ -151,7 +151,6 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 	context("SetupModules", func() {
 		var (
 			workingDir              string
-			tempDir                 string
 			currentModulesLayerPath string
 			nextModulesLayerPath    string
 			buffer                  *bytes.Buffer
@@ -164,9 +163,6 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		it.Before(func() {
 			var err error
 			workingDir, err = os.MkdirTemp("", "working-dir")
-			Expect(err).NotTo(HaveOccurred())
-
-			tempDir, err = os.MkdirTemp("", "temp")
 			Expect(err).NotTo(HaveOccurred())
 
 			currentModulesLayerPath, err = os.MkdirTemp("", "current-modules-dir")
@@ -185,7 +181,6 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 		it.After(func() {
 			Expect(os.RemoveAll(workingDir)).To(Succeed())
-			Expect(os.RemoveAll(tempDir)).To(Succeed())
 			Expect(os.RemoveAll(currentModulesLayerPath)).To(Succeed())
 			Expect(os.RemoveAll(nextModulesLayerPath)).To(Succeed())
 		})
@@ -193,7 +188,7 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		context("when the current node directory is not set", func() {
 			context("when there is not a node_modules directory in the working", func() {
 				it("makes a node_modules directory in the working dir and one in the next modules dir and symlinks them", func() {
-					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
+					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(nextPath).To(Equal(nextModulesLayerPath))
 
@@ -212,7 +207,7 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(os.WriteFile(filepath.Join(workingDir, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
 				})
 				it("moves the contents of the node_modules directory in the working dir and into the next modules dir and symlinks them", func() {
-					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
+					nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 					Expect(err).NotTo(HaveOccurred())
 					Expect(nextPath).To(Equal(nextModulesLayerPath))
 
@@ -232,8 +227,8 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 				Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
 			})
-			it("copies the contents of the node_modules directory in the current dir into the next modules dir and creates an intermediate symlink", func() {
-				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
+			it("copies the contents of the node_modules directory in the current dir into the next modules dir", func() {
+				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nextPath).To(Equal(nextModulesLayerPath))
 
@@ -243,13 +238,6 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				Expect(filepath.Join(nextModulesLayerPath, "node_modules")).To(BeADirectory())
 				Expect(filepath.Join(nextModulesLayerPath, "node_modules", "some-file")).To(BeAnExistingFile())
 
-				link, err := os.Readlink(filepath.Join(tempDir, "node_modules"))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(link).To(Equal(filepath.Join(currentModulesLayerPath, "node_modules")))
-
-				link, err = os.Readlink(filepath.Join(workingDir, "node_modules"))
-				Expect(err).NotTo(HaveOccurred())
-				Expect(link).To(Equal(filepath.Join(tempDir, "node_modules")))
 			})
 		})
 
@@ -262,32 +250,13 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(os.Chmod(currentModulesLayerPath, os.ModePerm)).To(Succeed())
 				})
 				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
+					_, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to copy node_modules directory")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
 			})
 
-			context("node_modules dir cannot be removed from working directory", func() {
-				it.Before(func() {
-					Expect(os.Chmod(workingDir, 0000)).To(Succeed())
-					Expect(os.MkdirAll(filepath.Join(currentModulesLayerPath, "node_modules"), os.ModePerm)).To(Succeed())
-
-					Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
-				})
-
-				it.After(func() {
-					Expect(os.Chmod(workingDir, os.ModePerm)).To(Succeed())
-				})
-
-				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath, tempDir)
-					Expect(err).To(MatchError(ContainSubstring("failed to remove node_modules directory:")))
-					Expect(err).To(MatchError(ContainSubstring("permission denied")))
-				})
-			})
-
-			context("node_modules directory cannot be created in working directory", func() {
+			context("Lstat() cannot be run on node_modules in working directory", func() {
 				it.Before(func() {
 					Expect(os.Chmod(workingDir, 0000)).To(Succeed())
 				})
@@ -297,8 +266,8 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
-					Expect(err).To(MatchError(ContainSubstring("failed to create node_modules directory:")))
+					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
+					Expect(err).To(MatchError(ContainSubstring("failed to stat node_modules directory:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})
 			})
@@ -313,7 +282,7 @@ func testClassicInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				})
 
 				it("returns an error", func() {
-					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath, tempDir)
+					_, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 					Expect(err).To(MatchError(ContainSubstring("failed to move node_modules directory to layer:")))
 					Expect(err).To(MatchError(ContainSubstring("permission denied")))
 				})

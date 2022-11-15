@@ -3,10 +3,11 @@ module github.com/paketo-buildpacks/yarn-install
 go 1.18
 
 require (
-	github.com/BurntSushi/toml v1.2.1
-	github.com/onsi/gomega v1.24.1
-	github.com/paketo-buildpacks/occam v0.13.3
-	github.com/paketo-buildpacks/packit/v2 v2.7.0
+	github.com/BurntSushi/toml v1.2.0
+	github.com/anchore/syft v0.60.3
+	github.com/onsi/gomega v1.20.2
+	github.com/paketo-buildpacks/occam v0.13.2
+	github.com/paketo-buildpacks/packit/v2 v2.6.1
 	github.com/sclevine/spec v1.4.0
 	gopkg.in/yaml.v2 v2.4.0
 )
@@ -27,7 +28,6 @@ require (
 	github.com/anchore/go-version v1.2.2-0.20200701162849-18adb9c92b9b // indirect
 	github.com/anchore/packageurl-go v0.1.1-0.20220428202044-a072fa3cb6d7 // indirect
 	github.com/anchore/stereoscope v0.0.0-20221006201143-d24c9d626b33 // indirect
-	github.com/anchore/syft v0.60.3 // indirect
 	github.com/andybalholm/brotli v1.0.4 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.2.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.1.3 // indirect
@@ -116,7 +116,6 @@ require (
 	google.golang.org/genproto v0.0.0-20221014213838-99cd37c6964a // indirect
 	google.golang.org/grpc v1.50.1 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	lukechampine.com/uint128 v1.2.0 // indirect
 	modernc.org/cc/v3 v3.40.0 // indirect

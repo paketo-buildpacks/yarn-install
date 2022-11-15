@@ -227,6 +227,7 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 				Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "some-file"), []byte(""), os.ModePerm)).To(Succeed())
 			})
+
 			it("copies the contents of the node_modules directory in the current dir into the next modules dir", func() {
 				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())

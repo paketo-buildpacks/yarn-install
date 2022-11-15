@@ -9,6 +9,7 @@ import (
 
 func TestUnitClassic(t *testing.T) {
 	suite := spec.New("Classic", spec.Report(report.Terminal{}))
+	suite("ClassicBuild", testClassicBuild)
 	suite("InstallProcess", testClassicInstallProcess)
 	suite("PackageMgrConfigManager", testPackageManagerConfigurationManager)
 	suite.Run(t)
