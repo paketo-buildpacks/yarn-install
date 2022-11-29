@@ -1,17 +1,17 @@
 package main
 
 import (
-	"log"
 	"os"
 
 	"github.com/paketo-buildpacks/packit/v2"
-	"github.com/paketo-buildpacks/packit/v2/chronos"
 	"github.com/paketo-buildpacks/packit/v2/draft"
 	"github.com/paketo-buildpacks/packit/v2/fs"
 	"github.com/paketo-buildpacks/packit/v2/pexec"
 	"github.com/paketo-buildpacks/packit/v2/sbom"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
-	"github.com/paketo-buildpacks/packit/v2/servicebindings"
+	"github.com/paketo-buildpacks/yarn-install/berry"
+	"github.com/paketo-buildpacks/yarn-install/classic"
+	"github.com/paketo-buildpacks/yarn-install/common"
 
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
 )
@@ -23,35 +23,35 @@ func (s SBOMGenerator) Generate(path string) (sbom.SBOM, error) {
 }
 
 func main() {
-	packageJSONParser := yarninstall.NewPackageJSONParser()
+	packageJSONParser := common.NewPackageJSONParser()
+	yarnrcYmlParser := common.NewYarnrcYmlParser()
 	logger := scribe.NewEmitter(os.Stdout).WithLevel(os.Getenv("BP_LOG_LEVEL"))
-	installProcess := yarninstall.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
-	projectPathParser := yarninstall.NewProjectPathParser()
+	berryInstallProcess := berry.NewBerryInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
+	classicInstallProcess := classic.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
+	classic := classic.NewClassicBuild(logger)
+	berry := berry.NewBerryBuild()
+	projectPathParser := common.NewProjectPathParser()
+	symlinker := common.NewSymlinker()
 	sbomGenerator := SBOMGenerator{}
-	symlinker := yarninstall.NewSymlinker()
-	packageManagerConfigurationManager := yarninstall.NewPackageManagerConfigurationManager(servicebindings.NewResolver(), logger)
 	entryResolver := draft.NewPlanner()
-	home, err := os.UserHomeDir()
 	tmpDir := os.TempDir()
-	if err != nil {
-		// not tested
-		log.Fatal(err)
-	}
 
 	packit.Run(
 		yarninstall.Detect(
 			projectPathParser,
 			packageJSONParser,
+			yarnrcYmlParser,
 		),
 		yarninstall.Build(projectPathParser,
-			entryResolver,
-			packageManagerConfigurationManager,
-			home,
-			symlinker,
-			installProcess,
+			yarnrcYmlParser,
+			berry,
+			classic,
+			berryInstallProcess,
+			classicInstallProcess,
 			sbomGenerator,
-			chronos.DefaultClock,
+			entryResolver,
 			logger,
+			symlinker,
 			tmpDir,
 		),
 	)

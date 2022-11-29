@@ -1,0 +1,611 @@
+
+	// context("failure cases", func() {
+
+	// 	context("when the path parser returns an error", func() {
+	// 		it.Before(func() {
+	// 			pathParser.GetCall.Returns.Err = errors.New("path-parser-error")
+	// 		})
+
+	// 		it("returns an error", func() {
+	// 			_, err := build(packit.BuildContext{
+	// 				WorkingDir: workingDir,
+	// 				CNBPath:    cnbDir,
+	// 				Layers:     packit.Layers{Path: layersDir},
+	// 				Plan: packit.BuildpackPlan{
+	// 					Entries: []packit.BuildpackPlanEntry{
+	// 						{Name: "node_modules"},
+	// 					},
+	// 				},
+	// 			})
+	// 			Expect(err).To(MatchError("path-parser-error"))
+	// 		})
+	// 	})
+
+	// 	context("when determining the path for the npmrc fails", func() {
+	// 		it.Before(func() {
+	// 			configurationManager.DeterminePathCall.Stub = func(typ, platform, entry string) (string, error) {
+	// 				if typ == "npmrc" {
+	// 					return "", errors.New("failed to determine path for npmrc")
+	// 				}
+	// 				return "", nil
+	// 			}
+	// 		})
+
+	// 		it("errors", func() {
+	// 			_, err := build(packit.BuildContext{
+	// 				WorkingDir: workingDir,
+	// 				CNBPath:    cnbDir,
+	// 				Layers:     packit.Layers{Path: layersDir},
+	// 				Plan: packit.BuildpackPlan{
+	// 					Entries: []packit.BuildpackPlanEntry{
+	// 						{Name: "node_modules"},
+	// 					},
+	// 				},
+	// 			})
+	// 			Expect(err).To(MatchError("failed to determine path for npmrc"))
+	// 		})
+	// 	})
+
+	// 	context("when determining the path for the yarnrc fails", func() {
+	// 		it.Before(func() {
+	// 			configurationManager.DeterminePathCall.Stub = func(typ, platform, entry string) (string, error) {
+	// 				if typ == "yarnrc" {
+	// 					return "", errors.New("failed to determine path for yarnrc")
+	// 				}
+	// 				return "", nil
+	// 			}
+	// 		})
+
+	// 		it("errors", func() {
+	// 			_, err := build(packit.BuildContext{
+	// 				WorkingDir: workingDir,
+	// 				CNBPath:    cnbDir,
+	// 				Layers:     packit.Layers{Path: layersDir},
+	// 				Plan: packit.BuildpackPlan{
+	// 					Entries: []packit.BuildpackPlanEntry{
+	// 						{Name: "node_modules"},
+	// 					},
+	// 				},
+	// 			})
+	// 			Expect(err).To(MatchError("failed to determine path for yarnrc"))
+	// 		})
+	// 	})
+
+	// 	context("when .npmrc service binding symlink cannot be created", func() {
+	// 		it.Before(func() {
+	// 			configurationManager.DeterminePathCall.Stub = func(typ, platform, entry string) (string, error) {
+	// 				if typ == "npmrc" {
+	// 					return "some-path/.npmrc", nil
+	// 				}
+	// 				return "", nil
+	// 			}
+
+	// 			symlinker.LinkCall.Stub = func(o string, n string) error {
+	// 				if strings.Contains(o, ".npmrc") {
+	// 					return errors.New("symlinking .npmrc error")
+	// 				}
+	// 				return nil
+	// 			}
+	// 		})
+
+	// 		it("errors", func() {
+	// 			_, err := build(packit.BuildContext{
+	// 				WorkingDir: workingDir,
+	// 				CNBPath:    cnbDir,
+	// 				Layers:     packit.Layers{Path: layersDir},
+	// 				Plan: packit.BuildpackPlan{
+	// 					Entries: []packit.BuildpackPlanEntry{
+	// 						{Name: "node_modules"},
+	// 					},
+	// 				},
+	// 			})
+	// 			Expect(err).To(MatchError(ContainSubstring("symlinking .npmrc error")))
+	// 		})
+	// 	})
+
+	// 	context("when .yarnrc service binding symlink cannot be created", func() {
+	// 		it.Before(func() {
+	// 			configurationManager.DeterminePathCall.Stub = func(typ, platform, entry string) (string, error) {
+	// 				if typ == "yarnrc" {
+	// 					return "some-path/.yarnrc", nil
+	// 				}
+	// 				return "", nil
+	// 			}
+
+	// 			symlinker.LinkCall.Stub = func(o string, n string) error {
+	// 				if strings.Contains(o, ".yarnrc") {
+	// 					return errors.New("symlinking .yarnrc error")
+	// 				}
+	// 				return nil
+	// 			}
+	// 		})
+
+	// 		it("errors", func() {
+	// 			_, err := build(packit.BuildContext{
+	// 				WorkingDir: workingDir,
+	// 				CNBPath:    cnbDir,
+	// 				Layers:     packit.Layers{Path: layersDir},
+	// 				Plan: packit.BuildpackPlan{
+	// 					Entries: []packit.BuildpackPlanEntry{
+	// 						{Name: "node_modules"},
+	// 					},
+	// 				},
+	// 			})
+	// 			Expect(err).To(MatchError(ContainSubstring("symlinking .yarnrc error")))
+	// 		})
+	// 	})
+
+	// 	context("during the build installation process", func() {
+	// 		it.Before(func() {
+	// 			entryResolver.MergeLayerTypesCall.Returns.Build = true
+	// 		})
+	// 		context("when the layer cannot be retrieved", func() {
+	// 			it.Before(func() {
+	// 				Expect(os.WriteFile(filepath.Join(layersDir, "build-modules.toml"), nil, 0000)).To(Succeed())
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("failed to parse layer content metadata:")))
+	// 				Expect(err).To(MatchError(ContainSubstring("modules.toml")))
+	// 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
+	// 			})
+	// 		})
+
+	// 		context("when the check for the install process fails", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Err = errors.New("failed to determine if process should run")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError("failed to determine if process should run"))
+	// 			})
+	// 		})
+
+	// 		context("when the layer cannot be reset", func() {
+	// 			it.Before(func() {
+	// 				Expect(os.Chmod(layersDir, 4444)).To(Succeed())
+	// 			})
+
+	// 			it.After(func() {
+	// 				Expect(os.Chmod(layersDir, os.ModePerm)).To(Succeed())
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					CNBPath: cnbDir,
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
+	// 			})
+	// 		})
+
+	// 		context("when modules cannot be set up", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.SetupModulesCall.Returns.Error = errors.New("failed to setup modules")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					CNBPath: cnbDir,
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError("failed to setup modules"))
+	// 			})
+	// 		})
+
+	// 		context("when the build install process cannot be executed", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ExecuteCall.Returns.Error = errors.New("failed to execute install process")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError("failed to execute install process"))
+	// 			})
+	// 		})
+
+	// 		context("when the BOM cannot be generated", func() {
+	// 			it.Before(func() {
+	// 				sbomGenerator.GenerateCall.Returns.Error = errors.New("failed to generate SBOM")
+	// 			})
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					BuildpackInfo: packit.BuildpackInfo{
+	// 						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+	// 					},
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{{Name: "node_modules"}},
+	// 					},
+	// 					Stack: "some-stack",
+	// 				})
+	// 				Expect(err).To(MatchError("failed to generate SBOM"))
+	// 			})
+	// 		})
+
+	// 		context("when the BOM cannot be formatted", func() {
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					BuildpackInfo: packit.BuildpackInfo{
+	// 						SBOMFormats: []string{"random-format"},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError("unsupported SBOM format: 'random-format'"))
+	// 			})
+	// 		})
+
+	// 		context("when BP_DISABLE_SBOM is set incorrectly", func() {
+	// 			it.Before(func() {
+	// 				os.Setenv("BP_DISABLE_SBOM", "not-a-bool")
+	// 			})
+
+	// 			it.After(func() {
+	// 				os.Unsetenv("BP_DISABLE_SBOM")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					BuildpackInfo: packit.BuildpackInfo{
+	// 						SBOMFormats: []string{"random-format"},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("failed to parse BP_DISABLE_SBOM")))
+	// 			})
+	// 		})
+
+	// 		context("when install is skipped and node_modules cannot be removed", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
+	// 				Expect(os.Chmod(filepath.Join(workingDir), 0000)).To(Succeed())
+	// 			})
+
+	// 			it.After(func() {
+	// 				Expect(os.Chmod(filepath.Join(workingDir), os.ModePerm)).To(Succeed())
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
+	// 			})
+	// 		})
+
+	// 		context("when install is skipped and symlinking node_modules fails", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
+	// 				symlinker.LinkCall.Stub = nil
+	// 				symlinker.LinkCall.Returns.Error = errors.New("some symlinking error")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(symlinker.LinkCall.CallCount).To(Equal(1))
+	// 				Expect(err).To(MatchError(ContainSubstring("some symlinking error")))
+	// 			})
+	// 		})
+	// 	})
+
+	// 	context("during the launch installation process", func() {
+	// 		it.Before(func() {
+	// 			entryResolver.MergeLayerTypesCall.Returns.Launch = true
+	// 		})
+	// 		context("when the layer cannot be retrieved", func() {
+	// 			it.Before(func() {
+	// 				Expect(os.WriteFile(filepath.Join(layersDir, "launch-modules.toml"), nil, 0000)).To(Succeed())
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("failed to parse layer content metadata:")))
+	// 				Expect(err).To(MatchError(ContainSubstring("modules.toml")))
+	// 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
+	// 			})
+	// 		})
+
+	// 		context("when the check for the install process fails", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Err = errors.New("failed to determine if process should run")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError("failed to determine if process should run"))
+	// 			})
+	// 		})
+
+	// 		context("when the layer cannot be reset", func() {
+	// 			it.Before(func() {
+	// 				Expect(os.Chmod(layersDir, 4444)).To(Succeed())
+	// 			})
+
+	// 			it.After(func() {
+	// 				Expect(os.Chmod(layersDir, os.ModePerm)).To(Succeed())
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					CNBPath: cnbDir,
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
+	// 			})
+	// 		})
+
+	// 		context("when modules cannot be set up", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.SetupModulesCall.Returns.Error = errors.New("failed to setup modules")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					CNBPath: cnbDir,
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError("failed to setup modules"))
+	// 			})
+	// 		})
+
+	// 		context("when the install process cannot be executed", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ExecuteCall.Returns.Error = errors.New("failed to execute install process")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError("failed to execute install process"))
+	// 			})
+	// 		})
+
+	// 		context("when the BOM cannot be generated", func() {
+	// 			it.Before(func() {
+	// 				sbomGenerator.GenerateCall.Returns.Error = errors.New("failed to generate SBOM")
+	// 			})
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					BuildpackInfo: packit.BuildpackInfo{
+	// 						SBOMFormats: []string{"application/vnd.cyclonedx+json", "application/spdx+json", "application/vnd.syft+json"},
+	// 					},
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{{Name: "node_modules"}},
+	// 					},
+	// 					Stack: "some-stack",
+	// 				})
+	// 				Expect(err).To(MatchError("failed to generate SBOM"))
+	// 			})
+	// 		})
+
+	// 		context("when the BOM cannot be formatted", func() {
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					BuildpackInfo: packit.BuildpackInfo{
+	// 						SBOMFormats: []string{"random-format"},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError("unsupported SBOM format: 'random-format'"))
+	// 			})
+	// 		})
+
+	// 		context("when BP_DISABLE_SBOM is set incorrectly", func() {
+	// 			it.Before(func() {
+	// 				os.Setenv("BP_DISABLE_SBOM", "not-a-bool")
+	// 			})
+
+	// 			it.After(func() {
+	// 				os.Unsetenv("BP_DISABLE_SBOM")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					BuildpackInfo: packit.BuildpackInfo{
+	// 						SBOMFormats: []string{"random-format"},
+	// 					},
+	// 					Layers: packit.Layers{Path: layersDir},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("failed to parse BP_DISABLE_SBOM")))
+	// 			})
+	// 		})
+
+	// 		context("when install is skipped and node_modules cannot be removed", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
+	// 				Expect(os.Chmod(filepath.Join(workingDir), 0000)).To(Succeed())
+	// 			})
+
+	// 			it.After(func() {
+	// 				Expect(os.Chmod(filepath.Join(workingDir), os.ModePerm)).To(Succeed())
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(err).To(MatchError(ContainSubstring("permission denied")))
+	// 			})
+	// 		})
+
+	// 		context("when install is skipped and symlinking node_modules fails", func() {
+	// 			it.Before(func() {
+	// 				classicInstallProcess.ShouldRunCall.Stub = nil
+	// 				classicInstallProcess.ShouldRunCall.Returns.Run = false
+	// 				symlinker.LinkCall.Stub = nil
+	// 				symlinker.LinkCall.Returns.Error = errors.New("some symlinking error")
+	// 			})
+
+	// 			it("returns an error", func() {
+	// 				_, err := build(packit.BuildContext{
+	// 					WorkingDir: workingDir,
+	// 					CNBPath:    cnbDir,
+	// 					Layers:     packit.Layers{Path: layersDir},
+	// 					Plan: packit.BuildpackPlan{
+	// 						Entries: []packit.BuildpackPlanEntry{
+	// 							{Name: "node_modules"},
+	// 						},
+	// 					},
+	// 				})
+	// 				Expect(symlinker.LinkCall.CallCount).To(Equal(1))
+	// 				Expect(err).To(MatchError(ContainSubstring("some symlinking error")))
+	// 			})
+	// 		})
+	// 	})
+
+	// 	context("when .npmrc binding symlink can't be cleaned up", func() {
+	// 		it.Before(func() {
+	// 			symlinker.UnlinkCall.Stub = func(p string) error {
+	// 				if strings.Contains(p, ".npmrc") {
+	// 					return errors.New("unlinking .npmrc error")
+	// 				}
+	// 				return nil
+	// 			}
+	// 		})
+	// 		it("returns an error", func() {
+	// 			_, err := build(packit.BuildContext{
+	// 				WorkingDir: workingDir,
+	// 				CNBPath:    cnbDir,
+	// 				Layers:     packit.Layers{Path: layersDir},
+	// 				Plan: packit.BuildpackPlan{
+	// 					Entries: []packit.BuildpackPlanEntry{
+	// 						{Name: "node_modules"},
+	// 					},
+	// 				},
+	// 			})
+	// 			Expect(err).To(MatchError("unlinking .npmrc error"))
+	// 		})
+	// 	})
+
+	// 	context("when .yarnrc binding symlink can't be cleaned up", func() {
+	// 		it.Before(func() {
+	// 			symlinker.UnlinkCall.Stub = func(p string) error {
+	// 				if strings.Contains(p, ".yarnrc") {
+	// 					return errors.New("unlinking .yarnrc error")
+	// 				}
+	// 				return nil
+	// 			}
+	// 		})
+	// 		it("returns an error", func() {
+	// 			_, err := build(packit.BuildContext{
+	// 				WorkingDir: workingDir,
+	// 				CNBPath:    cnbDir,
+	// 				Layers:     packit.Layers{Path: layersDir},
+	// 				Plan: packit.BuildpackPlan{
+	// 					Entries: []packit.BuildpackPlanEntry{
+	// 						{Name: "node_modules"},
+	// 					},
+	// 				},
+	// 			})
+	// 			Expect(err).To(MatchError("unlinking .yarnrc error"))
+	// 		})
+	// 	})
+	// })
