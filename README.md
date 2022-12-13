@@ -85,7 +85,3 @@ the buildpack requires that you use the [Full
 builder](https://github.com/paketo-buildpacks/stacks#metadata-for-paketo-buildrun-stack-images).
 This is because `node-gyp` requires `python` that's absent on the Base builder,
 and the module may require other shared objects.
-
-## `buildpack.yml` Configurations
-
-The `yarn-install` buildpack does not support configurations using `buildpack.yml`.
