@@ -3,6 +3,7 @@ package yarninstall_test
 import (
 	"bytes"
 	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -179,20 +180,79 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				map[string]interface{}{
 					"cache_sha": "some-awesome-shasum",
 				}))
-			Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
-				{
-					Extension: "cdx.json",
-					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+
+			Expect(layer.SBOM.Formats()).To(HaveLen(3))
+
+			cdx := layer.SBOM.Formats()[0]
+			spdx := layer.SBOM.Formats()[1]
+			syft := layer.SBOM.Formats()[2]
+
+			Expect(cdx.Extension).To(Equal("cdx.json"))
+			content, err := io.ReadAll(cdx.Content)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(content)).To(MatchJSON(`{
+				"bomFormat": "CycloneDX",
+				"components": [],
+				"metadata": {
+					"tools": [
+						{
+							"name": "syft",
+							"vendor": "anchore",
+							"version": "[not provided]"
+						}
+					]
 				},
-				{
-					Extension: "spdx.json",
-					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+				"specVersion": "1.3",
+				"version": 1
+			}`))
+
+			Expect(spdx.Extension).To(Equal("spdx.json"))
+			content, err = io.ReadAll(spdx.Content)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(content)).To(MatchJSON(`{
+				"SPDXID": "SPDXRef-DOCUMENT",
+				"creationInfo": {
+					"created": "0001-01-01T00:00:00Z",
+					"creators": [
+						"Organization: Anchore, Inc",
+						"Tool: syft-"
+					],
+					"licenseListVersion": "3.16"
 				},
-				{
-					Extension: "syft.json",
-					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+				"dataLicense": "CC0-1.0",
+				"documentNamespace": "https://paketo.io/packit/unknown-source-type/unknown-88cfa225-65e0-5755-895f-c1c8f10fde76",
+				"name": "unknown",
+				"relationships": [
+					{
+						"relatedSpdxElement": "SPDXRef-DOCUMENT",
+						"relationshipType": "DESCRIBES",
+						"spdxElementId": "SPDXRef-DOCUMENT"
+					}
+				],
+				"spdxVersion": "SPDX-2.2"
+			}`))
+
+			Expect(syft.Extension).To(Equal("syft.json"))
+			content, err = io.ReadAll(syft.Content)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(content)).To(MatchJSON(`{
+				"artifacts": [],
+				"artifactRelationships": [],
+				"source": {
+					"type": "",
+					"target": null
 				},
-			}))
+				"distro": {},
+				"descriptor": {
+					"name": "",
+					"version": ""
+				},
+				"schema": {
+					"version": "3.0.1",
+					"url": "https://raw.githubusercontent.com/anchore/syft/main/schema/json/schema-3.0.1.json"
+				}
+			}`))
+
 			Expect(len(layer.ExecD)).To(Equal(0))
 
 			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
@@ -270,20 +330,78 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				map[string]interface{}{
 					"cache_sha": "some-awesome-shasum",
 				}))
-			Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
-				{
-					Extension: "cdx.json",
-					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+
+			Expect(layer.SBOM.Formats()).To(HaveLen(3))
+
+			cdx := layer.SBOM.Formats()[0]
+			spdx := layer.SBOM.Formats()[1]
+			syft := layer.SBOM.Formats()[2]
+
+			Expect(cdx.Extension).To(Equal("cdx.json"))
+			content, err := io.ReadAll(cdx.Content)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(content)).To(MatchJSON(`{
+				"bomFormat": "CycloneDX",
+				"components": [],
+				"metadata": {
+					"tools": [
+						{
+							"name": "syft",
+							"vendor": "anchore",
+							"version": "[not provided]"
+						}
+					]
 				},
-				{
-					Extension: "spdx.json",
-					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+				"specVersion": "1.3",
+				"version": 1
+			}`))
+
+			Expect(spdx.Extension).To(Equal("spdx.json"))
+			content, err = io.ReadAll(spdx.Content)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(content)).To(MatchJSON(`{
+				"SPDXID": "SPDXRef-DOCUMENT",
+				"creationInfo": {
+					"created": "0001-01-01T00:00:00Z",
+					"creators": [
+						"Organization: Anchore, Inc",
+						"Tool: syft-"
+					],
+					"licenseListVersion": "3.16"
 				},
-				{
-					Extension: "syft.json",
-					Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+				"dataLicense": "CC0-1.0",
+				"documentNamespace": "https://paketo.io/packit/unknown-source-type/unknown-88cfa225-65e0-5755-895f-c1c8f10fde76",
+				"name": "unknown",
+				"relationships": [
+					{
+						"relatedSpdxElement": "SPDXRef-DOCUMENT",
+						"relationshipType": "DESCRIBES",
+						"spdxElementId": "SPDXRef-DOCUMENT"
+					}
+				],
+				"spdxVersion": "SPDX-2.2"
+			}`))
+
+			Expect(syft.Extension).To(Equal("syft.json"))
+			content, err = io.ReadAll(syft.Content)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(string(content)).To(MatchJSON(`{
+				"artifacts": [],
+				"artifactRelationships": [],
+				"source": {
+					"type": "",
+					"target": null
 				},
-			}))
+				"distro": {},
+				"descriptor": {
+					"name": "",
+					"version": ""
+				},
+				"schema": {
+					"version": "3.0.1",
+					"url": "https://raw.githubusercontent.com/anchore/syft/main/schema/json/schema-3.0.1.json"
+				}
+			}`))
 
 			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
