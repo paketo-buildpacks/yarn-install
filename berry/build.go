@@ -38,7 +38,7 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 		return packit.BuildResult{}, err
 	}
 
-	_, build := entryResolver.MergeLayerTypes(yarninstall.PlanDependencyNodeModules, ctx.Plan.Entries)
+	launch, build := entryResolver.MergeLayerTypes(yarninstall.PlanDependencyNodeModules, ctx.Plan.Entries)
 
 	var layers []packit.Layer
 	var currentModLayer string
@@ -130,6 +130,81 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 		layer.Build = true
 		layer.Cache = true
 
+		layers = append(layers, layer)
+	}
+
+	if launch {
+
+		layer, err := ctx.Layers.Get("launch-modules")
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
+
+		run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
+		if err != nil {
+			return packit.BuildResult{}, err
+		}
+
+		if run {
+			layer, err = layer.Reset()
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+
+			_, err = installProcess.SetupModules(projectPath, currentModLayer, layer.Path)
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+
+			duration, err := clock.Measure(func() error {
+				return installProcess.Execute(projectPath, layer.Path, true)
+			})
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+
+			bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
+			bb.logger.Break()
+
+			layer.Metadata = map[string]interface{}{
+				"cache_sha": sha,
+			}
+
+			path := filepath.Join(layer.Path, "node_modules", ".bin")
+			layer.LaunchEnv.Append("PATH", path, string(os.PathListSeparator))
+			layer.LaunchEnv.Default("NODE_PROJECT_PATH", projectPath)
+
+			if sbomDisabled {
+				bb.logger.Subprocess("Skipping SBOM generation for Yarn Install")
+				bb.logger.Break()
+
+			} else {
+				bb.logger.GeneratingSBOM(layer.Path)
+				var sbomContent sbom.SBOM
+				duration, err = clock.Measure(func() error {
+					sbomContent, err = sbomGenerator.Generate(ctx.WorkingDir)
+					return err
+				})
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+				bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
+				bb.logger.Break()
+
+				bb.logger.FormattingSBOM(ctx.BuildpackInfo.SBOMFormats...)
+				layer.SBOM, err = sbomContent.InFormats(ctx.BuildpackInfo.SBOMFormats...)
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+			}
+
+			layer.ExecD = []string{filepath.Join(ctx.CNBPath, "bin", "setup-symlinks")}
+
+		} else {
+			//TODO:Layer reuse
+		}
+
+		layer.Launch = true
 		layers = append(layers, layer)
 	}
 

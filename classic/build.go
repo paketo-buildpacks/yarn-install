@@ -31,7 +31,7 @@ func NewClassicBuild(logger scribe.Emitter) ClassicBuild {
 	}
 }
 
-func (cb ClassicBuild) Build(context packit.BuildContext,
+func (cb ClassicBuild) Build(ctx packit.BuildContext,
 	installProcess yarninstall.InstallProcess,
 	sbomGenerator yarninstall.SBOMGenerator,
 	symlinker yarninstall.SymlinkManager,
@@ -46,7 +46,7 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 
 	configurationManager := NewPackageManagerConfigurationManager(servicebindings.NewResolver(), cb.logger)
 
-	globalNpmrcPath, err := configurationManager.DeterminePath("npmrc", context.Platform.Path, ".npmrc")
+	globalNpmrcPath, err := configurationManager.DeterminePath("npmrc", ctx.Platform.Path, ".npmrc")
 	if err != nil {
 		return packit.BuildResult{}, err
 	}
@@ -58,7 +58,7 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 		}
 	}
 
-	globalYarnrcPath, err := configurationManager.DeterminePath("yarnrc", context.Platform.Path, ".yarnrc")
+	globalYarnrcPath, err := configurationManager.DeterminePath("yarnrc", ctx.Platform.Path, ".yarnrc")
 	if err != nil {
 		return packit.BuildResult{}, err
 	}
@@ -77,12 +77,12 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 		return packit.BuildResult{}, err
 	}
 
-	launch, build := entryResolver.MergeLayerTypes(yarninstall.PlanDependencyNodeModules, context.Plan.Entries)
+	launch, build := entryResolver.MergeLayerTypes(yarninstall.PlanDependencyNodeModules, ctx.Plan.Entries)
 
 	var layers []packit.Layer
 	var currentModLayer string
 	if build {
-		layer, err := context.Layers.Get("build-modules")
+		layer, err := ctx.Layers.Get("build-modules")
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
@@ -142,7 +142,7 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 				cb.logger.GeneratingSBOM(layer.Path)
 				var sbomContent sbom.SBOM
 				duration, err = clock.Measure(func() error {
-					sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
+					sbomContent, err = sbomGenerator.Generate(ctx.WorkingDir)
 					return err
 				})
 				if err != nil {
@@ -151,8 +151,8 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 				cb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
 				cb.logger.Break()
 
-				cb.logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
-				layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
+				cb.logger.FormattingSBOM(ctx.BuildpackInfo.SBOMFormats...)
+				layer.SBOM, err = sbomContent.InFormats(ctx.BuildpackInfo.SBOMFormats...)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
@@ -173,7 +173,7 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 	}
 
 	if launch {
-		layer, err := context.Layers.Get("launch-modules")
+		layer, err := ctx.Layers.Get("launch-modules")
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
@@ -235,7 +235,7 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 				cb.logger.GeneratingSBOM(layer.Path)
 				var sbomContent sbom.SBOM
 				duration, err = clock.Measure(func() error {
-					sbomContent, err = sbomGenerator.Generate(context.WorkingDir)
+					sbomContent, err = sbomGenerator.Generate(ctx.WorkingDir)
 					return err
 				})
 				if err != nil {
@@ -244,14 +244,14 @@ func (cb ClassicBuild) Build(context packit.BuildContext,
 				cb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
 				cb.logger.Break()
 
-				cb.logger.FormattingSBOM(context.BuildpackInfo.SBOMFormats...)
-				layer.SBOM, err = sbomContent.InFormats(context.BuildpackInfo.SBOMFormats...)
+				cb.logger.FormattingSBOM(ctx.BuildpackInfo.SBOMFormats...)
+				layer.SBOM, err = sbomContent.InFormats(ctx.BuildpackInfo.SBOMFormats...)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
 			}
 
-			layer.ExecD = []string{filepath.Join(context.CNBPath, "bin", "setup-symlinks")}
+			layer.ExecD = []string{filepath.Join(ctx.CNBPath, "bin", "setup-symlinks")}
 
 		} else {
 			cb.logger.Process("Reusing cached layer %s", layer.Path)

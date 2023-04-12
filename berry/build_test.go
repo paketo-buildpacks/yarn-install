@@ -177,7 +177,7 @@ func testBerryBuild(t *testing.T, context spec.G, it spec.S) {
 			})
 
 			it("returns a result that installs launch modules", func() {
-				_, err := buildProcess.Build(
+				result, err := buildProcess.Build(
 					ctx,
 					berryInstallProcess,
 					sbomGenerator,
@@ -187,48 +187,47 @@ func testBerryBuild(t *testing.T, context spec.G, it spec.S) {
 					tmpDir)
 				Expect(err).NotTo(HaveOccurred())
 
-				// Expect(len(result.Layers)).To(Equal(1))
-				// layer := result.Layers[0]
-				// Expect(layer.Name).To(Equal("launch-modules"))
-				// Expect(layer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
-				// Expect(layer.LaunchEnv).To(Equal(packit.Environment{
-				// 	"NODE_PROJECT_PATH.default": filepath.Join(workingDir, "some-project-dir"),
-				// 	"PATH.append":               filepath.Join(layersDir, "launch-modules", "node_modules", ".bin"),
-				// 	"PATH.delim":                ":",
-				// }))
-				// Expect(layer.Launch).To(BeTrue())
-				// Expect(layer.Metadata).To(Equal(
-				// 	map[string]interface{}{
-				// 		"cache_sha": "some-awesome-shasum",
-				// 	}))
-				// Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
-				// 	{
-				// 		Extension: "cdx.json",
-				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
-				// 	},
-				// 	{
-				// 		Extension: "spdx.json",
-				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
-				// 	},
-				// 	{
-				// 		Extension: "syft.json",
-				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
-				// 	},
-				// }))
+				Expect(len(result.Layers)).To(Equal(1))
+				layer := result.Layers[0]
+				Expect(layer.Name).To(Equal("launch-modules"))
+				Expect(layer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(layer.LaunchEnv).To(Equal(packit.Environment{
+					"NODE_PROJECT_PATH.default": filepath.Join(workingDir, "some-project-dir"),
+					"PATH.append":               filepath.Join(layersDir, "launch-modules", "node_modules", ".bin"),
+					"PATH.delim":                ":",
+				}))
+				Expect(layer.Launch).To(BeTrue())
+				Expect(layer.Metadata).To(Equal(
+					map[string]interface{}{
+						"cache_sha": "some-awesome-shasum",
+					}))
+				Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+					{
+						Extension: "cdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+					},
+					{
+						Extension: "spdx.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+					},
+					{
+						Extension: "syft.json",
+						Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+					},
+				}))
+				Expect(len(layer.ExecD)).To(Equal(1))
 
-				// Expect(symlinker.LinkCall.CallCount).To(BeZero())
+				Expect(berryInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
 
-				// Expect(berryInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
+				Expect(berryInstallProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
 
-				// Expect(berryInstallProcess.SetupModulesCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
-				// Expect(berryInstallProcess.SetupModulesCall.Receives.CurrentModulesLayerPath).To(Equal(""))
-				// Expect(berryInstallProcess.SetupModulesCall.Receives.NextModulesLayerPath).To(Equal(layer.Path))
+				Expect(berryInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.Launch).To(BeTrue())
 
-				// Expect(berryInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
-				// Expect(berryInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "launch-modules")))
-				// Expect(berryInstallProcess.ExecuteCall.Receives.Launch).To(BeTrue())
-
-				// Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
+				Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
 			})
 		})
 
