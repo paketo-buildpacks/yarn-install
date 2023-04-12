@@ -21,7 +21,7 @@ type VersionParser interface {
 
 //go:generate faux --interface YarnrcYmlParser --output fakes/yarnrc_yml_parser.go
 type YarnrcYmlParser interface {
-	ParseLinker(path string) (nodeLinker string, err error)
+	Parse(path string) (nodeLinker string, err error)
 }
 
 //go:generate faux --interface PathParser --output fakes/path_parser.go
@@ -37,7 +37,7 @@ func Detect(projectPathParser PathParser, versionParser VersionParser, yarnrcYml
 		}
 
 		hasYarnrcYml := true
-		linker, err := yarnrcYmlParser.ParseLinker(filepath.Join(projectPath, ".yarnrc.yml"))
+		linker, err := yarnrcYmlParser.Parse(filepath.Join(projectPath, ".yarnrc.yml"))
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
 				hasYarnrcYml = false

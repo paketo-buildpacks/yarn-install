@@ -13,7 +13,7 @@ import (
 func testYarnrcYmlParser(t *testing.T, context spec.G, it spec.S) {
 	var Expect = NewWithT(t).Expect
 
-	context("ParseLinker", func() {
+	context("Parse", func() {
 		var (
 			path   string
 			parser common.YarnrcYmlParser
@@ -39,7 +39,7 @@ nodeLinker: node-modules
 		})
 
 		it("parses the node engine version from a package.json file", func() {
-			linker, err := parser.ParseLinker(path)
+			linker, err := parser.Parse(path)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(linker).To(Equal("node-modules"))
 		})
@@ -47,7 +47,7 @@ nodeLinker: node-modules
 		context("failure cases", func() {
 			context("when the .yarnrc.yml file does not exist", func() {
 				it("returns an error", func() {
-					_, err := parser.ParseLinker("/missing/file")
+					_, err := parser.Parse("/missing/file")
 					Expect(err).To(MatchError(ContainSubstring("no such file or directory")))
 				})
 			})
@@ -59,7 +59,7 @@ nodeLinker: node-modules
 				})
 
 				it("returns an error", func() {
-					_, err := parser.ParseLinker(path)
+					_, err := parser.Parse(path)
 					Expect(err).To(MatchError(ContainSubstring("could not find expected directive name")))
 				})
 			})

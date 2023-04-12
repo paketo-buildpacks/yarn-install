@@ -29,7 +29,7 @@ func main() {
 	berryInstallProcess := berry.NewBerryInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
 	classicInstallProcess := classic.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
 	classic := classic.NewClassicBuild(logger)
-	berry := berry.NewBerryBuild()
+	berry := berry.NewBerryBuild(logger)
 	projectPathParser := common.NewProjectPathParser()
 	symlinker := common.NewSymlinker()
 	sbomGenerator := SBOMGenerator{}

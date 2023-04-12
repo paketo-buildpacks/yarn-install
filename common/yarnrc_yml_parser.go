@@ -12,7 +12,7 @@ func NewYarnrcYmlParser() YarnrcYmlParser {
 	return YarnrcYmlParser{}
 }
 
-func (y YarnrcYmlParser) ParseLinker(path string) (string, error) {
+func (y YarnrcYmlParser) Parse(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return "", err

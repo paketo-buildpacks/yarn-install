@@ -1,11 +1,10 @@
 package yarninstall
 
 import (
-	"errors"
-	"os"
 	"path/filepath"
 
 	"github.com/paketo-buildpacks/packit/v2"
+	"github.com/paketo-buildpacks/packit/v2/fs"
 	"github.com/paketo-buildpacks/packit/v2/sbom"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
 )
@@ -56,18 +55,12 @@ func Build(pathParser PathParser,
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
-
-		hasYarnrcYml := true
-		_, err = yarnrcYmlParser.ParseLinker(filepath.Join(projectPath, ".yarnrc.yml"))
+		exists, err := fs.Exists(filepath.Join(projectPath, ".yarnrc.yml"))
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				hasYarnrcYml = false
-			} else {
-				return packit.BuildResult{}, err
-			}
+			panic(err)
 		}
 
-		if hasYarnrcYml {
+		if exists {
 			return berry.Build(context, berryInstall, sbomGenerator, symlinker, entryResolver, projectPath, tmpDir)
 		}
 

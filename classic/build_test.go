@@ -303,7 +303,7 @@ func testClassicBuild(t *testing.T, context spec.G, it spec.S) {
 			})
 		})
 
-		context("when node_modules is during both build and launch", func() {
+		context("when node_modules is required during both build and launch", func() {
 			type setupModulesParams struct {
 				WorkingDir              string
 				CurrentModulesLayerPath string
@@ -327,32 +327,30 @@ func testClassicBuild(t *testing.T, context spec.G, it spec.S) {
 					return n, nil
 				}
 			})
-			context("Classic", func() {
-				it("returns a result that has both layers and the module setup updates accordingly", func() {
-					result, err := buildProcess.Build(
-						ctx,
-						classicInstallProcess,
-						sbomGenerator,
-						symlinker,
-						entryResolver,
-						projectPath,
-						tmpDir)
-					Expect(err).NotTo(HaveOccurred())
+			it("returns a result that has both layers and the module setup updates accordingly", func() {
+				result, err := buildProcess.Build(
+					ctx,
+					classicInstallProcess,
+					sbomGenerator,
+					symlinker,
+					entryResolver,
+					projectPath,
+					tmpDir)
+				Expect(err).NotTo(HaveOccurred())
 
-					launchLayer := result.Layers[1]
-					Expect(launchLayer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
-					Expect(len(result.Layers)).To(Equal(2))
+				launchLayer := result.Layers[1]
+				Expect(launchLayer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
+				Expect(len(result.Layers)).To(Equal(2))
 
-					Expect(classicInstallProcess.SetupModulesCall.CallCount).To(Equal(2))
+				Expect(classicInstallProcess.SetupModulesCall.CallCount).To(Equal(2))
 
-					Expect(setupModulesCalls[0].WorkingDir).To(Equal(workingDir))
-					Expect(setupModulesCalls[0].CurrentModulesLayerPath).To(Equal(""))
-					Expect(setupModulesCalls[0].NextModulesLayerPath).To(Equal(result.Layers[0].Path))
+				Expect(setupModulesCalls[0].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[0].CurrentModulesLayerPath).To(Equal(""))
+				Expect(setupModulesCalls[0].NextModulesLayerPath).To(Equal(result.Layers[0].Path))
 
-					Expect(setupModulesCalls[1].WorkingDir).To(Equal(workingDir))
-					Expect(setupModulesCalls[1].CurrentModulesLayerPath).To(Equal(result.Layers[0].Path))
-					Expect(setupModulesCalls[1].NextModulesLayerPath).To(Equal(result.Layers[1].Path))
-				})
+				Expect(setupModulesCalls[1].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[1].CurrentModulesLayerPath).To(Equal(result.Layers[0].Path))
+				Expect(setupModulesCalls[1].NextModulesLayerPath).To(Equal(result.Layers[1].Path))
 			})
 
 		})

@@ -65,7 +65,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		sbomGenerator.GenerateCall.Returns.SBOM = sbom.SBOM{}
 
 		yarnrcYmlParser = &fakes.YarnrcYmlParser{}
-		yarnrcYmlParser.ParseLinkerCall.Returns.Err = os.ErrNotExist
+		yarnrcYmlParser.ParseCall.Returns.Err = os.ErrNotExist
 
 		symlinker = &fakes.SymlinkManager{}
 
@@ -120,7 +120,8 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	context("when .yarnrc.yml is present", func() {
 		it.Before(func() {
-			yarnrcYmlParser.ParseLinkerCall.Returns.Err = nil
+			err := os.WriteFile(filepath.Join(workingDir, "some-project-dir", ".yarnrc.yml"), []byte("---"), os.ModePerm)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		it("runs Yarn Berry build and returns a BuildResult", func() {

@@ -41,7 +41,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		versionParser.ParseVersionCall.Returns.Version = "some-version"
 
 		yarnrcYmlParser = &fakes.YarnrcYmlParser{}
-		yarnrcYmlParser.ParseLinkerCall.Returns.NodeLinker = ""
+		yarnrcYmlParser.ParseCall.Returns.NodeLinker = ""
 
 		projectPathParser = &fakes.PathParser{}
 		projectPathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "custom")
@@ -80,13 +80,13 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 				Expect(projectPathParser.GetCall.Receives.Path).To(Equal(filepath.Join(workingDir)))
 				Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
-				Expect(yarnrcYmlParser.ParseLinkerCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", ".yarnrc.yml")))
+				Expect(yarnrcYmlParser.ParseCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", ".yarnrc.yml")))
 			})
 		})
 
 		context("when nodeLinker field is set to pnp", func() {
 			it.Before(func() {
-				yarnrcYmlParser.ParseLinkerCall.Returns.NodeLinker = "pnp"
+				yarnrcYmlParser.ParseCall.Returns.NodeLinker = "pnp"
 			})
 
 			it("returns a plan that provides yarn_pkgs and requires node and yarn", func() {
@@ -120,7 +120,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 		context("when nodeLinker field is set to pnpm", func() {
 			it.Before(func() {
-				yarnrcYmlParser.ParseLinkerCall.Returns.NodeLinker = "pnpm"
+				yarnrcYmlParser.ParseCall.Returns.NodeLinker = "pnpm"
 			})
 
 			it("returns a plan that provides node_modules and requires node and yarn", func() {
@@ -154,7 +154,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 		context("when nodeLinker field is set to node-modules", func() {
 			it.Before(func() {
-				yarnrcYmlParser.ParseLinkerCall.Returns.NodeLinker = "node-modules"
+				yarnrcYmlParser.ParseCall.Returns.NodeLinker = "node-modules"
 			})
 
 			it("returns a plan that provides node_modules and requires node and yarn", func() {
@@ -190,7 +190,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	context("when there is a yarn.lock and NO yarnrc.yml", func() {
 		it.Before(func() {
 			_, err := os.Stat("/no/such/.yarnrc.yml")
-			yarnrcYmlParser.ParseLinkerCall.Returns.Err = err
+			yarnrcYmlParser.ParseCall.Returns.Err = err
 		})
 
 		it("returns a plan that provides node_modules and requires node and yarn", func() {
@@ -225,7 +225,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	context("when there is a yarnrc.yml and NO yarn.lock", func() {
 		it.Before(func() {
 			Expect(os.Remove(filepath.Join(workingDir, "custom", "yarn.lock"))).To(Succeed())
-			yarnrcYmlParser.ParseLinkerCall.Returns.NodeLinker = ""
+			yarnrcYmlParser.ParseCall.Returns.NodeLinker = ""
 		})
 
 		it("does not fail detection", func() {
@@ -292,7 +292,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 	context("when there is NO yarn.lock file AND NO yarnrc.yml file", func() {
 		it.Before(func() {
-			yarnrcYmlParser.ParseLinkerCall.Returns.Err = os.ErrNotExist
+			yarnrcYmlParser.ParseCall.Returns.Err = os.ErrNotExist
 			Expect(os.Remove(filepath.Join(workingDir, "custom", "yarn.lock"))).To(Succeed())
 		})
 
@@ -321,7 +321,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	context("failure cases", func() {
 		context("when the .yarnrc.yml cannot be read", func() {
 			it.Before(func() {
-				yarnrcYmlParser.ParseLinkerCall.Returns.Err = errors.New("failed to read package.json")
+				yarnrcYmlParser.ParseCall.Returns.Err = errors.New("failed to read package.json")
 			})
 
 			it("returns an error", func() {
