@@ -84,16 +84,16 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 				"cache_sha": sha,
 			}
 
-			// 	err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
-			// 	if err != nil {
-			// 		return packit.BuildResult{}, err
-			// 	}
+			err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 
 			path := filepath.Join(layer.Path, "node_modules", ".bin")
 			layer.BuildEnv.Append("PATH", path, string(os.PathListSeparator))
 			layer.BuildEnv.Override("NODE_ENV", "development")
 
-			// 	bb.logger.EnvironmentVariables(layer)
+			bb.logger.EnvironmentVariables(layer)
 
 			if sbomDisabled {
 				bb.logger.Subprocess("Skipping SBOM generation for Yarn Install")
@@ -119,12 +119,12 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 				}
 			}
 		} else {
-			// 	bb.logger.Process("Reusing cached layer %s", layer.Path)
+			bb.logger.Process("Reusing cached layer %s", layer.Path)
 
-			// 	err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
-			// 	if err != nil {
-			// 		return packit.BuildResult{}, err
-			// 	}
+			err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 		}
 
 		layer.Build = true
@@ -166,6 +166,13 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 			bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
 			bb.logger.Break()
 
+			if !build {
+				err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+			}
+
 			layer.Metadata = map[string]interface{}{
 				"cache_sha": sha,
 			}
@@ -201,7 +208,13 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 			layer.ExecD = []string{filepath.Join(ctx.CNBPath, "bin", "setup-symlinks")}
 
 		} else {
-			//TODO:Layer reuse
+			bb.logger.Process("Reusing cached layer %s", layer.Path)
+			if !build {
+				err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+			}
 		}
 
 		layer.Launch = true
@@ -213,6 +226,7 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 	}, nil
 }
 
+// TODO: Pull this out into common package
 func checkSbomDisabled() (bool, error) {
 	if disableStr, ok := os.LookupEnv("BP_DISABLE_SBOM"); ok {
 		disable, err := strconv.ParseBool(disableStr)
@@ -222,4 +236,30 @@ func checkSbomDisabled() (bool, error) {
 		return disable, nil
 	}
 	return false, nil
+}
+
+// TODO: Pull this out into common package
+func ensureNodeModulesSymlink(projectDir, targetLayer, tmpDir string) error {
+	projectDirNodeModules := filepath.Join(projectDir, "node_modules")
+	layerNodeModules := filepath.Join(targetLayer, "node_modules")
+	tmpNodeModules := filepath.Join(tmpDir, "node_modules")
+
+	for _, d := range []string{projectDirNodeModules, tmpNodeModules} {
+		err := os.RemoveAll(d)
+		if err != nil {
+			return err
+		}
+	}
+
+	err := os.Symlink(tmpNodeModules, projectDirNodeModules)
+	if err != nil {
+		return err
+	}
+
+	err = os.Symlink(layerNodeModules, tmpNodeModules)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -231,8 +231,147 @@ func testBerryBuild(t *testing.T, context spec.G, it spec.S) {
 			})
 		})
 
-		context("both build and launch", func() {})
-		context("neither build nor launch", func() {})
+		context("both build and launch", func() {
+			type setupModulesParams struct {
+				WorkingDir              string
+				CurrentModulesLayerPath string
+				NextModulesLayerPath    string
+				TempDir                 string
+			}
+
+			var setupModulesCalls []setupModulesParams
+			it.Before(func() {
+				entryResolver.MergeLayerTypesCall.Returns.Launch = true
+				entryResolver.MergeLayerTypesCall.Returns.Build = true
+				projectPath = workingDir
+
+				berryInstallProcess.SetupModulesCall.Stub = func(w string, c string, n string) (string, error) {
+					setupModulesCalls = append(setupModulesCalls, setupModulesParams{
+						WorkingDir:              w,
+						CurrentModulesLayerPath: c,
+						NextModulesLayerPath:    n,
+					})
+					return n, nil
+				}
+			})
+			it("returns a result that has both layers and the module setup updates accordingly", func() {
+				result, err := buildProcess.Build(
+					ctx,
+					berryInstallProcess,
+					sbomGenerator,
+					symlinker,
+					entryResolver,
+					projectPath,
+					tmpDir)
+				Expect(err).NotTo(HaveOccurred())
+
+				launchLayer := result.Layers[1]
+				Expect(launchLayer.ExecD).To(Equal([]string{filepath.Join(cnbDir, "bin", "setup-symlinks")}))
+				Expect(len(result.Layers)).To(Equal(2))
+
+				Expect(berryInstallProcess.SetupModulesCall.CallCount).To(Equal(2))
+
+				Expect(setupModulesCalls[0].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[0].CurrentModulesLayerPath).To(Equal(""))
+				Expect(setupModulesCalls[0].NextModulesLayerPath).To(Equal(result.Layers[0].Path))
+
+				Expect(setupModulesCalls[1].WorkingDir).To(Equal(workingDir))
+				Expect(setupModulesCalls[1].CurrentModulesLayerPath).To(Equal(result.Layers[0].Path))
+				Expect(setupModulesCalls[1].NextModulesLayerPath).To(Equal(result.Layers[1].Path))
+			})
+
+		})
+
+		context("neither build nor launch", func() {
+			it("returns a result that has no layers", func() {
+				result, err := buildProcess.Build(
+					ctx,
+					berryInstallProcess,
+					sbomGenerator,
+					symlinker,
+					entryResolver,
+					projectPath,
+					tmpDir)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(result).To(Equal(packit.BuildResult{}))
+			})
+		})
+
+		context("when re-using previous modules layer", func() {
+			it.Before(func() {
+				berryInstallProcess.ShouldRunCall.Stub = nil
+				berryInstallProcess.ShouldRunCall.Returns.Run = false
+				entryResolver.MergeLayerTypesCall.Returns.Launch = true
+				entryResolver.MergeLayerTypesCall.Returns.Build = true
+			})
+
+			it("does not redo the build process", func() {
+				result, err := buildProcess.Build(
+					ctx,
+					berryInstallProcess,
+					sbomGenerator,
+					symlinker,
+					entryResolver,
+					projectPath,
+					tmpDir)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(len(result.Layers)).To(Equal(2))
+				buildLayer := result.Layers[0]
+				Expect(buildLayer.Name).To(Equal("build-modules"))
+				Expect(buildLayer.Path).To(Equal(filepath.Join(layersDir, "build-modules")))
+				Expect(buildLayer.Build).To(BeTrue())
+				Expect(buildLayer.Cache).To(BeTrue())
+
+				launchLayer := result.Layers[1]
+				Expect(launchLayer.Name).To(Equal("launch-modules"))
+				Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(launchLayer.Launch).To(BeTrue())
+
+				workspaceLink, err := os.Readlink(filepath.Join(workingDir, "some-project-dir", "node_modules"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(workspaceLink).To(Equal(filepath.Join(tmpDir, "node_modules")))
+
+				tmpLink, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tmpLink).To(Equal(filepath.Join(layersDir, "build-modules", "node_modules")))
+
+			})
+		})
+
+		context("when re-using previous launch-modules layer", func() {
+			it.Before(func() {
+				berryInstallProcess.ShouldRunCall.Stub = nil
+				berryInstallProcess.ShouldRunCall.Returns.Run = false
+				entryResolver.MergeLayerTypesCall.Returns.Launch = true
+			})
+
+			it("does not redo the build process", func() {
+				result, err := buildProcess.Build(
+					ctx,
+					berryInstallProcess,
+					sbomGenerator,
+					symlinker,
+					entryResolver,
+					projectPath,
+					tmpDir)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(len(result.Layers)).To(Equal(1))
+				launchLayer := result.Layers[0]
+				Expect(launchLayer.Name).To(Equal("launch-modules"))
+				Expect(launchLayer.Path).To(Equal(filepath.Join(layersDir, "launch-modules")))
+				Expect(launchLayer.Launch).To(BeTrue())
+
+				workspaceLink, err := os.Readlink(filepath.Join(workingDir, "some-project-dir", "node_modules"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(workspaceLink).To(Equal(filepath.Join(tmpDir, "node_modules")))
+
+				tmpLink, err := os.Readlink(filepath.Join(tmpDir, "node_modules"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(tmpLink).To(Equal(filepath.Join(layersDir, "launch-modules", "node_modules")))
+			})
+		})
 
 	})
 
