@@ -63,7 +63,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(run).To(BeTrue())
 					Expect(sha).To(Equal(""))
 					Expect(err).NotTo(HaveOccurred())
-					Expect(buffer.String()).ToNot(ContainLines("    Running 'yarn config list --silent'"))
 				})
 			})
 
@@ -90,11 +89,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 						"--silent",
 					}))
 					Expect(execution.Dir).To(Equal(workingDir))
-					Expect(buffer.String()).To(ContainLines(
-						"    Running 'yarn config list --silent'",
-						"      undefined",
-						"      undefined",
-					))
 				})
 
 				it("succeeds when sha is missing", func() {
@@ -102,11 +96,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(run).To(BeTrue())
 					Expect(sha).To(Equal("some-other-sha"))
 					Expect(err).NotTo(HaveOccurred())
-					Expect(buffer.String()).To(ContainLines(
-						"    Running 'yarn config list --silent'",
-						"      undefined",
-						"      undefined",
-					))
 				})
 			})
 
@@ -125,11 +114,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(run).To(BeFalse())
 					Expect(sha).To(Equal(""))
 					Expect(err).NotTo(HaveOccurred())
-					Expect(buffer.String()).To(ContainLines(
-						"    Running 'yarn config list --silent'",
-						"      undefined",
-						"      undefined",
-					))
 				})
 			})
 
@@ -380,10 +364,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 				Expect(executions[1].Dir).To(Equal(workingDir))
 				Expect(buffer.String()).To(ContainLines(
-					"    Running 'yarn config get yarn-offline-mirror'",
-					"      stdout output",
-					"      stderr output",
-					"      undefined",
 					fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --production false --modules-folder %s'", filepath.Join(modulesLayerPath, "node_modules")),
 					"      stdout output",
 					"      stderr output",
@@ -415,10 +395,6 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 				Expect(executions[1].Dir).To(Equal(workingDir))
 				Expect(buffer.String()).To(ContainLines(
-					"    Running 'yarn config get yarn-offline-mirror'",
-					"      stdout output",
-					"      stderr output",
-					"      undefined",
 					fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder %s'", filepath.Join(modulesLayerPath, "node_modules")),
 					"      stdout output",
 					"      stderr output",
@@ -466,13 +442,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				}))
 				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 				Expect(executions[1].Dir).To(Equal(workingDir))
-				Expect(buffer.String()).To(ContainLines(
-					"    Running 'yarn config get yarn-offline-mirror'",
-					"      warning some extraneous warning",
-					"      warning some other warning",
-					fmt.Sprintf("      %s", filepath.Join(workingDir, "offline-mirror")),
-					fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --offline --modules-folder %s'", filepath.Join(modulesLayerPath, "node_modules")),
-				))
+				Expect(buffer.String()).To(ContainSubstring(fmt.Sprintf("Running 'yarn install --ignore-engines --frozen-lockfile --offline --modules-folder %s'", filepath.Join(modulesLayerPath, "node_modules"))))
 			})
 		})
 

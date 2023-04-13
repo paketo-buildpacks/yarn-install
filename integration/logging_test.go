@@ -74,9 +74,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing launch environment install process",
-				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
+				fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+			))
+			Expect(logs).To(ContainLines(
 				"  Configuring launch environment",
 				"    NODE_PROJECT_PATH -> \"/workspace\"",
 				fmt.Sprintf("    PATH              -> \"$PATH:/layers/%s/launch-modules/node_modules/.bin\"", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
@@ -88,7 +88,6 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    application/vnd.cyclonedx+json",
 				"    application/spdx+json",
 				"    application/vnd.syft+json",
-				"",
 			))
 		})
 	})
@@ -140,9 +139,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing launch environment install process",
-				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
+				fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --offline --modules-folder /layers/%s/launch-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+			))
+			Expect(logs).To(ContainLines(
 				"  Configuring launch environment",
 				"    NODE_PROJECT_PATH -> \"/workspace\"",
 				fmt.Sprintf("    PATH              -> \"$PATH:/layers/%s/launch-modules/node_modules/.bin\"", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
@@ -201,9 +200,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing build environment install process",
-				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --production false --modules-folder /layers/%s/build-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
+				fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --production false --modules-folder /layers/%s/build-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+			))
+			Expect(logs).To(ContainLines(
 				"  Configuring build environment",
 				`    NODE_ENV -> "development"`,
 				fmt.Sprintf("    PATH     -> \"$PATH:/layers/%s/build-modules/node_modules/.bin\"", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
@@ -223,9 +222,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 				"    Selected default build process: 'yarn install'",
 				"",
 				"  Executing launch environment install process",
-				fmt.Sprintf("    Running yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
+				fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+			))
+			Expect(logs).To(ContainLines(
 				"  Configuring launch environment",
 				"    NODE_PROJECT_PATH -> \"/workspace\"",
 				fmt.Sprintf("    PATH              -> \"$PATH:/layers/%s/launch-modules/node_modules/.bin\"", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),

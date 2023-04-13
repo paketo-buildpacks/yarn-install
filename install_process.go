@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -54,17 +53,15 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	ip.logger.Break()
 
 	buffer := bytes.NewBuffer(nil)
-	listArgs := []string{"config", "list", "--silent"}
-	ip.logger.Subprocess("Running 'yarn %s'", strings.Join(listArgs, " "))
 
 	err = ip.executable.Execute(pexec.Execution{
-		Args:   listArgs,
-		Stdout: io.MultiWriter(ip.logger.ActionWriter, buffer),
-		Stderr: io.MultiWriter(ip.logger.ActionWriter, buffer),
+		Args:   []string{"config", "list", "--silent"},
+		Stdout: buffer,
+		Stderr: buffer,
 		Dir:    workingDir,
 	})
 	if err != nil {
-		return true, "", fmt.Errorf("failed to execute yarn config output:\nerror: %s", err)
+		return true, "", fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
 	}
 
 	nodeEnv := os.Getenv("NODE_ENV")
@@ -147,18 +144,16 @@ func (ip YarnInstallProcess) Execute(workingDir, modulesLayerPath string, launch
 	environment = append(environment, fmt.Sprintf("PATH=%s%c%s", os.Getenv("PATH"), os.PathListSeparator, filepath.Join("node_modules", ".bin")))
 
 	buffer := bytes.NewBuffer(nil)
-	configArgs := []string{"config", "get", "yarn-offline-mirror"}
-	ip.logger.Subprocess("Running 'yarn %s'", strings.Join(configArgs, " "))
 
 	err := ip.executable.Execute(pexec.Execution{
-		Args:   configArgs,
-		Stdout: io.MultiWriter(ip.logger.ActionWriter, buffer),
-		Stderr: io.MultiWriter(ip.logger.ActionWriter, buffer),
+		Args:   []string{"config", "get", "yarn-offline-mirror"},
+		Stdout: buffer,
+		Stderr: buffer,
 		Env:    environment,
 		Dir:    workingDir,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to execute yarn config output:\nerror: %s", err)
+		return fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
 	}
 
 	installArgs := []string{"install", "--ignore-engines", "--frozen-lockfile"}
