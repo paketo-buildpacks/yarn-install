@@ -16,6 +16,7 @@ import (
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
+	. "github.com/paketo-buildpacks/occam/matchers"
 )
 
 func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
@@ -27,6 +28,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable     *fakes.Executable
 			installProcess yarninstall.YarnInstallProcess
 			summer         *fakes.Summer
+			buffer         *bytes.Buffer
 			execution      pexec.Execution
 		)
 
@@ -40,13 +42,15 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			executable = &fakes.Executable{}
 			summer = &fakes.Summer{}
+			buffer = bytes.NewBuffer(nil)
 
 			executable.ExecuteCall.Stub = func(exec pexec.Execution) error {
 				execution = exec
 				fmt.Fprintln(exec.Stdout, "undefined")
+				fmt.Fprintln(exec.Stderr, "undefined")
 				return nil
 			}
-			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(bytes.NewBuffer(nil)))
+			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(buffer))
 		})
 
 		context("we should run yarn install when", func() {
@@ -59,6 +63,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(run).To(BeTrue())
 					Expect(sha).To(Equal(""))
 					Expect(err).NotTo(HaveOccurred())
+					Expect(buffer.String()).ToNot(ContainLines("    Running 'yarn config list --silent'"))
 				})
 			})
 
@@ -85,6 +90,11 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 						"--silent",
 					}))
 					Expect(execution.Dir).To(Equal(workingDir))
+					Expect(buffer.String()).To(ContainLines(
+						"    Running 'yarn config list --silent'",
+						"      undefined",
+						"      undefined",
+					))
 				})
 
 				it("succeeds when sha is missing", func() {
@@ -92,6 +102,11 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(run).To(BeTrue())
 					Expect(sha).To(Equal("some-other-sha"))
 					Expect(err).NotTo(HaveOccurred())
+					Expect(buffer.String()).To(ContainLines(
+						"    Running 'yarn config list --silent'",
+						"      undefined",
+						"      undefined",
+					))
 				})
 			})
 
@@ -110,6 +125,11 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					Expect(run).To(BeFalse())
 					Expect(sha).To(Equal(""))
 					Expect(err).NotTo(HaveOccurred())
+					Expect(buffer.String()).To(ContainLines(
+						"    Running 'yarn config list --silent'",
+						"      undefined",
+						"      undefined",
+					))
 				})
 			})
 
@@ -317,6 +337,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable = &fakes.Executable{}
 			executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 				executions = append(executions, execution)
+				fmt.Fprintln(execution.Stdout, "stdout output")
+				fmt.Fprintln(execution.Stderr, "stderr output")
 
 				if strings.Contains(strings.Join(execution.Args, " "), "yarn-offline-mirror") {
 					fmt.Fprintln(execution.Stdout, "undefined")
@@ -357,6 +379,15 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				}))
 				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 				Expect(executions[1].Dir).To(Equal(workingDir))
+				Expect(buffer.String()).To(ContainLines(
+					"    Running 'yarn config get yarn-offline-mirror'",
+					"      stdout output",
+					"      stderr output",
+					"      undefined",
+					fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --production false --modules-folder %s'", filepath.Join(modulesLayerPath, "node_modules")),
+					"      stdout output",
+					"      stderr output",
+				))
 			})
 		})
 
@@ -383,7 +414,15 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				}))
 				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 				Expect(executions[1].Dir).To(Equal(workingDir))
-
+				Expect(buffer.String()).To(ContainLines(
+					"    Running 'yarn config get yarn-offline-mirror'",
+					"      stdout output",
+					"      stderr output",
+					"      undefined",
+					fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder %s'", filepath.Join(modulesLayerPath, "node_modules")),
+					"      stdout output",
+					"      stderr output",
+				))
 			})
 		})
 
@@ -427,6 +466,13 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				}))
 				Expect(executions[1].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
 				Expect(executions[1].Dir).To(Equal(workingDir))
+				Expect(buffer.String()).To(ContainLines(
+					"    Running 'yarn config get yarn-offline-mirror'",
+					"      warning some extraneous warning",
+					"      warning some other warning",
+					fmt.Sprintf("      %s", filepath.Join(workingDir, "offline-mirror")),
+					fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --offline --modules-folder %s'", filepath.Join(modulesLayerPath, "node_modules")),
+				))
 			})
 		})
 
@@ -447,9 +493,7 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				it("returns an error", func() {
 					err := installProcess.Execute(workingDir, modulesLayerPath, true)
 					Expect(err).To(MatchError(ContainSubstring("failed to execute yarn config")))
-					Expect(err).To(MatchError(ContainSubstring("some stdout error")))
-					Expect(err).To(MatchError(ContainSubstring("some stderr error")))
-					Expect(err).To(MatchError(ContainSubstring("yarn config failed")))
+					Expect(err).To(MatchError(ContainSubstring("error: yarn config failed")))
 				})
 			})
 
