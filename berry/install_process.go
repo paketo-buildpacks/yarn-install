@@ -87,6 +87,7 @@ func (ip BerryInstallProcess) ShouldRun(workingDir string, metadata map[string]i
 	return false, "", nil
 }
 
+// TODO: Pull this out into common package
 func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath string) (string, error) {
 
 	if currentModulesLayerPath != "" {
@@ -136,8 +137,7 @@ func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, 
 func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launch bool) error {
 	environment := os.Environ()
 	environment = append(environment, fmt.Sprintf("PATH=%s%c%s", os.Getenv("PATH"), os.PathListSeparator, filepath.Join("node_modules", ".bin")))
-
-	buffer := bytes.NewBuffer(nil)
+	environment = append(environment, fmt.Sprintf("YARN_CACHE_FOLDER=%s", filepath.Join(modulesLayerPath, "yarn-pkgs")))
 
 	installArgs := []string{"install"}
 
@@ -153,7 +153,7 @@ func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launc
 
 	ip.logger.Subprocess("Running yarn %s", strings.Join(installArgs, " "))
 
-	buffer = bytes.NewBuffer(nil)
+	buffer := bytes.NewBuffer(nil)
 	err := ip.executable.Execute(pexec.Execution{
 		Args:   installArgs,
 		Env:    environment,

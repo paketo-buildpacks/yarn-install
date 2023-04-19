@@ -1,0 +1,5 @@
+[[requires]]
+  name = "yarn_pkgs"
+
+  [requires.metadata]
+    launch = true

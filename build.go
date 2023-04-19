@@ -55,6 +55,7 @@ func Build(pathParser PathParser,
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
+
 		exists, err := fs.Exists(filepath.Join(projectPath, ".yarnrc.yml"))
 		if err != nil {
 			panic(err)

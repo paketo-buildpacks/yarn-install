@@ -12,6 +12,7 @@ import (
 	"github.com/paketo-buildpacks/packit/v2/sbom"
 	"github.com/paketo-buildpacks/packit/v2/scribe"
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
+	"github.com/paketo-buildpacks/yarn-install/common"
 )
 
 type BerryBuild struct {
@@ -38,187 +39,270 @@ func (bb BerryBuild) Build(ctx packit.BuildContext,
 		return packit.BuildResult{}, err
 	}
 
-	launch, build := entryResolver.MergeLayerTypes(yarninstall.PlanDependencyNodeModules, ctx.Plan.Entries)
+	yarnrcYmlParser := common.NewYarnrcYmlParser()
+	linker, err := yarnrcYmlParser.Parse(filepath.Join(projectPath, ".yarnrc.yml"))
 
 	var layers []packit.Layer
-	var currentModLayer string
-	if build {
-		layer, err := ctx.Layers.Get("build-modules")
-		if err != nil {
-			return packit.BuildResult{}, err
+
+	if linker == "" || linker == "pnp" {
+		launch, build := entryResolver.MergeLayerTypes(yarninstall.PlanDependencyYarnPkgs, ctx.Plan.Entries)
+
+		if build {
+			layer, err := ctx.Layers.Get("build-pkgs")
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
+
+			run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
+			if err != nil {
+				panic(err)
+			}
+
+			if run {
+				layer, err = layer.Reset()
+				if err != nil {
+					// return packit.BuildResult{}, err
+					panic(err)
+				}
+
+				_, err = clock.Measure(func() error {
+					return installProcess.Execute(projectPath, layer.Path, false)
+				})
+				if err != nil {
+					panic(err)
+					// return packit.BuildResult{}, err
+				}
+
+				layer.Metadata = map[string]interface{}{
+					"cache_sha": sha,
+				}
+			}
+
+			layer.Build = true
+			layer.Cache = true
+
+			layers = append(layers, layer)
+
 		}
 
-		bb.logger.Process("Resolving installation process")
+		if launch {
+			layer, err := ctx.Layers.Get("launch-pkgs")
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 
-		run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
-		if err != nil {
-			return packit.BuildResult{}, err
+			run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
+			if err != nil {
+				panic(err)
+			}
+
+			if run {
+				layer, err = layer.Reset()
+				if err != nil {
+					// return packit.BuildResult{}, err
+					panic(err)
+				}
+
+				_, err = clock.Measure(func() error {
+					return installProcess.Execute(projectPath, layer.Path, true)
+				})
+				if err != nil {
+					panic(err)
+					// return packit.BuildResult{}, err
+				}
+
+				layer.Metadata = map[string]interface{}{
+					"cache_sha": sha,
+				}
+			}
+
+			layer.Launch = true
+			layers = append(layers, layer)
 		}
 
-		if run {
-			bb.logger.Subprocess("Selected default build process: 'yarn install'")
-			bb.logger.Break()
-			bb.logger.Process("Executing build environment install process")
+	} else if linker == "node-modules" || linker == "pnpm" {
+		launch, build := entryResolver.MergeLayerTypes(yarninstall.PlanDependencyNodeModules, ctx.Plan.Entries)
 
-			layer, err = layer.Reset()
+		var currentModLayer string
+		if build {
+			layer, err := ctx.Layers.Get("build-modules")
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
 
-			currentModLayer, err = installProcess.SetupModules(projectPath, currentModLayer, layer.Path)
+			bb.logger.Process("Resolving installation process")
+
+			run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
 			if err != nil {
 				return packit.BuildResult{}, err
 			}
 
-			duration, err := clock.Measure(func() error {
-				return installProcess.Execute(projectPath, layer.Path, false)
-			})
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-
-			bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
-			bb.logger.Break()
-
-			layer.Metadata = map[string]interface{}{
-				"cache_sha": sha,
-			}
-
-			err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-
-			path := filepath.Join(layer.Path, "node_modules", ".bin")
-			layer.BuildEnv.Append("PATH", path, string(os.PathListSeparator))
-			layer.BuildEnv.Override("NODE_ENV", "development")
-
-			bb.logger.EnvironmentVariables(layer)
-
-			if sbomDisabled {
-				bb.logger.Subprocess("Skipping SBOM generation for Yarn Install")
+			if run {
+				bb.logger.Subprocess("Selected default build process: 'yarn install'")
 				bb.logger.Break()
+				bb.logger.Process("Executing build environment install process")
 
-			} else {
-				bb.logger.GeneratingSBOM(layer.Path)
-				var sbomContent sbom.SBOM
-				duration, err = clock.Measure(func() error {
-					sbomContent, err = sbomGenerator.Generate(ctx.WorkingDir)
-					return err
+				layer, err = layer.Reset()
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+
+				currentModLayer, err = installProcess.SetupModules(projectPath, currentModLayer, layer.Path)
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+
+				duration, err := clock.Measure(func() error {
+					return installProcess.Execute(projectPath, layer.Path, false)
 				})
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
+
 				bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
 				bb.logger.Break()
 
-				bb.logger.FormattingSBOM(ctx.BuildpackInfo.SBOMFormats...)
-				layer.SBOM, err = sbomContent.InFormats(ctx.BuildpackInfo.SBOMFormats...)
+				layer.Metadata = map[string]interface{}{
+					"cache_sha": sha,
+				}
+
+				err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
-			}
-		} else {
-			bb.logger.Process("Reusing cached layer %s", layer.Path)
 
-			err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-		}
+				path := filepath.Join(layer.Path, "node_modules", ".bin")
+				layer.BuildEnv.Append("PATH", path, string(os.PathListSeparator))
+				layer.BuildEnv.Override("NODE_ENV", "development")
 
-		layer.Build = true
-		layer.Cache = true
+				bb.logger.EnvironmentVariables(layer)
 
-		layers = append(layers, layer)
-	}
+				if sbomDisabled {
+					bb.logger.Subprocess("Skipping SBOM generation for Yarn Install")
+					bb.logger.Break()
 
-	if launch {
+				} else {
+					bb.logger.GeneratingSBOM(layer.Path)
+					var sbomContent sbom.SBOM
+					duration, err = clock.Measure(func() error {
+						sbomContent, err = sbomGenerator.Generate(ctx.WorkingDir)
+						return err
+					})
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+					bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
+					bb.logger.Break()
 
-		layer, err := ctx.Layers.Get("launch-modules")
-		if err != nil {
-			return packit.BuildResult{}, err
-		}
+					bb.logger.FormattingSBOM(ctx.BuildpackInfo.SBOMFormats...)
+					layer.SBOM, err = sbomContent.InFormats(ctx.BuildpackInfo.SBOMFormats...)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				}
+			} else {
+				bb.logger.Process("Reusing cached layer %s", layer.Path)
 
-		run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
-		if err != nil {
-			return packit.BuildResult{}, err
-		}
-
-		if run {
-			layer, err = layer.Reset()
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-
-			_, err = installProcess.SetupModules(projectPath, currentModLayer, layer.Path)
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-
-			duration, err := clock.Measure(func() error {
-				return installProcess.Execute(projectPath, layer.Path, true)
-			})
-			if err != nil {
-				return packit.BuildResult{}, err
-			}
-
-			bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
-			bb.logger.Break()
-
-			if !build {
 				err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
 			}
 
-			layer.Metadata = map[string]interface{}{
-				"cache_sha": sha,
+			layer.Build = true
+			layer.Cache = true
+
+			layers = append(layers, layer)
+		}
+
+		if launch {
+
+			layer, err := ctx.Layers.Get("launch-modules")
+			if err != nil {
+				return packit.BuildResult{}, err
 			}
 
-			path := filepath.Join(layer.Path, "node_modules", ".bin")
-			layer.LaunchEnv.Append("PATH", path, string(os.PathListSeparator))
-			layer.LaunchEnv.Default("NODE_PROJECT_PATH", projectPath)
+			run, sha, err := installProcess.ShouldRun(projectPath, layer.Metadata)
+			if err != nil {
+				return packit.BuildResult{}, err
+			}
 
-			if sbomDisabled {
-				bb.logger.Subprocess("Skipping SBOM generation for Yarn Install")
-				bb.logger.Break()
+			if run {
+				layer, err = layer.Reset()
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
 
-			} else {
-				bb.logger.GeneratingSBOM(layer.Path)
-				var sbomContent sbom.SBOM
-				duration, err = clock.Measure(func() error {
-					sbomContent, err = sbomGenerator.Generate(ctx.WorkingDir)
-					return err
+				_, err = installProcess.SetupModules(projectPath, currentModLayer, layer.Path)
+				if err != nil {
+					return packit.BuildResult{}, err
+				}
+
+				duration, err := clock.Measure(func() error {
+					return installProcess.Execute(projectPath, layer.Path, true)
 				})
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
+
 				bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
 				bb.logger.Break()
 
-				bb.logger.FormattingSBOM(ctx.BuildpackInfo.SBOMFormats...)
-				layer.SBOM, err = sbomContent.InFormats(ctx.BuildpackInfo.SBOMFormats...)
-				if err != nil {
-					return packit.BuildResult{}, err
+				if !build {
+					err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				}
+
+				layer.Metadata = map[string]interface{}{
+					"cache_sha": sha,
+				}
+
+				path := filepath.Join(layer.Path, "node_modules", ".bin")
+				layer.LaunchEnv.Append("PATH", path, string(os.PathListSeparator))
+				layer.LaunchEnv.Default("NODE_PROJECT_PATH", projectPath)
+
+				if sbomDisabled {
+					bb.logger.Subprocess("Skipping SBOM generation for Yarn Install")
+					bb.logger.Break()
+
+				} else {
+					bb.logger.GeneratingSBOM(layer.Path)
+					var sbomContent sbom.SBOM
+					duration, err = clock.Measure(func() error {
+						sbomContent, err = sbomGenerator.Generate(ctx.WorkingDir)
+						return err
+					})
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+					bb.logger.Action("Completed in %s", duration.Round(time.Millisecond))
+					bb.logger.Break()
+
+					bb.logger.FormattingSBOM(ctx.BuildpackInfo.SBOMFormats...)
+					layer.SBOM, err = sbomContent.InFormats(ctx.BuildpackInfo.SBOMFormats...)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				}
+
+				layer.ExecD = []string{filepath.Join(ctx.CNBPath, "bin", "setup-symlinks")}
+
+			} else {
+				bb.logger.Process("Reusing cached layer %s", layer.Path)
+				if !build {
+					err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
 				}
 			}
 
-			layer.ExecD = []string{filepath.Join(ctx.CNBPath, "bin", "setup-symlinks")}
-
-		} else {
-			bb.logger.Process("Reusing cached layer %s", layer.Path)
-			if !build {
-				err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
-				if err != nil {
-					return packit.BuildResult{}, err
-				}
-			}
+			layer.Launch = true
+			layers = append(layers, layer)
 		}
 
-		layer.Launch = true
-		layers = append(layers, layer)
 	}
 
 	return packit.BuildResult{

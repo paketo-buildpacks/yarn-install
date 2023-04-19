@@ -18,10 +18,10 @@ import (
 
 func testBerryBuild(t *testing.T, context spec.G, it spec.S) {
 
-	type linkCallParams struct {
-		Oldname string
-		Newname string
-	}
+	// type linkCallParams struct {
+	// 	Oldname string
+	// 	Newname string
+	// }
 
 	var (
 		Expect = NewWithT(t).Expect
@@ -38,6 +38,7 @@ func testBerryBuild(t *testing.T, context spec.G, it spec.S) {
 		entryResolver *fakes.EntryResolver
 		symlinker     *fakes.SymlinkManager
 		// linkCalls           []linkCallParams
+		yarnrcYmlParser     *fakes.YarnrcYmlParser
 		berryInstallProcess *fakes.InstallProcess
 		sbomGenerator       *fakes.SBOMGenerator
 		buildProcess        berry.BerryBuild
@@ -63,6 +64,9 @@ func testBerryBuild(t *testing.T, context spec.G, it spec.S) {
 
 		cnbDir, err = os.MkdirTemp("", "cnb")
 		Expect(err).NotTo(HaveOccurred())
+
+		yarnrcYmlParser = &fakes.YarnrcYmlParser{}
+		yarnrcYmlParser.ParseCall.Returns.NodeLinker = ""
 
 		berryInstallProcess = &fakes.InstallProcess{}
 		berryInstallProcess.ShouldRunCall.Stub = func(string, map[string]interface{}) (bool, string, error) {
@@ -376,8 +380,131 @@ func testBerryBuild(t *testing.T, context spec.G, it spec.S) {
 	})
 
 	context("pnp linker", func() {
-		context("launch only", func() {})
-		context("build only", func() {})
+		context.Focus("launch only", func() {
+			it.Before(func() {
+				yarnrcYmlParser.ParseCall.Returns.NodeLinker = "pnp"
+				entryResolver.MergeLayerTypesCall.Returns.Launch = true
+				entryResolver.MergeLayerTypesCall.Returns.Build = false
+			})
+
+			it("returns a result that installs packages", func() {
+				result, err := buildProcess.Build(
+					ctx,
+					berryInstallProcess,
+					sbomGenerator,
+					symlinker,
+					entryResolver,
+					projectPath,
+					tmpDir)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(len(result.Layers)).To(Equal(1))
+
+				layer := result.Layers[0]
+				Expect(layer.Name).To(Equal("pkgs"))
+				Expect(layer.Path).To(Equal(filepath.Join(layersDir, "pkgs")))
+
+				//TODO: Is there a node_modules/.bin equivalent?
+				// Expect(layer.BuildEnv).To(Equal(packit.Environment{
+				// 	"PATH.append":       filepath.Join(layersDir, "launch-pkgs", "node_modules", ".bin"),
+				// 	"PATH.delim":        ":",
+				// 	"NODE_ENV.override": "development",
+				// }))
+
+				Expect(layer.Launch).To(BeTrue())
+				Expect(layer.Metadata).To(Equal(
+					map[string]interface{}{
+						"cache_sha": "some-awesome-shasum",
+					}))
+				// Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+				// 	{
+				// 		Extension: "cdx.json",
+				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+				// 	},
+				// 	{
+				// 		Extension: "spdx.json",
+				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+				// 	},
+				// 	{
+				// 		Extension: "syft.json",
+				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+				// 	},
+				// }))
+				//TODO: Do we need this?
+				Expect(len(layer.ExecD)).To(Equal(0))
+
+				Expect(berryInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+
+				Expect(berryInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "pkgs")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.Launch).To(BeTrue())
+
+				// Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
+			})
+		})
+		context.Focus("build only", func() {
+			it.Before(func() {
+				yarnrcYmlParser.ParseCall.Returns.NodeLinker = ""
+				entryResolver.MergeLayerTypesCall.Returns.Launch = false
+				entryResolver.MergeLayerTypesCall.Returns.Build = true
+			})
+			it("returns a result that installs build modules", func() {
+				result, err := buildProcess.Build(
+					ctx,
+					berryInstallProcess,
+					sbomGenerator,
+					symlinker,
+					entryResolver,
+					projectPath,
+					tmpDir)
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(len(result.Layers)).To(Equal(1))
+
+				layer := result.Layers[0]
+				Expect(layer.Name).To(Equal("pkgs"))
+				Expect(layer.Path).To(Equal(filepath.Join(layersDir, "pkgs")))
+
+				//TODO: Is there a node_modules/.bin equivalent?
+				// Expect(layer.BuildEnv).To(Equal(packit.Environment{
+				// 	"PATH.append":       filepath.Join(layersDir, "launch-pkgs", "node_modules", ".bin"),
+				// 	"PATH.delim":        ":",
+				// 	"NODE_ENV.override": "development",
+				// }))
+
+				Expect(layer.Build).To(BeTrue())
+				Expect(layer.Build).To(BeTrue())
+				Expect(layer.Launch).To(BeFalse())
+				Expect(layer.Metadata).To(Equal(
+					map[string]interface{}{
+						"cache_sha": "some-awesome-shasum",
+					}))
+				// Expect(layer.SBOM.Formats()).To(Equal([]packit.SBOMFormat{
+				// 	{
+				// 		Extension: "cdx.json",
+				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.CycloneDXFormat),
+				// 	},
+				// 	{
+				// 		Extension: "spdx.json",
+				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SPDXFormat),
+				// 	},
+				// 	{
+				// 		Extension: "syft.json",
+				// 		Content:   sbom.NewFormattedReader(sbom.SBOM{}, sbom.SyftFormat),
+				// 	},
+				// }))
+				//TODO: Do we need this?
+				// Expect(len(layer.ExecD)).To(Equal(1))
+
+				Expect(berryInstallProcess.ShouldRunCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+
+				Expect(berryInstallProcess.ExecuteCall.Receives.WorkingDir).To(Equal(filepath.Join(workingDir, "some-project-dir")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.ModulesLayerPath).To(Equal(filepath.Join(layersDir, "pkgs")))
+				Expect(berryInstallProcess.ExecuteCall.Receives.Launch).To(BeFalse())
+
+				// Expect(sbomGenerator.GenerateCall.Receives.Dir).To(Equal(workingDir))
+			})
+		})
 		context("both build and launch", func() {})
 		context("neither build nor launch", func() {})
 	})

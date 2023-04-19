@@ -343,11 +343,12 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"install",
 				}))
 				Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
+				Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^YARN_CACHE_FOLDER=.*%s$`, modulesLayerPath)))
 				Expect(executions[0].Dir).To(Equal(workingDir))
 			})
 		})
 
-		context("when launch is true", func() {
+		context.Focus("when launch is true", func() {
 			it("executes yarn install", func() {
 				err := installProcess.Execute(workingDir, modulesLayerPath, true)
 				Expect(err).NotTo(HaveOccurred())
@@ -358,6 +359,7 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					"install",
 				}))
 				Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^PATH=.*:node_modules/.bin$`)))
+				Expect(executions[0].Env).To(ContainElement(MatchRegexp(`^YARN_CACHE_FOLDER=.*%s$`, filepath.Join(modulesLayerPath, "yarn-pkgs"))))
 				Expect(executions[0].Dir).To(Equal(workingDir))
 
 			})

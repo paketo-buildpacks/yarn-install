@@ -96,6 +96,7 @@ func TestIntegration(t *testing.T) {
 
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
 	suite("BerryNodeModules", testBerryNodeModulesApp)
+	suite("BerryPlugnPlay", testBerrySimplePNPApp)
 	suite("Caching", testCaching)
 	suite("DevDependenciesDuringBuild", testDevDependenciesDuringBuild)
 	suite("Logging", testLogging)
