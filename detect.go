@@ -38,7 +38,7 @@ func Detect(projectPathParser PathParser, versionParser VersionParser) packit.De
 		}
 
 		if !exists {
-			return packit.DetectResult{}, packit.Fail.WithMessage(`no "yarn.lock" file found in the project path %s`, projectPath)
+			return packit.DetectResult{}, packit.Fail.WithMessage("no 'yarn.lock' file found in the project path %s", projectPath)
 		}
 
 		nodeVersion, err := versionParser.ParseVersion(filepath.Join(projectPath, "package.json"))
