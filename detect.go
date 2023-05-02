@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/paketo-buildpacks/packit/v2"
+	"github.com/paketo-buildpacks/packit/v2/fs"
 )
 
 type BuildPlanMetadata struct {
@@ -31,12 +32,13 @@ func Detect(projectPathParser PathParser, versionParser VersionParser) packit.De
 			return packit.DetectResult{}, err
 		}
 
-		_, err = os.Stat(filepath.Join(projectPath, "yarn.lock"))
+		exists, err := fs.Exists(filepath.Join(projectPath, "yarn.lock"))
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				return packit.DetectResult{}, packit.Fail
-			}
 			return packit.DetectResult{}, err
+		}
+
+		if !exists {
+			return packit.DetectResult{}, packit.Fail.WithMessage(`no "yarn.lock" file found in the project path %s`, projectPath)
 		}
 
 		nodeVersion, err := versionParser.ParseVersion(filepath.Join(projectPath, "package.json"))
