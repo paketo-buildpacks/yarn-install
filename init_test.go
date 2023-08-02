@@ -13,9 +13,7 @@ func TestUnitYarn(t *testing.T) {
 	suite("CacheHandler", testCacheHandler)
 	suite("Detect", testDetect)
 	suite("InstallProcess", testInstallProcess)
-	suite("PackageJSONParser", testPackageJSONParser)
 	suite("PackageManagerConfigurationManager", testPackageManagerConfigurationManager)
-	suite("ProjectPathParser", testProjectPathParser)
 	suite("Symlinker", testSymlinker)
 	suite.Run(t)
 }
