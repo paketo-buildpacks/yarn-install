@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/paketo-buildpacks/libnodejs"
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/fs"
 )
@@ -15,19 +16,9 @@ type BuildPlanMetadata struct {
 	Build         bool   `toml:"build"`
 }
 
-//go:generate faux --interface VersionParser --output fakes/version_parser.go
-type VersionParser interface {
-	ParseVersion(path string) (version string, err error)
-}
-
-//go:generate faux --interface PathParser --output fakes/path_parser.go
-type PathParser interface {
-	Get(path string) (projectPath string, err error)
-}
-
-func Detect(projectPathParser PathParser, versionParser VersionParser) packit.DetectFunc {
+func Detect() packit.DetectFunc {
 	return func(context packit.DetectContext) (packit.DetectResult, error) {
-		projectPath, err := projectPathParser.Get(context.WorkingDir)
+		projectPath, err := libnodejs.FindProjectPath(context.WorkingDir)
 		if err != nil {
 			return packit.DetectResult{}, err
 		}
@@ -41,14 +32,15 @@ func Detect(projectPathParser PathParser, versionParser VersionParser) packit.De
 			return packit.DetectResult{}, packit.Fail.WithMessage("no 'yarn.lock' file found in the project path %s", projectPath)
 		}
 
-		nodeVersion, err := versionParser.ParseVersion(filepath.Join(projectPath, "package.json"))
+		pkg, err := libnodejs.ParsePackageJSON(projectPath)
 		if err != nil {
 			if errors.Is(err, os.ErrNotExist) {
-				return packit.DetectResult{}, packit.Fail
+				return packit.DetectResult{}, packit.Fail.WithMessage("no 'package.json' found in project path %s", filepath.Join(projectPath))
 			}
 
 			return packit.DetectResult{}, err
 		}
+		nodeVersion := pkg.GetVersion()
 
 		nodeRequirement := packit.BuildPlanRequirement{
 			Name: PlanDependencyNode,

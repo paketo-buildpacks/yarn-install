@@ -23,10 +23,8 @@ func (s SBOMGenerator) Generate(path string) (sbom.SBOM, error) {
 }
 
 func main() {
-	packageJSONParser := yarninstall.NewPackageJSONParser()
 	logger := scribe.NewEmitter(os.Stdout).WithLevel(os.Getenv("BP_LOG_LEVEL"))
 	installProcess := yarninstall.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
-	projectPathParser := yarninstall.NewProjectPathParser()
 	sbomGenerator := SBOMGenerator{}
 	symlinker := yarninstall.NewSymlinker()
 	packageManagerConfigurationManager := yarninstall.NewPackageManagerConfigurationManager(servicebindings.NewResolver(), logger)
@@ -39,12 +37,8 @@ func main() {
 	}
 
 	packit.Run(
-		yarninstall.Detect(
-			projectPathParser,
-			packageJSONParser,
-		),
-		yarninstall.Build(projectPathParser,
-			entryResolver,
+		yarninstall.Detect(),
+		yarninstall.Build(entryResolver,
 			packageManagerConfigurationManager,
 			home,
 			symlinker,

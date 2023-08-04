@@ -3,6 +3,7 @@ package yarninstall_test
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -48,7 +49,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		entryResolver        *fakes.EntryResolver
 		installProcess       *fakes.InstallProcess
 		linkCalls            []linkCallParams
-		pathParser           *fakes.PathParser
 		sbomGenerator        *fakes.SBOMGenerator
 		symlinker            *fakes.SymlinkManager
 		unlinkPaths          []string
@@ -83,8 +83,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 		buffer = bytes.NewBuffer(nil)
 
-		pathParser = &fakes.PathParser{}
-		pathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "some-project-dir")
+		t.Setenv("BP_NODE_PROJECT_PATH", "some-project-dir")
 
 		sbomGenerator = &fakes.SBOMGenerator{}
 		sbomGenerator.GenerateCall.Returns.SBOM = sbom.SBOM{}
@@ -113,7 +112,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		}
 
 		build = yarninstall.Build(
-			pathParser,
 			entryResolver,
 			configurationManager,
 			homeDir,
@@ -254,8 +252,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			}`))
 
 			Expect(len(layer.ExecD)).To(Equal(0))
-
-			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
 
 			Expect(configurationManager.DeterminePathCall.CallCount).To(Equal(2))
 
@@ -403,8 +399,6 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				}
 			}`))
 
-			Expect(pathParser.GetCall.Receives.Path).To(Equal(workingDir))
-
 			Expect(configurationManager.DeterminePathCall.CallCount).To(Equal(2))
 
 			Expect(determinePathCalls[0].Typ).To(Equal("npmrc"))
@@ -483,7 +477,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 		it.Before(func() {
 			entryResolver.MergeLayerTypesCall.Returns.Launch = true
 			entryResolver.MergeLayerTypesCall.Returns.Build = true
-			pathParser.GetCall.Returns.ProjectPath = workingDir
+			t.Setenv("BP_NODE_PROJECT_PATH", "")
 
 			installProcess.SetupModulesCall.Stub = func(w string, c string, n string) (string, error) {
 				setupModulesCalls = append(setupModulesCalls, setupModulesParams{
@@ -656,23 +650,23 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 	context("failure cases", func() {
 
-		context("when the path parser returns an error", func() {
+		context("when the project path parser provided fails", func() {
 			it.Before(func() {
-				pathParser.GetCall.Returns.Err = errors.New("path-parser-error")
+				t.Setenv("BP_NODE_PROJECT_PATH", "does_not_exist")
 			})
 
 			it("returns an error", func() {
 				_, err := build(packit.BuildContext{
 					WorkingDir: workingDir,
-					CNBPath:    cnbDir,
 					Layers:     packit.Layers{Path: layersDir},
+					CNBPath:    cnbDir,
 					Plan: packit.BuildpackPlan{
 						Entries: []packit.BuildpackPlanEntry{
 							{Name: "node_modules"},
 						},
 					},
 				})
-				Expect(err).To(MatchError("path-parser-error"))
+				Expect(err).To(MatchError(ContainSubstring(fmt.Sprintf("could not find project path \"%s/does_not_exist\": stat %s/does_not_exist: no such file or directory", workingDir, workingDir))))
 			})
 		})
 
@@ -849,8 +843,10 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
 						CNBPath: cnbDir,
+						WorkingDir: workingDir,
 						Plan: packit.BuildpackPlan{
 							Entries: []packit.BuildpackPlanEntry{
+
 								{Name: "node_modules"},
 							},
 						},
@@ -868,6 +864,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
 						CNBPath: cnbDir,
+						WorkingDir: workingDir,
 						Plan: packit.BuildpackPlan{
 							Entries: []packit.BuildpackPlanEntry{
 								{Name: "node_modules"},
@@ -923,6 +920,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			context("when the BOM cannot be formatted", func() {
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
+						WorkingDir: workingDir,
 						BuildpackInfo: packit.BuildpackInfo{
 							SBOMFormats: []string{"random-format"},
 						},
@@ -943,6 +941,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
+						WorkingDir: workingDir,
 						BuildpackInfo: packit.BuildpackInfo{
 							SBOMFormats: []string{"random-format"},
 						},
@@ -1013,6 +1012,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
 						CNBPath: cnbDir,
+						WorkingDir: workingDir,
 						Plan: packit.BuildpackPlan{
 							Entries: []packit.BuildpackPlanEntry{
 								{Name: "node_modules"},
@@ -1032,6 +1032,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
 						CNBPath: cnbDir,
+						WorkingDir: workingDir,
 						Plan: packit.BuildpackPlan{
 							Entries: []packit.BuildpackPlanEntry{
 								{Name: "node_modules"},
@@ -1087,6 +1088,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 			context("when the BOM cannot be formatted", func() {
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
+						WorkingDir: workingDir,
 						BuildpackInfo: packit.BuildpackInfo{
 							SBOMFormats: []string{"random-format"},
 						},
@@ -1107,6 +1109,7 @@ func testBuild(t *testing.T, context spec.G, it spec.S) {
 
 				it("returns an error", func() {
 					_, err := build(packit.BuildContext{
+						WorkingDir: workingDir,
 						BuildpackInfo: packit.BuildpackInfo{
 							SBOMFormats: []string{"random-format"},
 						},

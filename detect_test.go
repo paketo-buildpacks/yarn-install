@@ -1,14 +1,12 @@
 package yarninstall_test
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/paketo-buildpacks/packit/v2"
 	yarninstall "github.com/paketo-buildpacks/yarn-install"
-	"github.com/paketo-buildpacks/yarn-install/fakes"
 	"github.com/sclevine/spec"
 
 	. "github.com/onsi/gomega"
@@ -18,8 +16,7 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	var (
 		Expect = NewWithT(t).Expect
 
-		versionParser     *fakes.VersionParser
-		projectPathParser *fakes.PathParser
+		filePath	  string
 		workingDir        string
 		detect            packit.DetectFunc
 	)
@@ -33,13 +30,16 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 		err = os.WriteFile(filepath.Join(workingDir, "custom", "yarn.lock"), []byte{}, 0644)
 		Expect(err).NotTo(HaveOccurred())
 
-		versionParser = &fakes.VersionParser{}
-		versionParser.ParseVersionCall.Returns.Version = "some-version"
+		filePath = filepath.Join(workingDir, "custom", "package.json")
+		Expect(os.WriteFile(filePath, []byte(`{
+			"engines": {
+				"node": "some-version"
+			}
+		}`), 0600)).To(Succeed())
 
-		projectPathParser = &fakes.PathParser{}
-		projectPathParser.GetCall.Returns.ProjectPath = filepath.Join(workingDir, "custom")
+		t.Setenv("BP_NODE_PROJECT_PATH", "custom")
 
-		detect = yarninstall.Detect(projectPathParser, versionParser)
+		detect = yarninstall.Detect()
 	})
 
 	it("returns a plan that provides node_modules and requires node and yarn", func() {
@@ -69,13 +69,12 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 			},
 		}))
 
-		Expect(projectPathParser.GetCall.Receives.Path).To(Equal(filepath.Join(workingDir)))
-		Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
 	})
 
 	context("when the node version is not in the package.json file", func() {
 		it.Before(func() {
-			versionParser.ParseVersionCall.Returns.Version = ""
+			Expect(os.WriteFile(filePath, []byte(`{
+			}`), 0600)).To(Succeed())
 		})
 
 		it("returns a plan that provides node_modules", func() {
@@ -102,9 +101,6 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 					},
 				},
 			}))
-
-			Expect(projectPathParser.GetCall.Receives.Path).To(Equal(filepath.Join(workingDir)))
-			Expect(versionParser.ParseVersionCall.Receives.Path).To(Equal(filepath.Join(workingDir, "custom", "package.json")))
 		})
 	})
 
@@ -123,15 +119,14 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 	context("when there is no package.json file", func() {
 		it.Before(func() {
-			_, err := os.Stat("/no/such/package.json")
-			versionParser.ParseVersionCall.Returns.Err = err
+			Expect(os.Remove(filePath)).To(Succeed())
 		})
 
 		it("fails detection", func() {
 			_, err := detect(packit.DetectContext{
 				WorkingDir: workingDir,
 			})
-			Expect(err).To(MatchError(packit.Fail))
+			Expect(err).To(MatchError(packit.Fail.WithMessage("no 'package.json' found in project path %s", filepath.Join(workingDir, "custom"))))
 		})
 	})
 
@@ -155,27 +150,31 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 
 		context("when the package.json cannot be read", func() {
 			it.Before(func() {
-				versionParser.ParseVersionCall.Returns.Err = errors.New("failed to read package.json")
+				Expect(os.Chmod(filePath, 0000)).To(Succeed())
+			})
+
+			it.After(func() {
+				Expect(os.Chmod(workingDir, os.ModePerm)).To(Succeed())
 			})
 
 			it("returns an error", func() {
 				_, err := detect(packit.DetectContext{
 					WorkingDir: workingDir,
 				})
-				Expect(err).To(MatchError("failed to read package.json"))
+				Expect(err).To(MatchError(ContainSubstring("permission denied")))
 			})
 		})
 
 		context("when the project path cannot be found", func() {
 			it.Before(func() {
-				projectPathParser.GetCall.Returns.Err = errors.New("couldn't find directory")
+				t.Setenv("BP_NODE_PROJECT_PATH", "does_not_exist")
 			})
 
 			it("returns an error", func() {
 				_, err := detect(packit.DetectContext{
-					WorkingDir: workingDir,
+					WorkingDir: "/working-dir",
 				})
-				Expect(err).To(MatchError("couldn't find directory"))
+				Expect(err).To(MatchError("could not find project path \"/working-dir/does_not_exist\": stat /working-dir/does_not_exist: no such file or directory"))
 			})
 		})
 	})

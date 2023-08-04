@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/paketo-buildpacks/libnodejs"
 	"github.com/paketo-buildpacks/packit/v2"
 	"github.com/paketo-buildpacks/packit/v2/chronos"
 	"github.com/paketo-buildpacks/packit/v2/sbom"
@@ -41,8 +42,7 @@ type ConfigurationManager interface {
 	DeterminePath(typ, platformDir, entry string) (path string, err error)
 }
 
-func Build(pathParser PathParser,
-	entryResolver EntryResolver,
+func Build( entryResolver EntryResolver,
 	configurationManager ConfigurationManager,
 	homeDir string,
 	symlinker SymlinkManager,
@@ -54,7 +54,7 @@ func Build(pathParser PathParser,
 	return func(context packit.BuildContext) (packit.BuildResult, error) {
 		logger.Title("%s %s", context.BuildpackInfo.Name, context.BuildpackInfo.Version)
 
-		projectPath, err := pathParser.Get(context.WorkingDir)
+		projectPath, err := libnodejs.FindProjectPath(context.WorkingDir)
 		if err != nil {
 			return packit.BuildResult{}, err
 		}
