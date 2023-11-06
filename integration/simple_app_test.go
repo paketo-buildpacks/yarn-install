@@ -27,6 +27,8 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 		name    string
 		source  string
 		sbomDir string
+
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
@@ -40,6 +42,10 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 		sbomDir, err = os.MkdirTemp("", "sbom")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(os.Chmod(sbomDir, os.ModePerm)).To(Succeed())
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+		}
 	})
 
 	it.After(func() {
@@ -57,13 +63,16 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			image, _, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				WithSBOMOutputDir(sbomDir).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
@@ -101,13 +110,16 @@ func testSimpleApp(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			image, _, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				WithSBOMOutputDir(sbomDir).
 				WithEnv(map[string]string{"BP_DISABLE_SBOM": "true"}).
 				Execute(name, source)

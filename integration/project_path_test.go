@@ -20,11 +20,17 @@ func testProjectPathApp(t *testing.T, context spec.G, it spec.S) {
 
 		pack   occam.Pack
 		docker occam.Docker
+
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
 		pack = occam.NewPack()
 		docker = occam.NewDocker()
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+		}
 	})
 
 	context("when the node_modules are NOT vendored", func() {
@@ -55,13 +61,16 @@ func testProjectPathApp(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			image, _, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				WithEnv(map[string]string{"BP_NODE_PROJECT_PATH": "hello_world_server"}).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
@@ -102,17 +111,21 @@ func testProjectPathApp(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		it("builds and runs using given project path", func() {
+			var err error
 			source, err = occam.Source(filepath.Join("testdata", "custom_project_path_app"))
 			Expect(err).NotTo(HaveOccurred())
 
 			image, _, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				WithEnv(map[string]string{"BP_NODE_PROJECT_PATH": "bye_vendored_server"}).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())

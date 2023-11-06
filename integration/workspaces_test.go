@@ -20,8 +20,9 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 		Expect     = NewWithT(t).Expect
 		Eventually = NewWithT(t).Eventually
 
-		pack   occam.Pack
-		docker occam.Docker
+		pack       occam.Pack
+		docker     occam.Docker
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
@@ -42,6 +43,10 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 			var err error
 			name, err = occam.RandomName()
 			Expect(err).NotTo(HaveOccurred())
+
+			if settings.Extensions.UbiNodejsExtension.Online != "" {
+				pullPolicy = "always"
+			}
 		})
 
 		it.After(func() {
@@ -52,6 +57,13 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		context("when offline", func() {
+
+			//UBI does not support offline installation at the moment,
+			//so we are skipping it.
+			if settings.Extensions.UbiNodejsExtension.Online != "" {
+				return
+			}
+
 			it("should correctly install node modules in respective workspaces", func() {
 				var err error
 				source, err = occam.Source(filepath.Join("testdata", "with_yarn_workspaces_offline"))
@@ -65,6 +77,7 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 						buildPlanURI,
 					).
 					WithNetwork("none").
+					WithPullPolicy(pullPolicy).
 					Execute(name, source)
 				Expect(err).NotTo(HaveOccurred())
 
@@ -96,12 +109,16 @@ func testWorkspaces(t *testing.T, context spec.G, it spec.S) {
 				Expect(err).NotTo(HaveOccurred())
 
 				image, _, err = pack.Build.
+					WithExtensions(
+						settings.Extensions.UbiNodejsExtension.Online,
+					).
 					WithBuildpacks(
 						nodeURI,
 						yarnURI,
 						buildpackURI,
 						buildPlanURI,
 					).
+					WithPullPolicy(pullPolicy).
 					Execute(name, source)
 				Expect(err).NotTo(HaveOccurred())
 

@@ -24,24 +24,33 @@ func testServiceBindings(t *testing.T, context spec.G, it spec.S) {
 
 		pack   occam.Pack
 		docker occam.Docker
+
+		image     occam.Image
+		container occam.Container
+
+		name   string
+		source string
+
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
-		pack = occam.NewPack().WithVerbose()
+		pack = occam.NewPack().WithVerbose().WithNoColor()
 		docker = occam.NewDocker()
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+		}
 	})
 
 	context("when service bindings are provided", func() {
-		var (
-			image     occam.Image
-			container occam.Container
-
-			name    string
-			source  string
-			binding string
-		)
+		var binding string
 
 		it.Before(func() {
+
+			pack = occam.NewPack().WithNoColor()
+			docker = occam.NewDocker()
+
 			var err error
 			name, err = occam.RandomName()
 			Expect(err).NotTo(HaveOccurred())
@@ -126,8 +135,11 @@ leftpad@~0.0.1:
 				`, serverURI)), os.ModePerm)).To(Succeed())
 
 				build = pack.Build.
+					WithExtensions(
+						settings.Extensions.UbiNodejsExtension.Online,
+					).
 					WithBuildpacks(nodeURI, yarnURI, buildpackURI, buildPlanURI).
-					WithPullPolicy("never").
+					WithPullPolicy(pullPolicy).
 					WithEnv(map[string]string{
 						"SERVICE_BINDING_ROOT": "/bindings",
 					}).
@@ -163,8 +175,11 @@ leftpad@~0.0.1:
 				Expect(err).NotTo(HaveOccurred())
 
 				image, _, err = pack.Build.
+					WithExtensions(
+						settings.Extensions.UbiNodejsExtension.Online,
+					).
 					WithBuildpacks(nodeURI, yarnURI, buildpackURI, buildPlanURI).
-					WithPullPolicy("never").
+					WithPullPolicy(pullPolicy).
 					WithEnv(map[string]string{
 						"SERVICE_BINDING_ROOT": "/bindings",
 					}).
