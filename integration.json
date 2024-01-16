@@ -1,6 +1,10 @@
 {
-  "builder": "index.docker.io/paketobuildpacks/builder-jammy-buildpackless-full",
-  "build-plan": "github.com/ForestEckhardt/build-plan",
+  "builders": [
+    "index.docker.io/paketocommunity/builder-ubi-buildpackless-base:latest",
+    "index.docker.io/paketobuildpacks/builder-jammy-buildpackless-full"
+  ],
+  "ubi-nodejs-extension": "github.com/paketo-community/ubi-nodejs-extension",
+  "build-plan": "github.com/paketo-community/build-plan",
   "node-engine": "github.com/paketo-buildpacks/node-engine",
   "yarn": "github.com/paketo-buildpacks/yarn"
 }

@@ -16,6 +16,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var settings struct {
+	Extensions struct {
+		UbiNodejsExtension struct {
+			Online string
+		}
+	}
+}
+
 var (
 	buildpackURI        string
 	buildpackOfflineURI string
@@ -38,9 +46,10 @@ func TestIntegration(t *testing.T) {
 	format.MaxLength = 0
 
 	var config struct {
-		BuildPlan  string `json:"build-plan"`
-		NodeEngine string `json:"node-engine"`
-		Yarn       string `json:"yarn"`
+		BuildPlan          string `json:"build-plan"`
+		NodeEngine         string `json:"node-engine"`
+		Yarn               string `json:"yarn"`
+		UbiNodejsExtension string `json:"ubi-nodejs-extension"`
 	}
 
 	file, err := os.Open("./../integration.json")
@@ -58,6 +67,17 @@ func TestIntegration(t *testing.T) {
 	Expect(err).NotTo(HaveOccurred())
 
 	buildpackStore := occam.NewBuildpackStore()
+
+	pack := occam.NewPack()
+
+	builder, err := pack.Builder.Inspect.Execute()
+	Expect(err).NotTo(HaveOccurred())
+
+	if builder.BuilderName == "index.docker.io/paketocommunity/builder-ubi-buildpackless-base:latest" {
+		settings.Extensions.UbiNodejsExtension.Online, err = buildpackStore.Get.
+			Execute(config.UbiNodejsExtension)
+		Expect(err).ToNot(HaveOccurred())
+	}
 
 	buildpackURI, err = buildpackStore.Get.
 		WithVersion("1.2.3").

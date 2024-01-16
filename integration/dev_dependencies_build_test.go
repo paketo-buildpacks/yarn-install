@@ -20,11 +20,17 @@ func testDevDependenciesDuringBuild(t *testing.T, context spec.G, it spec.S) {
 
 		pack   occam.Pack
 		docker occam.Docker
+
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
 		pack = occam.NewPack()
 		docker = occam.NewDocker()
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+		}
 	})
 
 	context("when the node_modules are needed during build", func() {
@@ -55,13 +61,16 @@ func testDevDependenciesDuringBuild(t *testing.T, context spec.G, it spec.S) {
 			Expect(os.RemoveAll(sbomDir)).To(Succeed())
 		})
 
-		it("should build a working OCI image for a app that requires devDependencies during build", func() {
+		it("should build a working OCI image for an app that requires devDependencies during build", func() {
 			var err error
 			var logs fmt.Stringer
 			source, err = occam.Source(filepath.Join("testdata", "dev_dependencies_during_build"))
 			Expect(err).NotTo(HaveOccurred())
 
 			image, logs, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
@@ -69,7 +78,7 @@ func testDevDependenciesDuringBuild(t *testing.T, context spec.G, it spec.S) {
 					buildPlanURI,
 					yarnList,
 				).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				WithSBOMOutputDir(sbomDir).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
