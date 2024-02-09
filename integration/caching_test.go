@@ -27,6 +27,9 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 
 		name   string
 		source string
+
+		pullPolicy       = "never"
+		extenderBuildStr = ""
 	)
 
 	it.Before(func() {
@@ -39,6 +42,11 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 		var err error
 		name, err = occam.RandomName()
 		Expect(err).NotTo(HaveOccurred())
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+			extenderBuildStr = "[extender (build)] "
+		}
 	})
 
 	it.After(func() {
@@ -63,6 +71,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			build := pack.WithNoColor().Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
+				WithPullPolicy(pullPolicy).
 				WithEnv(map[string]string{"NODE_ENV": "development"}).
 				WithBuildpacks(nodeURI, yarnURI, buildpackURI, buildPlanURI)
 
@@ -130,6 +142,10 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			build := pack.WithNoColor().Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
+				WithPullPolicy(pullPolicy).
 				WithEnv(map[string]string{"YARN_IGNORE_SCRIPTS": "true"}).
 				WithBuildpacks(nodeURI, yarnURI, buildpackURI, buildPlanURI)
 
@@ -197,7 +213,12 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				source, err = occam.Source(filepath.Join("testdata", "simple_app"))
 				Expect(err).NotTo(HaveOccurred())
 
-				build := pack.WithNoColor().Build.WithBuildpacks(nodeURI, yarnURI, buildpackURI, buildPlanURI)
+				build := pack.WithNoColor().Build.
+					WithExtensions(
+						settings.Extensions.UbiNodejsExtension.Online,
+					).
+					WithPullPolicy(pullPolicy).
+					WithBuildpacks(nodeURI, yarnURI, buildpackURI, buildPlanURI)
 
 				firstImage, firstLogs, err := build.Execute(name, source)
 				Expect(err).NotTo(HaveOccurred(), firstLogs.String)
@@ -249,12 +270,12 @@ func testCaching(t *testing.T, context spec.G, it spec.S) {
 				Expect(secondImage.ID).To(Equal(firstImage.ID), fmt.Sprintf("%s\n\n%s", firstLogs, secondLogs))
 
 				Expect(secondLogs).To(ContainLines(
-					fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, "1.2.3"),
-					"  Resolving installation process",
-					"    Process inputs:",
-					"      yarn.lock -> Found",
-					"",
-					fmt.Sprintf("  Reusing cached layer /layers/%s/launch-modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+					fmt.Sprintf("%s%s %s", extenderBuildStr, buildpackInfo.Buildpack.Name, "1.2.3"),
+					extenderBuildStr+"  Resolving installation process",
+					extenderBuildStr+"    Process inputs:",
+					extenderBuildStr+"      yarn.lock -> Found",
+					extenderBuildStr+"",
+					fmt.Sprintf(extenderBuildStr+"  Reusing cached layer /layers/%s/launch-modules", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 				))
 			})
 		})

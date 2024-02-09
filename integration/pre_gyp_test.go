@@ -21,11 +21,17 @@ func testPreGyp(t *testing.T, context spec.G, it spec.S) {
 
 		pack   occam.Pack
 		docker occam.Docker
+
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
 		pack = occam.NewPack()
 		docker = occam.NewDocker()
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+		}
 	})
 
 	context("when the app uses a binary in a pre-install script like node-pre-gyp", func() {
@@ -56,13 +62,16 @@ func testPreGyp(t *testing.T, context spec.G, it spec.S) {
 			Expect(err).NotTo(HaveOccurred())
 
 			image, _, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 

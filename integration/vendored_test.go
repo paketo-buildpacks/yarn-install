@@ -20,14 +20,27 @@ func testVendored(t *testing.T, context spec.G, it spec.S) {
 
 		pack   occam.Pack
 		docker occam.Docker
+
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
 		pack = occam.NewPack()
 		docker = occam.NewDocker()
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+		}
 	})
 
 	context("when the node_modules are vendored", func() {
+
+		//UBI does not support offline installation at the moment,
+		//so we are skipping it.
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			return
+		}
+
 		var (
 			image     occam.Image
 			container occam.Container
@@ -64,6 +77,7 @@ func testVendored(t *testing.T, context spec.G, it spec.S) {
 					buildpackOfflineURI,
 					buildPlanURI,
 				).
+				WithPullPolicy(pullPolicy).
 				WithNetwork("none").
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())

@@ -32,12 +32,18 @@ func testModuleBinaries(t *testing.T, context spec.G, it spec.S) {
 
 			name   string
 			source string
+
+			pullPolicy = "never"
 		)
 
 		it.Before(func() {
 			var err error
 			name, err = occam.RandomName()
 			Expect(err).NotTo(HaveOccurred())
+
+			if settings.Extensions.UbiNodejsExtension.Online != "" {
+				pullPolicy = "always"
+			}
 		})
 
 		it.After(func() {
@@ -54,13 +60,16 @@ func testModuleBinaries(t *testing.T, context spec.G, it spec.S) {
 
 			var logs fmt.Stringer
 			image, logs, err = pack.WithVerbose().WithNoColor().Build.
-				WithPullPolicy("never").
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
+				WithPullPolicy(pullPolicy).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred(), logs.String)
 

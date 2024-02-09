@@ -22,11 +22,17 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 
 		pack   occam.Pack
 		docker occam.Docker
+
+		pullPolicy = "never"
 	)
 
 	it.Before(func() {
 		pack = occam.NewPack()
 		docker = occam.NewDocker()
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+		}
 	})
 
 	context("when using yarn workspaces with nohoist", func() {
@@ -46,6 +52,9 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 			source, err = occam.Source(filepath.Join("testdata", "with_workspaces_nohoist"))
 			Expect(err).NotTo(HaveOccurred())
 
+			if settings.Extensions.UbiNodejsExtension.Online != "" {
+				pullPolicy = "always"
+			}
 		})
 
 		it.After(func() {
@@ -58,12 +67,16 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 		it("should correctly run the app", func() {
 			var err error
 			image, _, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
+				WithPullPolicy(pullPolicy).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
@@ -89,12 +102,17 @@ func testNoHoist(t *testing.T, context spec.G, it spec.S) {
 		it("should correctly install node modules without hoisting", func() {
 			var err error
 			image, _, err = pack.Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
+				WithPullPolicy(pullPolicy).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
 					buildpackURI,
 					buildPlanURI,
 				).
+				WithPullPolicy(pullPolicy).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 

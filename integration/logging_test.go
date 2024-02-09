@@ -20,11 +20,22 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 
 		pack   occam.Pack
 		docker occam.Docker
+
+		pullPolicy              = "never"
+		extenderBuildStr        = ""
+		extenderBuildStrEscaped = ""
 	)
 
 	it.Before(func() {
 		pack = occam.NewPack()
 		docker = occam.NewDocker()
+
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			pullPolicy = "always"
+			extenderBuildStr = "[extender (build)] "
+			extenderBuildStrEscaped = `\[extender \(build\)\] `
+
+		}
 	})
 
 	context("when app is NOT vendored", func() {
@@ -54,6 +65,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 
 			var logs fmt.Stringer
 			image, logs, err = pack.WithNoColor().Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
@@ -61,38 +75,45 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 					buildPlanURI,
 				).
 				WithEnv(map[string]string{"BP_LOG_LEVEL": "DEBUG"}).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(logs).To(ContainLines(
-				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, "1.2.3"),
-				"  Resolving installation process",
-				"    Process inputs:",
-				"      yarn.lock -> Found",
-				"",
-				"    Selected default build process: 'yarn install'",
-				"",
-				"  Executing launch environment install process",
-				fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				fmt.Sprintf("%s%s %s", extenderBuildStr, buildpackInfo.Buildpack.Name, "1.2.3"),
+				extenderBuildStr+"  Resolving installation process",
+				extenderBuildStr+"    Process inputs:",
+				extenderBuildStr+"      yarn.lock -> Found",
+				extenderBuildStr+"",
+				extenderBuildStr+"    Selected default build process: 'yarn install'",
+				extenderBuildStr+"",
+				extenderBuildStr+"  Executing launch environment install process",
+				fmt.Sprintf(extenderBuildStr+"    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 			))
 			Expect(logs).To(ContainLines(
-				"  Configuring launch environment",
-				"    NODE_PROJECT_PATH -> \"/workspace\"",
-				fmt.Sprintf("    PATH              -> \"$PATH:/layers/%s/launch-modules/node_modules/.bin\"", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				"",
-				fmt.Sprintf(`  Generating SBOM for /layers/%s/launch-modules`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
-				"  Writing SBOM in the following format(s):",
-				"    application/vnd.cyclonedx+json",
-				"    application/spdx+json",
-				"    application/vnd.syft+json",
+				extenderBuildStr+"  Configuring launch environment",
+				extenderBuildStr+"    NODE_PROJECT_PATH -> \"/workspace\"",
+				fmt.Sprintf("%s    PATH              -> \"$PATH:/layers/%s/launch-modules/node_modules/.bin\"", extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				extenderBuildStr+"",
+				fmt.Sprintf(`%s  Generating SBOM for /layers/%s/launch-modules`, extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				MatchRegexp(extenderBuildStrEscaped+`      Completed in (\d+)(\.\d+)?(ms|s)`),
+				extenderBuildStr+"",
+				extenderBuildStr+"  Writing SBOM in the following format(s):",
+				extenderBuildStr+"    application/vnd.cyclonedx+json",
+				extenderBuildStr+"    application/spdx+json",
+				extenderBuildStr+"    application/vnd.syft+json",
 			))
 		})
 	})
 
 	context("when the app is vendored", func() {
+
+		//UBI does not support offline installation at the moment,
+		//so we are skipping it.
+		if settings.Extensions.UbiNodejsExtension.Online != "" {
+			return
+		}
+
 		var (
 			image occam.Image
 
@@ -180,6 +201,9 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 
 			var logs fmt.Stringer
 			image, logs, err = pack.WithNoColor().Build.
+				WithExtensions(
+					settings.Extensions.UbiNodejsExtension.Online,
+				).
 				WithBuildpacks(
 					nodeURI,
 					yarnURI,
@@ -187,56 +211,56 @@ func testLogging(t *testing.T, context spec.G, it spec.S) {
 					buildPlanURI,
 				).
 				WithEnv(map[string]string{"BP_LOG_LEVEL": "DEBUG"}).
-				WithPullPolicy("never").
+				WithPullPolicy(pullPolicy).
 				Execute(name, source)
 			Expect(err).NotTo(HaveOccurred())
 
 			Expect(logs).To(ContainLines(
-				fmt.Sprintf("%s %s", buildpackInfo.Buildpack.Name, "1.2.3"),
-				"  Resolving installation process",
-				"    Process inputs:",
-				"      yarn.lock -> Found",
-				"",
-				"    Selected default build process: 'yarn install'",
-				"",
-				"  Executing build environment install process",
-				fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --production false --modules-folder /layers/%s/build-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				fmt.Sprintf("%s%s %s", extenderBuildStr, buildpackInfo.Buildpack.Name, "1.2.3"),
+				extenderBuildStr+"  Resolving installation process",
+				extenderBuildStr+"    Process inputs:",
+				extenderBuildStr+"      yarn.lock -> Found",
+				extenderBuildStr+"",
+				extenderBuildStr+"    Selected default build process: 'yarn install'",
+				extenderBuildStr+"",
+				extenderBuildStr+"  Executing build environment install process",
+				fmt.Sprintf("%s    Running 'yarn install --ignore-engines --frozen-lockfile --production false --modules-folder /layers/%s/build-modules/node_modules'", extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 			))
 			Expect(logs).To(ContainLines(
-				"  Configuring build environment",
-				`    NODE_ENV -> "development"`,
-				fmt.Sprintf("    PATH     -> \"$PATH:/layers/%s/build-modules/node_modules/.bin\"", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				"",
-				fmt.Sprintf(`  Generating SBOM for /layers/%s/build-modules`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
-				"  Writing SBOM in the following format(s):",
-				"    application/vnd.cyclonedx+json",
-				"    application/spdx+json",
-				"    application/vnd.syft+json",
-				"",
-				"  Resolving installation process",
-				"    Process inputs:",
-				"      yarn.lock -> Found",
-				"",
-				"    Selected default build process: 'yarn install'",
-				"",
-				"  Executing launch environment install process",
-				fmt.Sprintf("    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules'", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				extenderBuildStr+"  Configuring build environment",
+				extenderBuildStr+`    NODE_ENV -> "development"`,
+				fmt.Sprintf("%s    PATH     -> \"$PATH:/layers/%s/build-modules/node_modules/.bin\"", extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				extenderBuildStr+"",
+				fmt.Sprintf(`%s  Generating SBOM for /layers/%s/build-modules`, extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				MatchRegexp(extenderBuildStrEscaped+`      Completed in (\d+)(\.\d+)?(ms|s)`),
+				extenderBuildStr+"",
+				extenderBuildStr+"  Writing SBOM in the following format(s):",
+				extenderBuildStr+"    application/vnd.cyclonedx+json",
+				extenderBuildStr+"    application/spdx+json",
+				extenderBuildStr+"    application/vnd.syft+json",
+				extenderBuildStr+"",
+				extenderBuildStr+"  Resolving installation process",
+				extenderBuildStr+"    Process inputs:",
+				extenderBuildStr+"      yarn.lock -> Found",
+				extenderBuildStr+"",
+				extenderBuildStr+"    Selected default build process: 'yarn install'",
+				extenderBuildStr+"",
+				extenderBuildStr+"  Executing launch environment install process",
+				fmt.Sprintf("%s    Running 'yarn install --ignore-engines --frozen-lockfile --modules-folder /layers/%s/launch-modules/node_modules'", extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
 			))
 			Expect(logs).To(ContainLines(
-				"  Configuring launch environment",
-				"    NODE_PROJECT_PATH -> \"/workspace\"",
-				fmt.Sprintf("    PATH              -> \"$PATH:/layers/%s/launch-modules/node_modules/.bin\"", strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				"",
-				fmt.Sprintf(`  Generating SBOM for /layers/%s/launch-modules`, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
-				MatchRegexp(`      Completed in (\d+)(\.\d+)?(ms|s)`),
-				"",
-				"  Writing SBOM in the following format(s):",
-				"    application/vnd.cyclonedx+json",
-				"    application/spdx+json",
-				"    application/vnd.syft+json",
-				"",
+				extenderBuildStr+"  Configuring launch environment",
+				extenderBuildStr+"    NODE_PROJECT_PATH -> \"/workspace\"",
+				fmt.Sprintf("%s    PATH              -> \"$PATH:/layers/%s/launch-modules/node_modules/.bin\"", extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				extenderBuildStr+"",
+				fmt.Sprintf(`%s  Generating SBOM for /layers/%s/launch-modules`, extenderBuildStr, strings.ReplaceAll(buildpackInfo.Buildpack.ID, "/", "_")),
+				MatchRegexp(extenderBuildStrEscaped+`      Completed in (\d+)(\.\d+)?(ms|s)`),
+				extenderBuildStr+"",
+				extenderBuildStr+"  Writing SBOM in the following format(s):",
+				extenderBuildStr+"    application/vnd.cyclonedx+json",
+				extenderBuildStr+"    application/spdx+json",
+				extenderBuildStr+"    application/vnd.syft+json",
+				extenderBuildStr+"",
 			))
 		})
 	})
