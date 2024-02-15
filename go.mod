@@ -120,7 +120,7 @@ require (
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/sylabs/sif/v2 v2.15.1 // indirect
 	github.com/sylabs/squashfs v0.6.1 // indirect
-	github.com/testcontainers/testcontainers-go v0.27.0 // indirect
+	github.com/testcontainers/testcontainers-go v0.28.0 // indirect
 	github.com/therootcompany/xz v1.0.1 // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
 	github.com/tklauser/numcpus v0.7.0 // indirect
