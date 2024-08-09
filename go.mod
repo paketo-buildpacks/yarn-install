@@ -7,7 +7,7 @@ require (
 	github.com/onsi/gomega v1.34.1
 	github.com/paketo-buildpacks/libnodejs v0.2.0
 	github.com/paketo-buildpacks/occam v0.18.7
-	github.com/paketo-buildpacks/packit/v2 v2.14.0
+	github.com/paketo-buildpacks/packit/v2 v2.14.1
 	github.com/sclevine/spec v1.4.0
 )
 
@@ -144,7 +144,7 @@ require (
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/net v0.28.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
-	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
