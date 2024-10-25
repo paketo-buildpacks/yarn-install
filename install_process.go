@@ -78,7 +78,7 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 		return true, "", fmt.Errorf("failed to write temp file for %s: %w", file.Name(), err)
 	}
 
-	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"), file.Name())
+	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"), filepath.Join(workingDir, "package.json"), file.Name())
 	if err != nil {
 		return true, "", fmt.Errorf("unable to sum config files: %w", err)
 	}
