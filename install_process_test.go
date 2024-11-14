@@ -79,7 +79,8 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 						"cache_sha": "some-sha",
 					})
 					Expect(summer.SumCall.Receives.Paths[0]).To(Equal(filepath.Join(workingDir, "yarn.lock")))
-					Expect(summer.SumCall.Receives.Paths[1]).To(ContainSubstring("config-file"))
+					Expect(summer.SumCall.Receives.Paths[1]).To(Equal(filepath.Join(workingDir, "package.json")))
+					Expect(summer.SumCall.Receives.Paths[2]).To(ContainSubstring("config-file"))
 					Expect(run).To(BeTrue())
 					Expect(sha).To(Equal("some-other-sha"))
 					Expect(err).NotTo(HaveOccurred())
