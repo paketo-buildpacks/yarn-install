@@ -73,7 +73,7 @@ func TestIntegration(t *testing.T) {
 	builder, err := pack.Builder.Inspect.Execute()
 	Expect(err).NotTo(HaveOccurred())
 
-	if builder.BuilderName == "index.docker.io/paketocommunity/builder-ubi-buildpackless-base:latest" {
+	if builder.BuilderName == "index.docker.io/paketobuildpacks/builder-ubi8-buildpackless-base:latest" {
 		settings.Extensions.UbiNodejsExtension.Online, err = buildpackStore.Get.
 			Execute(config.UbiNodejsExtension)
 		Expect(err).ToNot(HaveOccurred())
