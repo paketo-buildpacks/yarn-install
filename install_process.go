@@ -71,7 +71,11 @@ func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]in
 	if err != nil {
 		return true, "", fmt.Errorf("failed to create temp file for %s: %w", file.Name(), err)
 	}
-	defer file.Close()
+	defer func() {
+		if closeFileErr := file.Close(); closeFileErr != nil && err == nil {
+			err = fmt.Errorf("failed to close temp file: %w", closeFileErr)
+		}
+	}()
 
 	_, err = file.Write(buffer.Bytes())
 	if err != nil {
