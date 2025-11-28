@@ -61,7 +61,7 @@ func testServiceBindings(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		it.After(func() {
-			os.RemoveAll(binding)
+			Expect(os.RemoveAll(binding)).To(Succeed())
 
 			if container.ID != "" {
 				Expect(docker.Container.Remove.Execute(container.ID)).To(Succeed())
@@ -91,10 +91,14 @@ func testServiceBindings(t *testing.T, context spec.G, it spec.S) {
 					}
 					if auth {
 						w.WriteHeader(http.StatusOK)
-						fmt.Fprintln(w, "Authenticated!")
+						_, err := fmt.Fprintln(w, "Authenticated!")
+						Expect(err).NotTo(HaveOccurred())
+
 					} else {
 						w.WriteHeader(http.StatusUnauthorized)
-						fmt.Fprintln(w, "Auth token not provided")
+						_, err := fmt.Fprintln(w, "Auth token not provided")
+						Expect(err).NotTo(HaveOccurred())
+
 					}
 				}))
 				uri, err := url.Parse(server.URL)
