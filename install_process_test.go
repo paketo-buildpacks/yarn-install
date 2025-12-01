@@ -46,8 +46,10 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 			executable.ExecuteCall.Stub = func(exec pexec.Execution) error {
 				execution = exec
-				fmt.Fprintln(exec.Stdout, "undefined")
-				fmt.Fprintln(exec.Stderr, "undefined")
+				_, err := fmt.Fprintln(exec.Stdout, "undefined")
+				Expect(err).NotTo(HaveOccurred())
+				_, err = fmt.Fprintln(exec.Stderr, "undefined")
+				Expect(err).NotTo(HaveOccurred())
 				return nil
 			}
 			installProcess = yarninstall.NewYarnInstallProcess(executable, summer, scribe.NewEmitter(buffer))
@@ -322,11 +324,15 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable = &fakes.Executable{}
 			executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 				executions = append(executions, execution)
-				fmt.Fprintln(execution.Stdout, "stdout output")
-				fmt.Fprintln(execution.Stderr, "stderr output")
+				_, err := fmt.Fprintln(execution.Stdout, "stdout output")
+				Expect(err).NotTo(HaveOccurred())
+				_, err = fmt.Fprintln(execution.Stderr, "stderr output")
+				Expect(err).NotTo(HaveOccurred())
 
 				if strings.Contains(strings.Join(execution.Args, " "), "yarn-offline-mirror") {
-					fmt.Fprintln(execution.Stdout, "undefined")
+					_, err := fmt.Fprintln(execution.Stdout, "undefined")
+					Expect(err).NotTo(HaveOccurred())
+
 				}
 
 				return nil
@@ -411,9 +417,13 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 					executions = append(executions, execution)
 
 					if strings.Contains(strings.Join(execution.Args, " "), "yarn-offline-mirror") {
-						fmt.Fprintln(execution.Stdout, "warning some extraneous warning")
-						fmt.Fprintln(execution.Stdout, "warning some other warning")
-						fmt.Fprintln(execution.Stdout, filepath.Join(workingDir, "offline-mirror"))
+						_, err := fmt.Fprintln(execution.Stdout, "warning some extraneous warning")
+						Expect(err).NotTo(HaveOccurred())
+						_, err = fmt.Fprintln(execution.Stdout, "warning some other warning")
+						Expect(err).NotTo(HaveOccurred())
+						_, err = fmt.Fprintln(execution.Stdout, filepath.Join(workingDir, "offline-mirror"))
+						Expect(err).NotTo(HaveOccurred())
+
 					}
 
 					return nil
@@ -452,8 +462,10 @@ func testInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				it.Before(func() {
 					executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 						if strings.Contains(strings.Join(execution.Args, " "), "config") {
-							fmt.Fprintf(execution.Stdout, "some stdout error")
-							fmt.Fprintf(execution.Stderr, "some stderr error")
+							_, err := fmt.Fprintf(execution.Stdout, "some stdout error")
+							Expect(err).NotTo(HaveOccurred())
+							_, err = fmt.Fprintf(execution.Stderr, "some stderr error")
+							Expect(err).NotTo(HaveOccurred())
 							return errors.New("yarn config failed")
 						}
 
