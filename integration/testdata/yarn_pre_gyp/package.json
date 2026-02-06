@@ -8,9 +8,9 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "bcrypt": "^5.1.0",
-    "logfmt": "~1.1.2",
-    "express": "~4.0.0"
+    "bcrypt": "^6.0.0",
+    "express": "~5.2.1",
+    "logfmt": "~1.4.0"
   },
   "repository": {
     "type": "git",
