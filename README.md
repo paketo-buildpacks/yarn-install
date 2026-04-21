@@ -3,7 +3,7 @@
 The Yarn Install CNB generates and provides application dependencies for node
 applications that use the [yarn](https://yarnpkg.com) package manager.
 
-**NOTE:** Support for `yarn` is limited to version 1 (Classic).
+Supports both **Yarn Classic (v1)** and **Yarn Berry (v2+)**.
 
 ## Integration
 
@@ -63,6 +63,27 @@ the `BP_NODE_PROJECT_PATH` environment variable at build time either directly
 [`project.toml`
 file](https://github.com/buildpacks/spec/blob/main/extensions/project-descriptor.md).
 This could be useful if your app is a part of a monorepo.
+
+## Yarn Classic vs Yarn Berry
+
+The install process is selected automatically based on the `packageManager` field
+in `package.json`:
+
+| `packageManager` value | Install process |
+| :--- | :--- |
+| `yarn@1.x.x` or absent | Classic: `yarn install --frozen-lockfile` |
+| `yarn@2.x.x` or higher | Berry: `yarn install --immutable` |
+
+### App-provided Berry binary (`yarnPath`)
+
+If the app declares `yarnPath` in `.yarnrc.yml` pointing to a committed `.cjs`
+bundle (e.g. `.yarn/releases/yarn-4.12.0.cjs`), that binary is invoked via
+`node <yarnPath> install --immutable`, giving the app full control over the
+Berry version.
+
+If no `yarnPath` is declared, the buildpack-delivered Berry binary (on `$PATH`
+as `yarn`) is used with `YARN_IGNORE_PATH=1` to prevent any stale `yarnPath`
+from interfering.
 
 ## Run Tests
 
