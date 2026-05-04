@@ -171,11 +171,10 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		context("when currentModulesLayerPath is empty (first run)", func() {
-			it("creates node_modules in next layer and returns the layer path", func() {
+			it("returns the next layer path without pre-creating node_modules", func() {
 				nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nextPath).To(Equal(nextModulesLayerPath))
-				Expect(filepath.Join(nextModulesLayerPath, "node_modules")).To(BeADirectory())
 			})
 		})
 
@@ -249,15 +248,15 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 		context("when no yarnPath in .yarnrc.yml (buildpack-provided Berry)", func() {
 			context("when launch is false", func() {
-				it("runs yarn install --immutable with YARN_IGNORE_PATH and NODE_ENV=development", func() {
+				it("runs yarn install --immutable with NODE_ENV=development", func() {
 					err := installProcess.Execute(workingDir, modulesLayerPath, false)
 					Expect(err).NotTo(HaveOccurred())
 
 					Expect(executions).To(HaveLen(1))
 					Expect(executions[0].Args).To(Equal([]string{"install", "--immutable"}))
 					Expect(executions[0].Dir).To(Equal(workingDir))
-					Expect(executions[0].Env).To(ContainElement("YARN_IGNORE_PATH=1"))
-					Expect(executions[0].Env).To(ContainElement("YARN_NODE_LINKER=node-modules"))
+					Expect(executions[0].Env).NotTo(ContainElement("YARN_IGNORE_PATH=1"))
+					Expect(executions[0].Env).NotTo(ContainElement("YARN_NODE_LINKER=node-modules"))
 					Expect(executions[0].Env).To(ContainElement("NODE_ENV=development"))
 					Expect(executions[0].Env).To(ContainElement(ContainSubstring("YARN_INSTALL_STATE_PATH=")))
 
@@ -272,8 +271,8 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 					Expect(executions).To(HaveLen(1))
 					Expect(executions[0].Args).To(Equal([]string{"install", "--immutable"}))
-					Expect(executions[0].Env).To(ContainElement("YARN_IGNORE_PATH=1"))
-					Expect(executions[0].Env).To(ContainElement("YARN_NODE_LINKER=node-modules"))
+					Expect(executions[0].Env).NotTo(ContainElement("YARN_IGNORE_PATH=1"))
+					Expect(executions[0].Env).NotTo(ContainElement("YARN_NODE_LINKER=node-modules"))
 					Expect(executions[0].Env).NotTo(ContainElement("NODE_ENV=development"))
 				})
 			})
@@ -316,7 +315,7 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 				expectedBin := filepath.Join(workingDir, ".yarn", "releases", "yarn-4.12.0.cjs")
 				Expect(nodeExecutions[0].Args).To(Equal([]string{expectedBin, "install", "--immutable"}))
 				Expect(nodeExecutions[0].Env).NotTo(ContainElement("YARN_IGNORE_PATH=1"))
-				Expect(nodeExecutions[0].Env).To(ContainElement("YARN_NODE_LINKER=node-modules"))
+				Expect(nodeExecutions[0].Env).NotTo(ContainElement("YARN_NODE_LINKER=node-modules"))
 				Expect(nodeExecutions[0].Env).To(ContainElement("NODE_ENV=development"))
 				Expect(buffer.String()).To(ContainSubstring("app-provided yarnPath"))
 			})

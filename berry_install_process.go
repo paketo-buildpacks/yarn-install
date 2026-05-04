@@ -2,7 +2,6 @@ package yarninstall
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -102,7 +101,18 @@ func (ip BerryInstallProcess) ShouldRun(workingDir string, metadata map[string]i
 		return true, "", fmt.Errorf("failed to write temp file: %w", writeErr)
 	}
 
-	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"), filepath.Join(workingDir, "package.json"), file.Name())
+	pathsToSum := []string{
+		filepath.Join(workingDir, "yarn.lock"),
+		filepath.Join(workingDir, "package.json"),
+		file.Name(),
+	}
+	for _, optional := range []string{".yarnrc.yml", ".pnp.cjs", "pnp.loader.mjs"} {
+		p := filepath.Join(workingDir, optional)
+		if _, statErr := os.Stat(p); statErr == nil {
+			pathsToSum = append(pathsToSum, p)
+		}
+	}
+	sum, err := ip.summer.Sum(pathsToSum...)
 	if err != nil {
 		return true, "", fmt.Errorf("unable to sum config files: %w", err)
 	}
@@ -121,11 +131,6 @@ func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, 
 		if err != nil {
 			return "", fmt.Errorf("failed to copy node_modules directory: %w", err)
 		}
-	} else {
-		err := os.MkdirAll(filepath.Join(nextModulesLayerPath, "node_modules"), os.ModePerm)
-		if err != nil {
-			return "", fmt.Errorf("failed to create node_modules directory: %w", err)
-		}
 	}
 	return nextModulesLayerPath, nil
 }
@@ -139,8 +144,6 @@ func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, 
 // yarnPath from interfering.
 func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launch bool) error {
 	environment := os.Environ()
-	// Tell Berry to use the traditional node_modules linker.
-	environment = append(environment, "YARN_NODE_LINKER=node-modules")
 
 	// Redirect Berry's install-state cache into the layer so it survives across
 	// builds. The app is not expected to commit .yarn/install-state.gz.
@@ -169,14 +172,11 @@ func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launc
 		execArgs = []string{yarnBin, "install", "--immutable"}
 		ip.logger.Subprocess("Running 'node %s install --immutable' (app-provided yarnPath)", yarnBin)
 	} else {
-		// Use the buildpack-delivered Berry; suppress any residual yarnPath.
-		environment = append(environment, "YARN_IGNORE_PATH=1")
 		exe = ip.yarnExecutable
 		execArgs = []string{"install", "--immutable"}
 		ip.logger.Subprocess("Running 'yarn install --immutable' (buildpack-provided Berry)")
 	}
 
-	buffer := bytes.NewBuffer(nil)
 	err = exe.Execute(pexec.Execution{
 		Args:   execArgs,
 		Env:    environment,
@@ -185,7 +185,7 @@ func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launc
 		Dir:    workingDir,
 	})
 	if err != nil {
-		return fmt.Errorf("failed to execute yarn install: %w\n%s", err, buffer.String())
+		return fmt.Errorf("failed to execute yarn install: %w", err)
 	}
 
 	// Move node_modules from working directory into the layer so the layer can
