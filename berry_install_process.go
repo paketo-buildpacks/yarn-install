@@ -71,58 +71,9 @@ func yarnPathFromRC(workingDir string) (string, error) {
 }
 
 func (ip BerryInstallProcess) ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error) {
-	ip.logger.Subprocess("Process inputs:")
-
-	_, err = os.Stat(filepath.Join(workingDir, "yarn.lock"))
-	if os.IsNotExist(err) {
-		ip.logger.Action("yarn.lock -> Not found")
-		ip.logger.Break()
-		return true, "", nil
-	} else if err != nil {
-		return true, "", fmt.Errorf("unable to read yarn.lock file: %w", err)
-	}
-
-	ip.logger.Action("yarn.lock -> Found")
-	ip.logger.Break()
-
-	nodeEnv := os.Getenv("NODE_ENV")
-
-	file, err := os.CreateTemp("", "berry-node-env-*")
-	if err != nil {
-		return true, "", fmt.Errorf("failed to create temp file: %w", err)
-	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil && err == nil {
-			err = fmt.Errorf("failed to close temp file: %w", closeErr)
-		}
-	}()
-
-	if _, writeErr := file.WriteString(nodeEnv); writeErr != nil {
-		return true, "", fmt.Errorf("failed to write temp file: %w", writeErr)
-	}
-
-	pathsToSum := []string{
-		filepath.Join(workingDir, "yarn.lock"),
-		filepath.Join(workingDir, "package.json"),
-		file.Name(),
-	}
-	for _, optional := range []string{".yarnrc.yml", ".pnp.cjs", "pnp.loader.mjs"} {
-		p := filepath.Join(workingDir, optional)
-		if _, statErr := os.Stat(p); statErr == nil {
-			pathsToSum = append(pathsToSum, p)
-		}
-	}
-	sum, err := ip.summer.Sum(pathsToSum...)
-	if err != nil {
-		return true, "", fmt.Errorf("unable to sum config files: %w", err)
-	}
-
-	prevSHA, ok := metadata["cache_sha"].(string)
-	if (ok && sum != prevSHA) || !ok {
-		return true, sum, nil
-	}
-
-	return false, "", nil
+	return shouldRun(workingDir, metadata, ip.summer, ip.logger, func() ([]byte, error) {
+		return []byte(os.Getenv("NODE_ENV")), nil
+	}, []string{".yarnrc.yml", ".pnp.cjs", "pnp.loader.mjs"})
 }
 
 func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath string) (string, error) {
