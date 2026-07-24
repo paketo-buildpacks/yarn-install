@@ -91,8 +91,7 @@ func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, 
 // If the app declares yarnPath in .yarnrc.yml pointing to a committed .cjs
 // binary, that binary is invoked via `node <yarnPath>` — giving the app full
 // control over the Berry version. Otherwise the buildpack-delivered Berry
-// (on PATH as `yarn`) is used with YARN_IGNORE_PATH=1 to prevent any stale
-// yarnPath from interfering.
+// (on PATH as `yarn`) is used.
 func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launch bool) error {
 	environment := os.Environ()
 

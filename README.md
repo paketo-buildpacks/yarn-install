@@ -50,6 +50,7 @@ $ ./scripts/package.sh --version <version-number>
 
 This will create a `buildpackage.cnb` file under the `build` directory which you
 can use to build your app as follows:
+
 ```
 pack build <app-name> -p <path-to-app> -b <path/to/node-engine.cnb> -b <path/to/yarn.cnb> /
 -b build/buildpackage.cnb
@@ -69,10 +70,10 @@ This could be useful if your app is a part of a monorepo.
 The install process is selected automatically based on the `packageManager` field
 in `package.json`:
 
-| `packageManager` value | Install process |
-| :--- | :--- |
+| `packageManager` value | Install process                           |
+| :--------------------- | :---------------------------------------- |
 | `yarn@1.x.x` or absent | Classic: `yarn install --frozen-lockfile` |
-| `yarn@2.x.x` or higher | Berry: `yarn install --immutable` |
+| `yarn@2.x.x` or higher | Berry: `yarn install --immutable`         |
 
 ### App-provided Berry binary (`yarnPath`)
 
@@ -82,17 +83,18 @@ bundle (e.g. `.yarn/releases/yarn-4.12.0.cjs`), that binary is invoked via
 Berry version.
 
 If no `yarnPath` is declared, the buildpack-delivered Berry binary (on `$PATH`
-as `yarn`) is used with `YARN_IGNORE_PATH=1` to prevent any stale `yarnPath`
-from interfering.
+as `yarn`) is used.
 
 ## Run Tests
 
 To run all unit tests, run:
+
 ```
 ./scripts/unit.sh
 ```
 
 To run all integration tests, run:
+
 ```
 /scripts/integration.sh
 ```
