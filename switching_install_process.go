@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Masterminds/semver/v3"
 )
 
 // isBerryApp returns true if the working directory's package.json declares a
@@ -23,12 +25,16 @@ func isBerryApp(workingDir string) bool {
 		return false
 	}
 
-	if strings.HasPrefix(pkg.PackageManager, "yarn@") {
-		ver := strings.TrimPrefix(pkg.PackageManager, "yarn@")
-		major := strings.SplitN(ver, ".", 2)[0]
-		return major >= "2"
+	if !strings.HasPrefix(pkg.PackageManager, "yarn@") {
+		return false
 	}
-	return false
+
+	yarnVersion, err := semver.NewVersion(strings.TrimPrefix(pkg.PackageManager, "yarn@"))
+	if err != nil {
+		return false
+	}
+
+	return yarnVersion.GreaterThanEqual(semver.MustParse("2"))
 }
 
 // SwitchingInstallProcess selects between a classic and a berry install process

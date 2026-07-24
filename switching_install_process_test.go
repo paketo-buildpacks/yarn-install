@@ -2,6 +2,7 @@ package yarninstall_test
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -113,19 +114,29 @@ func testSwitchingInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		})
 	})
 
-	context("when app has packageManager yarn@2.x (berry threshold)", func() {
-		it.Before(func() {
-			Expect(os.WriteFile(filepath.Join(workingDir, "package.json"),
-				[]byte(`{"packageManager":"yarn@2.0.0"}`), os.ModePerm)).To(Succeed())
-		})
+	for _, tc := range []struct {
+		description    string
+		packageManager string
+	}{
+		{description: "yarn@2.x (berry threshold)", packageManager: "yarn@2.0.0"},
+		{description: "yarn@10.x (double-digit major)", packageManager: "yarn@10.0.0"},
+		{description: "Corepack build metadata", packageManager: "yarn@4.14.1+sha512.abcdef"},
+	} {
+		tc := tc
+		context(fmt.Sprintf("when app has packageManager %s", tc.description), func() {
+			it.Before(func() {
+				Expect(os.WriteFile(filepath.Join(workingDir, "package.json"),
+					[]byte(fmt.Sprintf(`{"packageManager":%q}`, tc.packageManager)), os.ModePerm)).To(Succeed())
+			})
 
-		it("delegates to the berry process", func() {
-			_, _, err := switching.ShouldRun(workingDir, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(berryProcess.ShouldRunCall.CallCount).To(Equal(1))
-			Expect(classicProcess.ShouldRunCall.CallCount).To(Equal(0))
+			it("delegates to the berry process", func() {
+				_, _, err := switching.ShouldRun(workingDir, nil)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(berryProcess.ShouldRunCall.CallCount).To(Equal(1))
+				Expect(classicProcess.ShouldRunCall.CallCount).To(Equal(0))
+			})
 		})
-	})
+	}
 
 	context("error propagation", func() {
 		context("when berry ShouldRun returns an error", func() {
