@@ -47,7 +47,7 @@ func yarnPathFromRC(workingDir string) (string, error) {
 		}
 		return "", fmt.Errorf("failed to open .yarnrc.yml: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {

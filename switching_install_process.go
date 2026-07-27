@@ -16,7 +16,7 @@ func isBerryApp(workingDir string) bool {
 	if err != nil {
 		return false
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	var pkg struct {
 		PackageManager string `json:"packageManager"`

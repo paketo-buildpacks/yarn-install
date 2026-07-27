@@ -275,8 +275,10 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 			executable = &fakes.Executable{}
 			executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 				executions = append(executions, execution)
-				fmt.Fprintln(execution.Stdout, "stdout output")
-				fmt.Fprintln(execution.Stderr, "stderr output")
+				_, err := fmt.Fprintln(execution.Stdout, "stdout output")
+				Expect(err).NotTo(HaveOccurred())
+				_, err = fmt.Fprintln(execution.Stderr, "stderr output")
+				Expect(err).NotTo(HaveOccurred())
 				return nil
 			}
 
