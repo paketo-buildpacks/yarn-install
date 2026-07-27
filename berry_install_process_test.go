@@ -171,24 +171,66 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 		})
 
 		context("when currentModulesLayerPath is empty (first run)", func() {
-			it("returns the next layer path without pre-creating node_modules", func() {
+			it("creates an empty layer node_modules and symlinks the working dir to it", func() {
 				nextPath, err := installProcess.SetupModules(workingDir, "", nextModulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nextPath).To(Equal(nextModulesLayerPath))
+
+				Expect(filepath.Join(nextModulesLayerPath, "node_modules")).To(BeADirectory())
+				info, err := os.Lstat(filepath.Join(workingDir, "node_modules"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(info.Mode() & os.ModeSymlink).NotTo(BeZero())
+				Expect(os.Readlink(filepath.Join(workingDir, "node_modules"))).To(Equal(filepath.Join(nextModulesLayerPath, "node_modules")))
 			})
 		})
 
-		context("when currentModulesLayerPath is set (cached layer)", func() {
+		context("when currentModulesLayerPath is set (warm-start from previous layer)", func() {
 			it.Before(func() {
 				Expect(os.MkdirAll(filepath.Join(currentModulesLayerPath, "node_modules"), os.ModePerm)).To(Succeed())
 				Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "cached-pkg"), []byte(""), os.ModePerm)).To(Succeed())
 			})
 
-			it("copies node_modules from current layer into next layer", func() {
+			it("copies node_modules into the next layer and symlinks the working dir to it", func() {
 				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath)
 				Expect(err).NotTo(HaveOccurred())
 				Expect(nextPath).To(Equal(nextModulesLayerPath))
+
 				Expect(filepath.Join(nextModulesLayerPath, "node_modules", "cached-pkg")).To(BeAnExistingFile())
+				Expect(os.Readlink(filepath.Join(workingDir, "node_modules"))).To(Equal(filepath.Join(nextModulesLayerPath, "node_modules")))
+			})
+		})
+
+		context("when working dir node_modules is a symlink to another layer", func() {
+			var otherLayerPath string
+
+			it.Before(func() {
+				var err error
+				otherLayerPath, err = os.MkdirTemp("", "other-modules-dir")
+				Expect(err).NotTo(HaveOccurred())
+
+				Expect(os.MkdirAll(filepath.Join(otherLayerPath, "node_modules", "stale-pkg"), os.ModePerm)).To(Succeed())
+				Expect(os.Symlink(
+					filepath.Join(otherLayerPath, "node_modules"),
+					filepath.Join(workingDir, "node_modules"),
+				)).To(Succeed())
+
+				Expect(os.MkdirAll(filepath.Join(currentModulesLayerPath, "node_modules"), os.ModePerm)).To(Succeed())
+				Expect(os.WriteFile(filepath.Join(currentModulesLayerPath, "node_modules", "cached-pkg"), []byte(""), os.ModePerm)).To(Succeed())
+			})
+
+			it.After(func() {
+				Expect(os.RemoveAll(otherLayerPath)).To(Succeed())
+			})
+
+			it("retargets the working dir at the next layer, warm-starts from current, and leaves the other layer alone", func() {
+				nextPath, err := installProcess.SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(nextPath).To(Equal(nextModulesLayerPath))
+
+				Expect(os.Readlink(filepath.Join(workingDir, "node_modules"))).To(Equal(filepath.Join(nextModulesLayerPath, "node_modules")))
+				Expect(filepath.Join(nextModulesLayerPath, "node_modules", "cached-pkg")).To(BeAnExistingFile())
+				Expect(filepath.Join(otherLayerPath, "node_modules", "stale-pkg")).To(BeADirectory())
+				Expect(filepath.Join(otherLayerPath, "node_modules", "cached-pkg")).NotTo(BeAnExistingFile())
 			})
 		})
 
@@ -323,9 +365,35 @@ func testBerryInstallProcess(t *testing.T, context spec.G, it spec.S) {
 
 		context("when yarn install places node_modules in the working dir", func() {
 			it.Before(func() {
+				_, err := installProcess.SetupModules(workingDir, "", modulesLayerPath)
+				Expect(err).NotTo(HaveOccurred())
+
 				executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
 					executions = append(executions, execution)
-					// Simulate berry creating node_modules in workingDir
+					Expect(os.MkdirAll(filepath.Join(workingDir, "node_modules", "some-pkg"), os.ModePerm)).To(Succeed())
+					return nil
+				}
+			})
+
+			it("installs node_modules into the layer via symlink", func() {
+				err := installProcess.Execute(workingDir, modulesLayerPath, true)
+				Expect(err).NotTo(HaveOccurred())
+
+				info, err := os.Lstat(filepath.Join(workingDir, "node_modules"))
+				Expect(err).NotTo(HaveOccurred())
+				Expect(info.Mode() & os.ModeSymlink).NotTo(BeZero())
+				Expect(filepath.Join(modulesLayerPath, "node_modules", "some-pkg")).To(BeADirectory())
+			})
+		})
+
+		context("when yarn replaces the symlink with a real node_modules directory", func() {
+			it.Before(func() {
+				_, err := installProcess.SetupModules(workingDir, "", modulesLayerPath)
+				Expect(err).NotTo(HaveOccurred())
+
+				executable.ExecuteCall.Stub = func(execution pexec.Execution) error {
+					executions = append(executions, execution)
+					Expect(os.RemoveAll(filepath.Join(workingDir, "node_modules"))).To(Succeed())
 					Expect(os.MkdirAll(filepath.Join(workingDir, "node_modules", "some-pkg"), os.ModePerm)).To(Succeed())
 					return nil
 				}

@@ -42,7 +42,7 @@ type ConfigurationManager interface {
 	DeterminePath(typ, platformDir, entry string) (path string, err error)
 }
 
-func Build( entryResolver EntryResolver,
+func Build(entryResolver EntryResolver,
 	configurationManager ConfigurationManager,
 	homeDir string,
 	symlinker SymlinkManager,
@@ -175,6 +175,7 @@ func Build( entryResolver EntryResolver,
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
+				currentModLayer = layer.Path
 			}
 
 			layer.Build = true
@@ -223,6 +224,11 @@ func Build( entryResolver EntryResolver,
 
 				if !build {
 					err = ensureNodeModulesSymlink(projectPath, layer.Path, tmpDir)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
+				} else if currentModLayer != "" {
+					err = ensureNodeModulesSymlink(projectPath, currentModLayer, tmpDir)
 					if err != nil {
 						return packit.BuildResult{}, err
 					}

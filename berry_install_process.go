@@ -77,12 +77,32 @@ func (ip BerryInstallProcess) ShouldRun(workingDir string, metadata map[string]i
 }
 
 func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, nextModulesLayerPath string) (string, error) {
+	appNodeModules := filepath.Join(workingDir, "node_modules")
+	layerNodeModules := filepath.Join(nextModulesLayerPath, "node_modules")
+
+	// remove any prior symlink. RemoveAll function, in case of a symlink, only unlinks the path.
+	if err := os.RemoveAll(appNodeModules); err != nil {
+		return "", fmt.Errorf("failed to clear node_modules in working directory: %w", err)
+	}
+
+	// If the node_modules directory is not empty, means that probably the build if statement ran.
+	// In that case, we want to reuse the node_modules directory from the build if statement.
 	if currentModulesLayerPath != "" {
-		err := fs.Copy(filepath.Join(currentModulesLayerPath, "node_modules"), filepath.Join(nextModulesLayerPath, "node_modules"))
+		err := fs.Copy(filepath.Join(currentModulesLayerPath, "node_modules"), layerNodeModules)
 		if err != nil {
 			return "", fmt.Errorf("failed to copy node_modules directory: %w", err)
 		}
+	} else {
+		if err := os.MkdirAll(layerNodeModules, os.ModePerm); err != nil {
+			return "", fmt.Errorf("failed to create node_modules in layer: %w", err)
+		}
 	}
+
+	// Point the app at this layer so yarn install writes into the correct place.
+	if err := os.Symlink(layerNodeModules, appNodeModules); err != nil {
+		return "", fmt.Errorf("failed to symlink node_modules to layer: %w", err)
+	}
+
 	return nextModulesLayerPath, nil
 }
 
@@ -92,11 +112,12 @@ func (ip BerryInstallProcess) SetupModules(workingDir, currentModulesLayerPath, 
 // binary, that binary is invoked via `node <yarnPath>` — giving the app full
 // control over the Berry version. Otherwise the buildpack-delivered Berry
 // (on PATH as `yarn`) is used.
+//
+// SetupModules must be called first for pointing the node_modules directory at the correct layer.
 func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launch bool) error {
 	environment := os.Environ()
 
-	// Redirect Berry's install-state cache into the layer so it survives across
-	// builds. The app is not expected to commit .yarn/install-state.gz.
+	// Keep install-state.gz in the layer instead of the app directory as it is not expected to be committed.
 	installStateDir := filepath.Join(modulesLayerPath, ".yarn")
 	if err := os.MkdirAll(installStateDir, os.ModePerm); err != nil {
 		return fmt.Errorf("failed to create install-state directory in layer: %w", err)
@@ -138,12 +159,15 @@ func (ip BerryInstallProcess) Execute(workingDir, modulesLayerPath string, launc
 		return fmt.Errorf("failed to execute yarn install: %w", err)
 	}
 
-	// Move node_modules from working directory into the layer so the layer can
-	// be cached and reused across builds.
-	srcNodeModules := filepath.Join(workingDir, "node_modules")
-	dstNodeModules := filepath.Join(modulesLayerPath, "node_modules")
-	if info, statErr := os.Lstat(srcNodeModules); statErr == nil && info.IsDir() {
-		if err := fs.Move(srcNodeModules, dstNodeModules); err != nil {
+	// If yarn replaced the symlink with a real directory, move it into the layer.
+	appNodeModules := filepath.Join(workingDir, "node_modules")
+	layerNodeModules := filepath.Join(modulesLayerPath, "node_modules")
+	info, statErr := os.Lstat(appNodeModules)
+	if statErr == nil && info.Mode()&os.ModeSymlink == 0 && info.IsDir() {
+		if err := os.RemoveAll(layerNodeModules); err != nil {
+			return fmt.Errorf("failed to clear layer node_modules: %w", err)
+		}
+		if err := fs.Move(appNodeModules, layerNodeModules); err != nil {
 			return fmt.Errorf("failed to move node_modules into layer: %w", err)
 		}
 	}
