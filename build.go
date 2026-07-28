@@ -241,6 +241,9 @@ func Build(entryResolver EntryResolver,
 				path := filepath.Join(layer.Path, "node_modules", ".bin")
 				layer.LaunchEnv.Append("PATH", path, string(os.PathListSeparator))
 				layer.LaunchEnv.Default("NODE_PROJECT_PATH", projectPath)
+				if isBerryApp(projectPath) {
+					layer.LaunchEnv.Default("YARN_INSTALL_STATE_PATH", filepath.Join(layer.Path, ".yarn", "install-state.gz"))
+				}
 
 				logger.EnvironmentVariables(layer)
 
