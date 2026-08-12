@@ -38,51 +38,68 @@ func NewYarnInstallProcess(executable Executable, summer Summer, logger scribe.E
 }
 
 func (ip YarnInstallProcess) ShouldRun(workingDir string, metadata map[string]interface{}) (run bool, sha string, err error) {
-	ip.logger.Subprocess("Process inputs:")
+	return shouldRun(workingDir, metadata, ip.summer, ip.logger, func() ([]byte, error) {
+		buffer := bytes.NewBuffer(nil)
+		if execErr := ip.executable.Execute(pexec.Execution{
+			Args:   []string{"config", "list", "--silent"},
+			Stdout: buffer,
+			Stderr: buffer,
+			Dir:    workingDir,
+		}); execErr != nil {
+			return nil, fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), execErr)
+		}
+		buffer.WriteString(os.Getenv("NODE_ENV"))
+		return buffer.Bytes(), nil
+	}, nil)
+}
+
+func shouldRun(workingDir string, metadata map[string]interface{}, summer Summer, logger scribe.Emitter, configContent func() ([]byte, error), optionalFiles []string) (run bool, sha string, err error) {
+	logger.Subprocess("Process inputs:")
 
 	_, err = os.Stat(filepath.Join(workingDir, "yarn.lock"))
 	if os.IsNotExist(err) {
-		ip.logger.Action("yarn.lock -> Not found")
-		ip.logger.Break()
+		logger.Action("yarn.lock -> Not found")
+		logger.Break()
 		return true, "", nil
 	} else if err != nil {
 		return true, "", fmt.Errorf("unable to read yarn.lock file: %w", err)
 	}
 
-	ip.logger.Action("yarn.lock -> Found")
-	ip.logger.Break()
+	logger.Action("yarn.lock -> Found")
+	logger.Break()
 
-	buffer := bytes.NewBuffer(nil)
-
-	err = ip.executable.Execute(pexec.Execution{
-		Args:   []string{"config", "list", "--silent"},
-		Stdout: buffer,
-		Stderr: buffer,
-		Dir:    workingDir,
-	})
+	content, err := configContent()
 	if err != nil {
-		return true, "", fmt.Errorf("failed to execute yarn config output:\n%s\nerror: %s", buffer.String(), err)
+		return true, "", err
 	}
-
-	nodeEnv := os.Getenv("NODE_ENV")
-	buffer.WriteString(nodeEnv)
 
 	file, err := os.CreateTemp("", "config-file")
 	if err != nil {
-		return true, "", fmt.Errorf("failed to create temp file for %s: %w", file.Name(), err)
+		return true, "", fmt.Errorf("failed to create temp file: %w", err)
 	}
 	defer func() {
-		if closeFileErr := file.Close(); closeFileErr != nil && err == nil {
-			err = fmt.Errorf("failed to close temp file: %w", closeFileErr)
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close temp file: %w", closeErr)
 		}
 	}()
 
-	_, err = file.Write(buffer.Bytes())
-	if err != nil {
-		return true, "", fmt.Errorf("failed to write temp file for %s: %w", file.Name(), err)
+	if _, writeErr := file.Write(content); writeErr != nil {
+		return true, "", fmt.Errorf("failed to write temp file: %w", writeErr)
 	}
 
-	sum, err := ip.summer.Sum(filepath.Join(workingDir, "yarn.lock"), filepath.Join(workingDir, "package.json"), file.Name())
+	pathsToSum := []string{
+		filepath.Join(workingDir, "yarn.lock"),
+		filepath.Join(workingDir, "package.json"),
+		file.Name(),
+	}
+	for _, optional := range optionalFiles {
+		p := filepath.Join(workingDir, optional)
+		if _, statErr := os.Stat(p); statErr == nil {
+			pathsToSum = append(pathsToSum, p)
+		}
+	}
+
+	sum, err := summer.Sum(pathsToSum...)
 	if err != nil {
 		return true, "", fmt.Errorf("unable to sum config files: %w", err)
 	}

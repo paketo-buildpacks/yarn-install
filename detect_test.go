@@ -16,9 +16,9 @@ func testDetect(t *testing.T, context spec.G, it spec.S) {
 	var (
 		Expect = NewWithT(t).Expect
 
-		filePath	  string
-		workingDir        string
-		detect            packit.DetectFunc
+		filePath   string
+		workingDir string
+		detect     packit.DetectFunc
 	)
 
 	it.Before(func() {
