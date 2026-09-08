@@ -52,7 +52,7 @@ jobs:
 
     - name: Checkout
       if: steps.human-commits.outputs.human_commits == 'false' && steps.unverified-commits.outputs.unverified_commits == 'false'
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
 
     - name: Approve
       if: steps.human-commits.outputs.human_commits == 'false' && steps.unverified-commits.outputs.unverified_commits == 'false'
@@ -66,4 +66,4 @@ jobs:
       run: |
         gh pr merge ${{ needs.download.outputs.pr-number }} --auto --rebase
       env:
-        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.PAKETO_BOT_REVIEWER_GITHUB_TOKEN }}
