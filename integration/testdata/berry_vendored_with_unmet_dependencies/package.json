@@ -1,0 +1,10 @@
+{
+  "name": "berry_simple_app",
+  "version": "0.0.0",
+  "description": "some app",
+  "license": "MIT",
+  "packageManager": "yarn@4.12.0",
+  "dependencies": {
+    "leftpad": "~0.0.1"
+  }
+}

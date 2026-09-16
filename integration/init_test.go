@@ -115,6 +115,12 @@ func TestIntegration(t *testing.T) {
 	SetDefaultEventuallyTimeout(10 * time.Second)
 
 	suite := spec.New("Integration", spec.Parallel(), spec.Report(report.Terminal{}))
+	suite("BerryCaching", testBerryCaching)
+	suite("BerryDevDependenciesDuringBuild", testBerryDevDependenciesDuringBuild)
+	suite("BerryLogging", testBerryLogging)
+	suite("BerryProjectPathApp", testBerryProjectPathApp)
+	suite("BerrySimpleApp", testBerrySimpleApp)
+	suite("BerryVendored", testBerryVendored)
 	suite("Caching", testCaching)
 	suite("DevDependenciesDuringBuild", testDevDependenciesDuringBuild)
 	suite("Logging", testLogging)
