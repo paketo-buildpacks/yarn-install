@@ -4,7 +4,8 @@
     "paketobuildpacks/ubi-9-builder-buildpackless",
     "paketobuildpacks/builder-ubi8-buildpackless-base",
     "paketobuildpacks/builder-jammy-buildpackless-base",
-    "paketobuildpacks/ubuntu-noble-builder-buildpackless"
+    "paketobuildpacks/ubuntu-noble-builder-buildpackless",
+    "paketobuildpacks/ubuntu-resolute-builder-buildpackless"
   ],
   "ubi-nodejs-extension": "github.com/paketo-buildpacks/ubi-nodejs-extension",
   "build-plan": "github.com/paketo-community/build-plan",
