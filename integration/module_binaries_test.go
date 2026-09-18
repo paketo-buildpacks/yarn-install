@@ -53,7 +53,7 @@ func testModuleBinaries(t *testing.T, context spec.G, it spec.S) {
 			Expect(os.RemoveAll(source)).To(Succeed())
 		})
 
-		it("builds a working OCI image for a vendored app with binary", func() {
+		it("builds a working OCI image for an app with a module binary", func() {
 			var err error
 			source, err = occam.Source(filepath.Join("testdata", "module_binaries"))
 			Expect(err).NotTo(HaveOccurred())
