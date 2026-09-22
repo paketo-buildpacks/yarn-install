@@ -3,14 +3,13 @@
   "version": "0.0.1",
   "description": "some app",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "author": "",
   "license": "",
   "dependencies": {
-    "chalk-cli": "~3.0.0",
-    "@mapbox/node-pre-gyp": "^1.0.9",
-    "sqlite3": "~5.0.1"
+    "chalk-cli": "~3.0.0"
   },
   "repository": {
     "type": "git",
