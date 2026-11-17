@@ -24,7 +24,14 @@ func (s SBOMGenerator) Generate(path string) (sbom.SBOM, error) {
 
 func main() {
 	logger := scribe.NewEmitter(os.Stdout).WithLevel(os.Getenv("BP_LOG_LEVEL"))
-	installProcess := yarninstall.NewYarnInstallProcess(pexec.NewExecutable("yarn"), fs.NewChecksumCalculator(), logger)
+	checksumCalculator := fs.NewChecksumCalculator()
+	yarnExecutable := pexec.NewExecutable("yarn")
+	nodeExecutable := pexec.NewExecutable("node")
+
+	classicProcess := yarninstall.NewYarnInstallProcess(yarnExecutable, checksumCalculator, logger)
+	berryProcess := yarninstall.NewBerryInstallProcess(yarnExecutable, nodeExecutable, checksumCalculator, logger)
+	installProcess := yarninstall.NewSwitchingInstallProcess(classicProcess, berryProcess)
+
 	sbomGenerator := SBOMGenerator{}
 	symlinker := yarninstall.NewSymlinker()
 	packageManagerConfigurationManager := yarninstall.NewPackageManagerConfigurationManager(servicebindings.NewResolver(), logger)

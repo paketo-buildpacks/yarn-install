@@ -42,7 +42,7 @@ type ConfigurationManager interface {
 	DeterminePath(typ, platformDir, entry string) (path string, err error)
 }
 
-func Build( entryResolver EntryResolver,
+func Build(entryResolver EntryResolver,
 	configurationManager ConfigurationManager,
 	homeDir string,
 	symlinker SymlinkManager,
@@ -175,6 +175,7 @@ func Build( entryResolver EntryResolver,
 				if err != nil {
 					return packit.BuildResult{}, err
 				}
+				currentModLayer = layer.Path
 			}
 
 			layer.Build = true
@@ -226,6 +227,11 @@ func Build( entryResolver EntryResolver,
 					if err != nil {
 						return packit.BuildResult{}, err
 					}
+				} else if currentModLayer != "" {
+					err = ensureNodeModulesSymlink(projectPath, currentModLayer, tmpDir)
+					if err != nil {
+						return packit.BuildResult{}, err
+					}
 				}
 
 				layer.Metadata = map[string]interface{}{
@@ -235,6 +241,9 @@ func Build( entryResolver EntryResolver,
 				path := filepath.Join(layer.Path, "node_modules", ".bin")
 				layer.LaunchEnv.Append("PATH", path, string(os.PathListSeparator))
 				layer.LaunchEnv.Default("NODE_PROJECT_PATH", projectPath)
+				if isBerryApp(projectPath) {
+					layer.LaunchEnv.Default("YARN_INSTALL_STATE_PATH", filepath.Join(layer.Path, ".yarn", "install-state.gz"))
+				}
 
 				logger.EnvironmentVariables(layer)
 
